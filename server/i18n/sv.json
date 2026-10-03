@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "Fyll i resans bekvämligheter",
+  "ui.filling": "Fyller i…",
+  "ui.filledN": "{n} platser kompletterade",
+  "ui.fillLater": "park4night-gränsen nådd: försök igen om en timme",
+  "ui.fillOsmBusy": "OpenStreetMap upptaget: försök igen om en minut"
+}

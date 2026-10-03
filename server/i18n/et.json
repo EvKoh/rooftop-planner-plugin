@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "Täida reisi mugavused",
+  "ui.filling": "Täitmine…",
+  "ui.filledN": "Täiendatud kohti: {n}",
+  "ui.fillLater": "park4nighti piirang täis: proovi tunni pärast",
+  "ui.fillOsmBusy": "OpenStreetMap on hõivatud: proovi minuti pärast"
+}

@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "املأ مرافق الرحلة",
+  "ui.filling": "جارٍ الملء…",
+  "ui.filledN": "اكتمل {n} مكان",
+  "ui.fillLater": "تم بلوغ حد park4night: حاول بعد ساعة",
+  "ui.fillOsmBusy": "OpenStreetMap مشغول: حاول بعد دقيقة"
+}

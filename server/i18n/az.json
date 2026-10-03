@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "Səyahətin imkanlarını doldur",
+  "ui.filling": "Doldurulur…",
+  "ui.filledN": "{n} yer tamamlandı",
+  "ui.fillLater": "park4night limiti doldu: bir saatdan sonra yenidən cəhd edin",
+  "ui.fillOsmBusy": "OpenStreetMap məşğuldur: bir dəqiqədən sonra yenidən cəhd edin"
+}

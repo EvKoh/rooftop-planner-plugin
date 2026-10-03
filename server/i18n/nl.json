@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "Voorzieningen van de reis invullen",
+  "ui.filling": "Bezig met invullen…",
+  "ui.filledN": "{n} plaatsen aangevuld",
+  "ui.fillLater": "park4night-limiet bereikt: probeer het over een uur opnieuw",
+  "ui.fillOsmBusy": "OpenStreetMap bezet: probeer het over een minuut opnieuw"
+}

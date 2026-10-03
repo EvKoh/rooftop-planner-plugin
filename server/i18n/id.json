@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "Isi fasilitas perjalanan",
+  "ui.filling": "Mengisi…",
+  "ui.filledN": "{n} tempat dilengkapi",
+  "ui.fillLater": "Batas park4night tercapai: coba lagi dalam satu jam",
+  "ui.fillOsmBusy": "OpenStreetMap sibuk: coba lagi dalam satu menit"
+}

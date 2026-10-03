@@ -8,7 +8,7 @@ const cache = require('./cache');
 const { roundPt, thin, distKm, pmap } = require('./util');
 
 const VALHALLA = 'https://valhalla1.openstreetmap.de';
-const UA = 'vanlife (TREK plugin; +https://github.com/EvkohLand/Vanlife)';
+const UA = 'vanlife (TREK plugin; +https://github.com/EvkohLand/TrekPluginVanlife)';
 // The public server refuses a matrix above 100 cells ("Exceeded max locations: 100",
 // seen 2026-10-03 with 20 x 20): chunks keep sources x targets <= 100.
 const MATRIX_CELLS = 100;

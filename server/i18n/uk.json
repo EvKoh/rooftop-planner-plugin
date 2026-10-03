@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "Заповнити зручності подорожі",
+  "ui.filling": "Заповнення…",
+  "ui.filledN": "Доповнено місць: {n}",
+  "ui.fillLater": "Ліміт park4night вичерпано: спробуйте за годину",
+  "ui.fillOsmBusy": "OpenStreetMap зайнятий: спробуйте за хвилину"
+}

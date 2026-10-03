@@ -124,7 +124,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_place_info',
     title: 'Read or record the amenities and price details of places',
-    description: 'Amenities and price details of the places of a trip, shown in the planner (columns on each place, the place widget) and used by the check and the budget. Without placeId: lists the places that have them, and the nights still to fill. With placeId and "set": the price goes to TREK\'s own place price (price_amount, currency); TREK has no field for the rest, kept by the plugin: per night or per person, dog fee, max height/length/weight, amenities (dog yes/no/fee, water, electricity, shower, toilets, dump station, wifi, rooftop tent accepted), each yes, no or unknown. Record only what a cited source states (official site first, then a dated review or the host\'s written answer, in "source"); leave everything else unknown, never estimate. "clear": true removes the record. Writes only the plugin\'s own data on the place, never the trip itself. Never book or message a host without the user\'s explicit validation.',
+    description: 'Amenities and price details of the places of a trip, shown in the planner (columns on each place, the place widget) and used by the check and the budget. Without placeId: lists the places that have them, and the nights still to fill. With placeId and "set": the price goes to TREK\'s own place price (price_amount, currency); TREK has no field for the rest, kept by the plugin: per night or per person, dog fee, max height/length/weight, amenities (dog yes/no/fee, water, electricity, shower, toilets, dump station, wifi, rooftop tent accepted), each yes, no or unknown. Record only what a cited source states (official site first, then a dated review or the host\'s written answer, in "source"); leave everything else unknown, never estimate. "clear": true removes the record. "fill": true fills unknown amenities from OpenStreetMap and park4night, citing them in "source". Writes only the plugin\'s own data on the place, never the trip itself. Never book or message a host without the user\'s explicit validation.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -133,6 +133,7 @@ const TOOL_SPECS = [
         tripId: TRIP,
         placeId: { type: 'integer', minimum: 1, description: 'TREK place id.' },
         clear: { type: 'boolean', default: false },
+        fill: { type: 'boolean', default: false, description: 'Fill unknown amenities from OpenStreetMap (and park4night if the instance enables it): the place given by placeId, or the next 20 places of the trip; call again while "remaining" is above 0. Never overwrites a recorded value.' },
         set: {
           type: 'object',
           additionalProperties: false,

@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "Az út szolgáltatásainak kitöltése",
+  "ui.filling": "Kitöltés…",
+  "ui.filledN": "{n} hely kiegészítve",
+  "ui.fillLater": "park4night-korlát elérve: próbáld újra egy óra múlva",
+  "ui.fillOsmBusy": "Az OpenStreetMap foglalt: próbáld újra egy perc múlva"
+}

@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "旅行の設備を入力",
+  "ui.filling": "入力中…",
+  "ui.filledN": "{n} か所を補完しました",
+  "ui.fillLater": "park4night の上限に達しました：1 時間後に再試行してください",
+  "ui.fillOsmBusy": "OpenStreetMap が混雑中：1 分後に再試行してください"
+}

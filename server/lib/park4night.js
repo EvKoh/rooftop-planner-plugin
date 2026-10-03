@@ -7,7 +7,7 @@
 // assistant cannot hammer the service.
 
 const BASE = 'https://park4night.com';
-const UA = 'vanlife (TREK plugin; +https://github.com/EvkohLand/Vanlife)';
+const UA = 'vanlife (TREK plugin; +https://github.com/EvkohLand/TrekPluginVanlife)';
 const MIN_GAP_MS = 3000; // between two requests
 const MAX_PER_HOUR = 20;
 
@@ -59,6 +59,28 @@ function decode(text) {
   return JSON.parse(Buffer.from(t.replace(/^"|"$/g, ''), 'base64').toString('utf8'));
 }
 
+/** One rate-limited call to the around endpoint: park4night's raw list, nothing kept. */
+async function fetchAround(lat, lng, radiusKm, lng2, now) {
+  await takeSlot(now);
+  const url = `${BASE}/api/places/around?lat=${(+lat).toFixed(5)}&lng=${(+lng).toFixed(5)}&radius=${Math.round(radiusKm)}&filter=%7B%7D&lang=${lng2 || 'en'}`;
+  const r = await fetch(url, { headers: { 'user-agent': UA, accept: 'application/json' }, signal: AbortSignal.timeout(10000) });
+  if (r.status === 429) throw new RateLimited('park4night is limiting requests: try again later');
+  if (!r.ok) throw new Error(`park4night ${r.status}`);
+  let list;
+  try { list = decode(await r.text()); } catch { throw new Error('park4night answer not readable (the unofficial endpoint may have changed)'); }
+  if (!Array.isArray(list)) throw new Error('park4night answer not a list (the unofficial endpoint may have changed)');
+  return list;
+}
+
+/**
+ * The places park4night lists around a point, reduced to what identifies one (id, position)
+ * and its services: used to read the amenities of a place already in a trip.
+ */
+async function around(lat, lng, radiusKm, { now } = {}) {
+  const list = await fetchAround(lat, lng, radiusKm, 'en', now);
+  return list.map((p) => ({ id: p.id, lat: p.lat, lng: p.lng, code: p.type && p.type.code, services: p.services || [] }));
+}
+
 /**
  * @param a { lat, lng, radius_km, types[], dog, min_rating, max_price, limit, lang }
  */
@@ -66,14 +88,7 @@ async function search(a, { now } = {}) {
   const allowed = KINDS_FOR[a.vehicle] || KINDS_FOR.rooftop_tent;
   const types = (a.types && a.types.length ? a.types : allowed).filter((k) => allowed.includes(k));
   const codes = new Set(types.flatMap((k) => KINDS[k] || []));
-  await takeSlot(now);
-  const url = `${BASE}/api/places/around?lat=${(+a.lat).toFixed(5)}&lng=${(+a.lng).toFixed(5)}&radius=${Math.round(a.radius_km)}&filter=%7B%7D&lang=${a.lang}`;
-  const r = await fetch(url, { headers: { 'user-agent': UA, accept: 'application/json' }, signal: AbortSignal.timeout(10000) });
-  if (r.status === 429) throw new RateLimited('park4night is limiting requests: try again later');
-  if (!r.ok) throw new Error(`park4night ${r.status}`);
-  let list;
-  try { list = decode(await r.text()); } catch { throw new Error('park4night answer not readable (the unofficial endpoint may have changed)'); }
-  if (!Array.isArray(list)) throw new Error('park4night answer not a list (the unofficial endpoint may have changed)');
+  const list = await fetchAround(a.lat, a.lng, a.radius_km, a.lang, now);
 
   const places = [];
   let skipped = 0;
@@ -112,4 +127,4 @@ async function search(a, { now } = {}) {
 
 const resetRate = () => { state.last = 0; state.recent = []; };
 
-module.exports = { search, priceHint, decode, RateLimited, KINDS, KINDS_FOR, SERVICES, resetRate, MAX_PER_HOUR };
+module.exports = { search, around, priceHint, decode, RateLimited, KINDS, KINDS_FOR, SERVICES, resetRate, MAX_PER_HOUR };

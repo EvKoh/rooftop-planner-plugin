@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "Ausstattung der Reise ausfüllen",
+  "ui.filling": "Wird ausgefüllt…",
+  "ui.filledN": "{n} Orte ergänzt",
+  "ui.fillLater": "park4night-Limit erreicht: in einer Stunde erneut versuchen",
+  "ui.fillOsmBusy": "OpenStreetMap ausgelastet: in einer Minute erneut versuchen"
+}

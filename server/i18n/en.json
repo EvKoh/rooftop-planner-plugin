@@ -148,14 +148,19 @@
   "ui.vehicleRefused": "Not suitable for your vehicle",
   "zone.south-tyrol.name": "South Tyrol",
   "zone.south-tyrol.farm": "only an authorised campsite is legal for a rooftop tent; farm camping without authorisation is fined EUR 300–900",
-  "zone.south-tyrol.van": "VAN_ST_EN",
+  "zone.south-tyrol.van": "sleeping inside a van or motorhome without setting anything out counts as parking (Codice della strada art. 185), but many South Tyrol municipalities ban overnight stays outside campsites: check the local signs and rules",
   "zone.veneto.name": "Veneto",
   "zone.veneto.farm": "agriturismo camping is legal (LR 28/2012)",
-  "zone.veneto.van": "VAN_VE_EN",
+  "zone.veneto.van": "sleeping inside a van or motorhome without setting anything out counts as parking (Codice della strada art. 185): a motorhome area is fine; check the local signs",
   "zone.liguria.name": "Liguria",
   "zone.liguria.farm": "agricampeggio on an agriturismo is legal (LR 37/2007 art. 7)",
-  "zone.liguria.van": "VAN_LI_EN",
+  "zone.liguria.van": "sleeping inside a van or motorhome without setting anything out counts as parking (Codice della strada art. 185): a motorhome area is fine; check the local signs",
   "zone.unknown.name": "this area",
   "zone.unknown.farm": "no rule known for this area: check the local law",
-  "zone.unknown.van": "no rule known for this area: check the signs and any municipal ban on overnight parking"
+  "zone.unknown.van": "no rule known for this area: check the signs and any municipal ban on overnight parking",
+  "ui.fillTrip": "Fill the trip's amenities",
+  "ui.filling": "Filling…",
+  "ui.filledN": "{n} places completed",
+  "ui.fillLater": "Park4night limit reached: try again in an hour",
+  "ui.fillOsmBusy": "OpenStreetMap busy: try again in a minute"
 }

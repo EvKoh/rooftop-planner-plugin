@@ -148,14 +148,19 @@
   "ui.vehicleRefused": "Ne convient pas à votre véhicule",
   "zone.south-tyrol.name": "Tyrol du Sud",
   "zone.south-tyrol.farm": "seul un camping autorisé est légal pour une tente de toit ; camper à la ferme sans autorisation coûte 300 à 900 € d'amende",
-  "zone.south-tyrol.van": "VAN_ST_FR",
+  "zone.south-tyrol.van": "dormir dans un van ou un camping-car sans rien sortir compte comme du stationnement (Codice della strada art. 185), mais beaucoup de communes du Haut-Adige interdisent la nuit hors camping : vérifier les panneaux et le règlement local",
   "zone.veneto.name": "Vénétie",
   "zone.veneto.farm": "le camping en agriturismo est légal (LR 28/2012)",
-  "zone.veneto.van": "VAN_VE_FR",
+  "zone.veneto.van": "dormir dans un van ou un camping-car sans rien sortir compte comme du stationnement (Codice della strada art. 185) : une aire de camping-car convient ; vérifier les panneaux locaux",
   "zone.liguria.name": "Ligurie",
   "zone.liguria.farm": "l'agricampeggio d'un agriturismo est légal (LR 37/2007 art. 7)",
-  "zone.liguria.van": "VAN_LI_FR",
+  "zone.liguria.van": "dormir dans un van ou un camping-car sans rien sortir compte comme du stationnement (Codice della strada art. 185) : une aire de camping-car convient ; vérifier les panneaux locaux",
   "zone.unknown.name": "cette zone",
   "zone.unknown.farm": "aucune règle connue pour cette zone : vérifier le droit local",
-  "zone.unknown.van": "aucune règle connue pour cette zone : vérifier les panneaux et les éventuelles interdictions municipales de stationnement de nuit"
+  "zone.unknown.van": "aucune règle connue pour cette zone : vérifier les panneaux et les éventuelles interdictions municipales de stationnement de nuit",
+  "ui.fillTrip": "Remplir les commodités du voyage",
+  "ui.filling": "Remplissage…",
+  "ui.filledN": "{n} lieux complétés",
+  "ui.fillLater": "Limite park4night atteinte : relancez dans une heure",
+  "ui.fillOsmBusy": "OpenStreetMap occupé : relancez dans une minute"
 }

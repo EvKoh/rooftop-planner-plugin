@@ -18,7 +18,8 @@ async function placeColumns(ctx, tripId, settings) {
   for (const p of real) {
     const rec = info.get(p.id) || null;
     const price = placeInfo.priceText(p.price == null ? null : +p.price, p.currency || 'EUR', rec, L);
-    if (price) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-price', label: t(L, 'col.price'), value: price.slice(0, 256), icon: 'Euro' });
+    // A free stop (lunch break, viewpoint) is not a night: no "0,00 €/night" on it.
+    if (price && !(+p.price === 0 && !rec)) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-price', label: t(L, 'col.price'), value: price.slice(0, 256), icon: 'Euro' });
     const am = placeInfo.amenitiesText(rec, L);
     if (am) {
       out.push({ kind: 'column', entityId: p.id, id: 'vanlife-amenities', label: t(L, 'col.amenities'), value: am.slice(0, 256), icon: 'Caravan', tone: placeInfo.refuses(rec, settings) ? 'danger' : 'default' });

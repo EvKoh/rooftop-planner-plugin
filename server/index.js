@@ -20,6 +20,7 @@ const { readSettings } = require('./lib/settings');
 const { loadTrip } = require('./lib/trip');
 const { warnings } = require('./lib/report');
 const placeInfo = require('./lib/place-info');
+const amenityFill = require('./lib/amenity-fill');
 const { placeColumns } = require('./lib/contributions');
 const { gentle } = require('./lib/gentle');
 const { bundle, lang } = require('./lib/i18n');
@@ -41,6 +42,7 @@ module.exports = definePlugin({
   async onLoad(ctx) {
     await cache.migrate(ctx);
     await placeInfo.migrate(ctx);
+    await amenityFill.migrate(ctx);
   },
 
   hooks: {
@@ -132,6 +134,31 @@ module.exports = definePlugin({
           return json(200, { saved: true, info: await placeInfo.set(ctx, at.tripId, at.placeId, (req.body && req.body.set) || {}) });
         } catch (e) {
           return json(e instanceof placeInfo.InfoError ? 400 : 403, { error: String((e && e.message) || e) });
+        }
+      },
+    },
+    {
+      // Fill unknown amenities from OpenStreetMap (and park4night when enabled): one place
+      // (placeId) or the next batch of the trip's places; the widget calls it again while
+      // `remaining` is above zero.
+      method: 'POST',
+      path: '/amenities/fill',
+      auth: true,
+      async handler(req, raw) {
+        const ctx = gentle(raw);
+        const tripId = Number(req.body && req.body.tripId);
+        const placeId = Number(req.body && req.body.placeId);
+        if (!Number.isInteger(tripId) || tripId < 1) return json(400, { error: 'tripId required' });
+        try {
+          const settings = await readSettings(ctx, ['language']);
+          const opts = { park4night: settings.park4night };
+          if (Number.isInteger(placeId) && placeId > 0) {
+            if (!(await placeOf(ctx, tripId, placeId))) return json(404, { error: 'place not in this trip' });
+            opts.placeIds = [placeId];
+          }
+          return json(200, await amenityFill.fill(ctx, tripId, opts));
+        } catch (e) {
+          return json(403, { error: String((e && e.message) || e) });
         }
       },
     },

@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "Uzupełnij udogodnienia podróży",
+  "ui.filling": "Uzupełnianie…",
+  "ui.filledN": "Uzupełniono miejsc: {n}",
+  "ui.fillLater": "Osiągnięto limit park4night: spróbuj za godzinę",
+  "ui.fillOsmBusy": "OpenStreetMap zajęty: spróbuj za minutę"
+}

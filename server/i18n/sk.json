@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "Doplniť vybavenie cesty",
+  "ui.filling": "Dopĺňam…",
+  "ui.filledN": "Doplnené miesta: {n}",
+  "ui.fillLater": "Limit park4night vyčerpaný: skúste to o hodinu",
+  "ui.fillOsmBusy": "OpenStreetMap je vyťažený: skúste to o minútu"
+}

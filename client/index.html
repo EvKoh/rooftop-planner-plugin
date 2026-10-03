@@ -31,7 +31,7 @@
   <script>
     // All text comes from POST /amenities (server/i18n), in the frame's language unless the
     // user chose one in the plugin settings: no string is written here.
-    var st = { tripId: null, placeId: null, locale: 'en', data: null, open: false };
+    var st = { tripId: null, placeId: null, locale: 'en', data: null, open: false, tried: {}, filling: false };
     var S = function (k) { return (st.data && st.data.strings[k]) || ''; };
 
     function h(tag, attrs, kids) {
@@ -119,6 +119,9 @@
         ])
       );
       summary(d).forEach(function (n) { app.appendChild(n); });
+      app.appendChild(h('div', { class: 'actions' }, [
+        h('button', { class: 'trek-btn trek-btn--ghost', type: 'button', disabled: st.filling ? 'disabled' : null, text: st.filling ? S('ui.filling') : S('ui.fillTrip'), on: { click: fillTrip } }),
+      ]));
       if (st.open) app.appendChild(editor(d));
     }
 
@@ -127,6 +130,12 @@
       try {
         st.data = await trek.invoke('/amenities', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId), locale: st.locale } });
         render();
+        // First visit of a place with nothing recorded: look it up once in the open sources.
+        if (!st.data.recorded && !st.tried[st.placeId]) {
+          st.tried[st.placeId] = true;
+          var r = await trek.invoke('/amenities/fill', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId) } });
+          if (r && r.filled) load();
+        }
       } catch (e) {
         document.getElementById('app').replaceChildren(h('p', { class: 'muted', text: '⚠ ' + e.message }));
       }
@@ -142,6 +151,23 @@
         st.open = false;
         load();
       } catch (e) { trek.notify('error', e.message); }
+    }
+    // Every place of the trip, 20 at a time, until nothing is left or a source asks to wait.
+    async function fillTrip() {
+      if (st.filling) return;
+      st.filling = true; render();
+      var total = 0, r = null;
+      try {
+        do {
+          r = await trek.invoke('/amenities/fill', { method: 'POST', body: { tripId: Number(st.tripId) } });
+          total += r.filled;
+        } while (r.remaining > 0 && r.looked > 0 && !r.osmBusy && !r.park4nightLimited);
+        trek.notify('success', S('ui.filledN').replace('{n}', String(total)));
+        if (r.osmBusy) trek.notify('info', S('ui.fillOsmBusy'));
+        if (r.park4nightLimited) trek.notify('info', S('ui.fillLater'));
+      } catch (e) { trek.notify('error', e.message); }
+      st.filling = false;
+      load();
     }
     async function clearIt() {
       if (!(await trek.confirm({ message: S('ui.confirmClear'), danger: true }))) return;

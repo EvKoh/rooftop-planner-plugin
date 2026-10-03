@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "Điền tiện nghi của chuyến đi",
+  "ui.filling": "Đang điền…",
+  "ui.filledN": "Đã bổ sung {n} địa điểm",
+  "ui.fillLater": "Đã đạt giới hạn park4night: thử lại sau một giờ",
+  "ui.fillOsmBusy": "OpenStreetMap đang bận: thử lại sau một phút"
+}

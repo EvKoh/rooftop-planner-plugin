@@ -1,1 +1,7 @@
-{}
+{
+  "ui.fillTrip": "填写行程设施",
+  "ui.filling": "正在填写…",
+  "ui.filledN": "已补全 {n} 个地点",
+  "ui.fillLater": "已达 park4night 上限：请一小时后重试",
+  "ui.fillOsmBusy": "OpenStreetMap 繁忙：请一分钟后重试"
+}
