@@ -104,7 +104,9 @@ describe('place info through the plugin', () => {
     expect(cols.some((x) => x.entityId === 16 && x.id === 'rooftop-price')).toBe(false);
     const acts = c.filter((x) => x.kind === 'action');
     expect(acts.some((x) => x.entityId === 20)).toBe(false); // route places get nothing
-    expect(acts.find((x) => x.entityId === 10)).toMatchObject({ label: 'Price & amenities', target: { kind: 'frame', sub: '/?place=10' } });
+    expect(acts.find((x) => x.entityId === 18)).toMatchObject({ label: 'Price & amenities', icon: 'Pencil', target: { kind: 'frame', sub: '/?place=18' } });
+    expect(acts.some((x) => x.entityId === 10)).toBe(false); // a lake: no button unless filled in
+    expect(acts.map((x) => x.entityId).sort()).toEqual([13, 16, 18, 19]); // the nights (and filled places)
     expect(c.every((x) => !x.value || x.value.length <= 256)).toBe(true);
     expect(await drv.hook('tableContributor', 'getContributions', 'reservations', 1)).toEqual([]);
     const fr = makeHost({ userSettings: { language: 'fr' }, queryResults: { [INDEX_SQL]: [{ place_id: 13 }] } });

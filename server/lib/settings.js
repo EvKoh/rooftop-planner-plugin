@@ -23,9 +23,10 @@ const DEFAULTS = Object.freeze({
 const NUMBERS = ['vehicle_height_m', 'night_price_target', 'night_price_max', 'sunset_margin_min', 'water_reserve_l',
   'fuel_l_per_100km', 'fuel_price_per_l', 'shop_detour_max_min', 'travellers'];
 
-async function readSettings(ctx) {
+/** All settings, or only `keys` (each one is an RPC to the host). Missing keys keep their default. */
+async function readSettings(ctx, keys) {
   const out = { ...DEFAULTS };
-  await Promise.all(Object.keys(DEFAULTS).map(async (k) => {
+  await Promise.all((keys || Object.keys(DEFAULTS)).map(async (k) => {
     let v;
     try { v = await ctx.settings.get(k); } catch { v = undefined; }
     if (v === undefined || v === null || v === '') return;

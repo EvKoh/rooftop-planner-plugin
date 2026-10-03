@@ -20,6 +20,7 @@ const { loadTrip } = require('./lib/trip');
 const { warnings, tripReport } = require('./lib/report');
 const placeInfo = require('./lib/place-info');
 const { placeColumns } = require('./lib/contributions');
+const { gentle } = require('./lib/gentle');
 
 const json = (status, body) => ({ status, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
@@ -32,20 +33,22 @@ module.exports = definePlugin({
   hooks: {
     mcpToolProvider: {
       tools: TOOL_NAMES,
-      callTool: (call, ctx) => callTool(call, ctx),
+      callTool: (call, ctx) => callTool(call, gentle(ctx)),
     },
 
     warningProvider: {
-      async getWarnings(tripId, ctx) {
+      async getWarnings(tripId, raw) {
+        const ctx = gentle(raw);
         const settings = await readSettings(ctx);
         return warnings(ctx, await loadTrip(ctx, tripId, settings), settings);
       },
     },
 
     tableContributor: {
-      async getContributions(view, tripId, ctx) {
+      async getContributions(view, tripId, raw) {
         if (view !== 'places') return [];
-        return placeColumns(ctx, tripId, await readSettings(ctx));
+        const ctx = gentle(raw);
+        return placeColumns(ctx, tripId, await readSettings(ctx, ['language', 'dog', 'vehicle_height_m']));
       },
     },
 
@@ -53,7 +56,7 @@ module.exports = definePlugin({
       // `rooftop`: no tolls (on-site days); `rooftop-highway`: tolls allowed (getting
       // there and back). Both use the vehicle height from the user's settings.
       async getRoute(request, ctx) {
-        const settings = await readSettings(ctx);
+        const settings = await readSettings(gentle(ctx), ['vehicle_height_m']);
         const r = await routing.route(request.waypoints.map((w) => [w.lat, w.lng]), {
           tolls: request.profile === 'rooftop-highway', height: settings.vehicle_height_m, maxPoints: 5000, timeoutMs: 17000,
         });
@@ -73,7 +76,8 @@ module.exports = definePlugin({
       method: 'POST',
       path: '/places',
       auth: true,
-      async handler(req, ctx) {
+      async handler(req, raw) {
+        const ctx = gentle(raw);
         const tripId = Number(req.body && req.body.tripId);
         if (!Number.isInteger(tripId) || tripId < 1) return json(400, { error: 'tripId required' });
         try {
@@ -94,7 +98,8 @@ module.exports = definePlugin({
       method: 'POST',
       path: '/place-info',
       auth: true,
-      async handler(req, ctx) {
+      async handler(req, raw) {
+        const ctx = gentle(raw);
         const b = req.body || {};
         const tripId = Number(b.tripId);
         const placeId = Number(b.placeId);
@@ -113,7 +118,8 @@ module.exports = definePlugin({
       method: 'POST',
       path: '/report',
       auth: true,
-      async handler(req, ctx) {
+      async handler(req, raw) {
+        const ctx = gentle(raw);
         const tripId = Number(req.body && req.body.tripId);
         if (!Number.isInteger(tripId) || tripId < 1) return json(400, { error: 'tripId required' });
         try {
