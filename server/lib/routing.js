@@ -5,13 +5,17 @@
 // non-motorway days. Times are cached in db:own; many legs are asked in ONE matrix call
 // (`sources_to_targets`) instead of one request each — the public server is shared.
 const cache = require('./cache');
-const { roundPt, thin } = require('./util');
+const { roundPt, thin, distKm, pmap } = require('./util');
 
 const VALHALLA = 'https://valhalla1.openstreetmap.de';
 const UA = 'rooftop-planner-plugin (TREK plugin; +https://github.com/EvKoh/rooftop-planner-plugin)';
 // The public server refuses a matrix above 100 cells ("Exceeded max locations: 100",
 // seen 2026-10-03 with 20 x 20): chunks keep sources x targets <= 100.
 const MATRIX_CELLS = 100;
+// It also refuses any matrix path over 150 km ("Path distance exceeds the max distance
+// limit: 150000 meters"), and one such pair fails its whole chunk: pairs farther apart
+// than this (straight line) are routed one by one with /route instead.
+const MATRIX_MAX_KM = 110;
 
 /** Decode a Valhalla polyline (precision 6) into [lat, lng] pairs. */
 function decodePolyline(str, precision = 6) {
@@ -111,11 +115,26 @@ async function legs(ctx, pairs, opts = {}) {
   });
   let pending = 0;
   if (todo.length && opts.network !== false) {
+    const fresh = [];
+    const far = todo.filter((i) => distKm(pairs[i][0], pairs[i][1]) > MATRIX_MAX_KM);
+    const near = todo.filter((i) => !far.includes(i));
+    await pmap(far, 2, async (i) => {
+      if (opts.deadline && opts.deadline.left() < 5000) { pending++; return; }
+      try {
+        const r = await route(pairs[i], { ...opts, maxPoints: 2, timeoutMs: opts.deadline ? Math.min(12000, opts.deadline.left() - 1500) : 12000 });
+        const v = { minutes: r.minutes, km: r.km };
+        values.set(i, v);
+        fresh.push([keys[i], v]);
+      } catch (e) {
+        ctx.log?.warn?.('valhalla route failed', { error: String(e && e.message) });
+        pending++;
+      }
+    });
     // Greedy chunks of pairs whose distinct sources x distinct targets stay <= MATRIX_CELLS.
     const ptKey = (p) => roundPt(p).join(',');
     const chunks = [];
     let cur = null;
-    for (const i of todo) {
+    for (const i of near) {
       const [a, b] = pairs[i];
       const ns = cur && !cur.si.has(ptKey(a)) ? 1 : 0;
       const nt = cur && !cur.ti.has(ptKey(b)) ? 1 : 0;
@@ -127,7 +146,6 @@ async function legs(ctx, pairs, opts = {}) {
       if (!cur.ti.has(ptKey(b))) { cur.ti.set(ptKey(b), cur.tgt.length); cur.tgt.push(b); }
       cur.idx.push(i);
     }
-    const fresh = [];
     for (let c = 0; c < chunks.length; c++) {
       const { idx: chunk, src, tgt, si, ti } = chunks[c];
       if (opts.deadline && opts.deadline.left() < 4000) { pending += chunks.slice(c).reduce((n, x) => n + x.idx.length, 0); break; }

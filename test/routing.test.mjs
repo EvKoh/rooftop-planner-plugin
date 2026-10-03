@@ -143,3 +143,25 @@ describe('matrix size limit of the public server', () => {
     expect(f.calls.length).toBeGreaterThan(1);
   });
 });
+
+describe('long legs', () => {
+  beforeEach(() => cache.clearMemory());
+  afterEach(() => vi.unstubAllGlobals());
+  it('routes legs over the matrix distance limit one by one, never in a matrix', async () => {
+    const f = stubFetch();
+    vi.stubGlobal('fetch', f);
+    const ctx = { db: { query: async () => [], tx: async () => ({}) }, log: { warn: vi.fn() } };
+    const r = await routing.legs(ctx, [[[43.7, 3.8], [44.5, 8.7]], [[46.5, 11.6], [46.6, 11.7]]], { tolls: true });
+    expect(r.pending).toBe(0);
+    expect(r.values.get(0).minutes).toBeGreaterThan(200);
+    const urls = f.calls.map((c) => c.url);
+    expect(urls.filter((u) => u.endsWith('/route'))).toHaveLength(1);
+    expect(urls.filter((u) => u.endsWith('/sources_to_targets'))).toHaveLength(1);
+    vi.stubGlobal('fetch', stubFetch({ failValhalla: true }));
+    cache.clearMemory();
+    const bad = await routing.legs(ctx, [[[43.7, 3.8], [44.5, 8.7]]], { tolls: true });
+    expect(bad.pending).toBe(1);
+    const late = await routing.legs(ctx, [[[43.7, 3.8], [44.6, 8.7]]], { tolls: true, deadline: { left: () => 1000 } });
+    expect(late.pending).toBe(1);
+  });
+});
