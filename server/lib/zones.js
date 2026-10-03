@@ -1,5 +1,6 @@
 'use strict';
-// Local law on where a rooftop tent may be opened, by zone. A tent unfolded on a vehicle
+// Local law on where the night may be spent, by zone (the texts and their sources are in
+// the message catalogues, keys zone.<id>.name / .farm / .van). A tent unfolded on a vehicle
 // counts as camping, so what matters is the kind of ground the night is spent on.
 //
 // Polygons are deliberately coarse outlines ([lat, lng] vertices, ~5 km precision): good
@@ -19,11 +20,7 @@
 const ZONES = [
   {
     id: 'south-tyrol',
-    name: 'South Tyrol (Bolzano)',
-    nameFr: 'Tyrol du Sud (Bolzano)',
-    country: 'IT',
     farm: 'risk',
-    privateGround: 'risk',
     note: 'only an authorised campsite is legal; farm camping without authorisation is fined EUR 300-900',
     noteFr: 'seul un camping autorisé est légal ; camper à la ferme sans autorisation coûte 300 à 900 € d\'amende',
     polygon: [
@@ -34,13 +31,7 @@ const ZONES = [
   },
   {
     id: 'veneto',
-    name: 'Veneto',
-    nameFr: 'Vénétie',
-    country: 'IT',
     farm: 'ok',
-    privateGround: 'verify',
-    note: 'agriturismo camping is legal (LR 28/2012)',
-    noteFr: 'le camping en agriturismo est légal (LR 28/2012)',
     polygon: [
       [46.68, 12.73], [46.62, 12.24], [46.55, 12.05], [46.52, 11.87], [46.25, 11.68], [45.85, 10.95],
       [45.6, 10.65], [45.1, 11.2], [44.8, 12.3], [45.3, 12.6], [45.65, 13.1], [46.1, 12.5],
@@ -48,11 +39,7 @@ const ZONES = [
   },
   {
     id: 'liguria',
-    name: 'Liguria',
-    nameFr: 'Ligurie',
-    country: 'IT',
     farm: 'ok',
-    privateGround: 'verify',
     note: 'agricampeggio on an agriturismo is legal (LR 37/2007 art. 7)',
     noteFr: 'l\'agricampeggio d\'un agriturismo est légal (LR 37/2007 art. 7)',
     polygon: [

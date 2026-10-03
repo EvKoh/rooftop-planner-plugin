@@ -38,7 +38,7 @@ async function tripBudget(ctx, model, o, { settings, deadline, network = true })
       for (let i = 1; i < pts.length; i++) { pairs.push([pts[i - 1], pts[i]]); owner.push(d); }
     }
     if (!pairs.length) continue;
-    const r = await routing.legs(ctx, pairs, { tolls, height: settings.vehicle_height_m, deadline, network });
+    const r = await routing.legs(ctx, pairs, { ...routing.vehicleOpts(settings, tolls), deadline, network });
     pending += r.pending;
     for (const d of ds) {
       let km = 0;

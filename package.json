@@ -1,8 +1,8 @@
 {
-  "name": "rooftop-planner-plugin",
+  "name": "vanlife",
   "version": "0.1.0",
   "private": true,
-  "description": "TREK plugin: plan car + rooftop-tent road trips (MCP tools, warnings, route profiles, trip tab).",
+  "description": "TREK plugin: road trips with a rooftop tent, a campervan or a motorhome (MCP tools, warnings, route profiles, amenities widget).",
   "license": "MIT",
   "type": "commonjs",
   "scripts": {

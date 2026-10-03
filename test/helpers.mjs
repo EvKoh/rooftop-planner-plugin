@@ -12,6 +12,7 @@ const { build, CATS, P } = require('./fixtures/trip.js');
 const { distKm } = require('../server/lib/util.js');
 const cache = require('../server/lib/cache.js');
 const overpass = require('../server/lib/overpass.js');
+const park4night = require('../server/lib/park4night.js');
 
 /** Drive minutes the stub "computes": 1.5 min/km, +15 min to or from the shop (off the road). */
 export function stubMinutes(a, b) {
@@ -54,8 +55,16 @@ export const OSM_SHOPS = [
   { type: 'node', id: 14, lat: 46.7, lon: 12.0, tags: { amenity: 'drinking_water' } },
 ];
 
+// A FICTIONAL park4night answer (invented names), in its real shape and base64 encoding.
+export const P4N_LIST = [
+  { id: 1, url: '/en/place/1', type: { code: 'C', label: 'Camping' }, title_short: 'Camping Meadow Example', description: 'Pitch 19 € a night.', lat: 46.58, lng: 12.16, services: ['animaux', 'douche', 'point_eau'], review: 40, rating: 4.6, distance: 3.2 },
+  { id: 2, url: '/en/place/2', type: { code: 'ACC_P', label: 'Paying motorhome area' }, title_short: 'Motorhome Area Example', description: '12 €', lat: 46.57, lng: 12.19, services: ['point_eau'], review: 12, rating: 4.1, distance: 4.0 },
+  { id: 3, url: '/en/place/3', type: { code: 'PN', label: 'Surrounded by nature' }, title_short: 'Forest Spot Example', description: '', lat: 46.6, lng: 12.12, services: [], review: 3, rating: 3.9, distance: 2.0 },
+  { id: 4, url: '/en/place/4', type: { code: 'PJ', label: 'Daily parking only' }, title_short: 'Day Car Park Example', description: '', lat: 46.55, lng: 12.15, services: [], review: 0, rating: 0, distance: 1.0 },
+];
+
 /** A fetch stub; `calls` records every request. Options make it fail on purpose. */
-export function stubFetch({ failValhalla = false, failOverpass = false } = {}) {
+export function stubFetch({ failValhalla = false, failOverpass = false, failPark4night = false } = {}) {
   const calls = [];
   const fn = vi.fn(async (url, init = {}) => {
     calls.push({ url: String(url), body: init.body });
@@ -78,6 +87,10 @@ export function stubFetch({ failValhalla = false, failOverpass = false } = {}) {
       }));
       return ok({ trip: { legs, summary: { length: legs.reduce((s, l) => s + l.summary.length, 0), time: legs.reduce((s, l) => s + l.summary.time, 0) } } });
     }
+    if (String(url).includes('park4night.com')) {
+      if (failPark4night) return { ok: false, status: 500, text: async () => '' };
+      return { ok: true, status: 200, text: async () => Buffer.from(JSON.stringify(P4N_LIST)).toString('base64') };
+    }
     if (String(url).includes('overpass')) {
       if (failOverpass) return { ok: false, status: 429, json: async () => ({}) };
       const q = decodeURIComponent(String(init.body));
@@ -90,15 +103,17 @@ export function stubFetch({ failValhalla = false, failOverpass = false } = {}) {
 }
 
 /** Mock host seeded with the fixture trip and the manifest's exact grants. */
-export function makeHost({ fixed = false, grants = manifest.permissions, userSettings = { language: 'en', timezone: 'Europe/Rome' }, trip, queryResults } = {}) {
+export function makeHost({ fixed = false, grants = manifest.permissions, userSettings = { language: 'en', timezone: 'Europe/Rome' }, trip, queryResults, config = { park4night_enabled: false } } = {}) {
   cache.clearMemory();
   overpass.resetBusy();
+  park4night.resetRate();
   return createMockHost({
     grants,
     actingUserId: 42,
     userSettings,
     categories: CATS,
     queryResults,
+    config,
     trips: { 1: trip || build({ fixed }) },
   });
 }

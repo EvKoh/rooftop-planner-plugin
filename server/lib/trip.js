@@ -108,8 +108,9 @@ async function loadTrip(ctx, tripId, settings) {
       notes: a.notes || '',
       categoryName: pl.categoryName || '',
       info: pl.info || null,
-      // The entered price (per person x travellers, + dog fee) wins over TREK's price field.
-      price: (pl.info && settings ? placeInfo.nightTotal(pl.info, settings) : null) ?? pl.price ?? null,
+      // TREK's price, made the party's total for the night with the recorded details
+      // (per person x travellers, + dog fee).
+      price: settings ? placeInfo.nightTotal(pl.price ?? null, pl.info, settings) : pl.price ?? null,
       text: `${pl.description || ''}\n${pl.notes || ''}\n${a.notes || ''}`,
     };
   });

@@ -43,7 +43,7 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
   const last = nuit && located(nuit) ? { from: car, to: [nuit.lat, nuit.lng] } : null;
   const pairs = seq.filter((x) => x.from && x.to).map((x) => [x.from, x.to]);
   if (last && last.from) pairs.push([last.from, last.to]);
-  const r = await routing.legs(ctx, pairs, { tolls, height: settings.vehicle_height_m, deadline, network });
+  const r = await routing.legs(ctx, pairs, { ...routing.vehicleOpts(settings, tolls), deadline, network });
   let k = 0;
   const legMin = [];
   for (const x of seq) legMin.push(x.from && x.to ? r.values.get(k++)?.minutes ?? null : 0);

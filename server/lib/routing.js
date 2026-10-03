@@ -8,7 +8,7 @@ const cache = require('./cache');
 const { roundPt, thin, distKm, pmap } = require('./util');
 
 const VALHALLA = 'https://valhalla1.openstreetmap.de';
-const UA = 'rooftop-planner-plugin (TREK plugin; +https://github.com/EvKoh/rooftop-planner-plugin)';
+const UA = 'vanlife (TREK plugin; +https://github.com/EvkohLand/Vanlife)';
 // The public server refuses a matrix above 100 cells ("Exceeded max locations: 100",
 // seen 2026-10-03 with 20 x 20): chunks keep sources x targets <= 100.
 const MATRIX_CELLS = 100;
@@ -18,6 +18,11 @@ const MATRIX_CELLS = 100;
 const MATRIX_MAX_KM = 110;
 
 /** Decode a Valhalla polyline (precision 6) into [lat, lng] pairs. */
+/** Routing options of the traveller's vehicle, from the settings. */
+function vehicleOpts(settings, tolls) {
+  return { tolls, vehicle: settings.vehicle, height: settings.vehicle_height_m, length: settings.vehicle_length_m, weight: settings.vehicle_weight_t };
+}
+
 function decodePolyline(str, precision = 6) {
   const out = [];
   const f = 10 ** precision;
@@ -38,8 +43,16 @@ function decodePolyline(str, precision = 6) {
   return out;
 }
 
-function costing(opts) {
-  return { auto: { exclude_tolls: !opts.tolls, height: opts.height ?? 1.95 } };
+/**
+ * Valhalla costing for the vehicle: a motorhome is routed as a truck so its length and
+ * weight count (narrow passes, weight-limited bridges); a car with a rooftop tent or a van
+ * as a car with its height.
+ */
+function costingOf(opts) {
+  if (opts.vehicle === 'motorhome') {
+    return { costing: 'truck', costing_options: { truck: { exclude_tolls: !opts.tolls, height: opts.height ?? 3, length: opts.length ?? 7, weight: opts.weight ?? 3.5 } } };
+  }
+  return { costing: 'auto', costing_options: { auto: { exclude_tolls: !opts.tolls, height: opts.height ?? 1.95 } } };
 }
 
 async function post(path, body, timeoutMs) {
@@ -62,8 +75,7 @@ async function post(path, body, timeoutMs) {
 async function route(points, opts = {}) {
   const d = await post('/route', {
     locations: points.map((p) => ({ lat: +p[0], lon: +p[1], type: 'break' })),
-    costing: 'auto',
-    costing_options: costing(opts),
+    ...costingOf(opts),
     units: 'kilometers',
     directions_type: 'none',
   }, opts.timeoutMs ?? 12000);
@@ -82,8 +94,7 @@ async function matrix(sources, targets, opts = {}) {
   const d = await post('/sources_to_targets', {
     sources: sources.map((p) => ({ lat: +p[0], lon: +p[1] })),
     targets: targets.map((p) => ({ lat: +p[0], lon: +p[1] })),
-    costing: 'auto',
-    costing_options: costing(opts),
+    ...costingOf(opts),
     units: 'kilometers',
   }, opts.timeoutMs ?? 12000);
   const rows = d.sources_to_targets || [];
@@ -96,7 +107,8 @@ async function matrix(sources, targets, opts = {}) {
 function legKey(a, b, opts) {
   const ra = roundPt(a);
   const rb = roundPt(b);
-  return `route:${opts.tolls ? 'T' : 'N'}:${opts.height ?? 1.95}:${ra.join(',')}|${rb.join(',')}`;
+  const v = opts.vehicle === 'motorhome' ? `M${opts.height}x${opts.length}x${opts.weight}` : `A${opts.height ?? 1.95}`;
+  return `route:${opts.tolls ? 'T' : 'N'}:${v}:${ra.join(',')}|${rb.join(',')}`;
 }
 
 /**
@@ -171,4 +183,4 @@ async function legs(ctx, pairs, opts = {}) {
   return { values, pending };
 }
 
-module.exports = { route, matrix, legs, legKey, decodePolyline, VALHALLA };
+module.exports = { route, matrix, legs, legKey, decodePolyline, costingOf, vehicleOpts, VALHALLA };

@@ -27,7 +27,7 @@ function planRequest(req) {
       { tool: 'create_trip', args: { title: req.destination ? `${req.destination}` : 'Road trip', start_date: req.start_date, end_date: req.end_date }, why: 'days are generated from the dates' },
       { tool: 'search_place / create_and_assign_place', why: 'one sourced place per wish (closing days, hours, season, booking, parking, dog rules, time on site), grouped by area so no valley is crossed twice', wishes },
       { tool: 'create_place + create_accommodation', why: 'one campsite or farm per night (never a motorhome area); use rooftop_tools_find_nights for candidates, then set booking status back to pending' },
-      { tool: 'plugin_rooftop-planner-plugin_rooftop_tools_plan_trip', args: { tripId: '<new trip id>' }, why: 'check, routes, schedules and budget' },
+      { tool: 'plugin_vanlife_vanlife_plan_trip', args: { tripId: '<new trip id>' }, why: 'check, routes, schedules and budget' },
     ],
     reminder: SAFETY,
   };

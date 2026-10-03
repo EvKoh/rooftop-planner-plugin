@@ -1,15 +1,19 @@
 'use strict';
-// Price and amenities of a place (a night, a car park...), shown in the planner instead of
-// being packed into the place's title.
+// Amenities of a place (a night, a car park...) and the price details TREK has no field for.
 //
-// Storage:
-//  - the value lives on the place itself: ctx.meta('place', placeId, 'info.v1'). The host
-//    checks the place belongs to a trip the user can access, and writes need place_edit.
-//  - an index of (trip, place) pairs that HAVE a value, in the plugin's own db, so the
-//    planner columns read only those places (ctx.* calls are rate-limited, a trip can hold
-//    hundreds of places). The index holds ids only; a stale entry is dropped on read.
-// Every field may be "unknown": nothing is ever guessed.
+// The price itself is TREK's own: the place's `price` and `currency`, written with
+// ctx.places.update and shown by TREK in the place header. It is never stored twice. What
+// TREK lacks lives in the plugin's namespaced data on the place, ctx.meta('place', id,
+// 'info.v1'): price per night or per person, dog fee, height/length/weight limits, the
+// amenities, and the source. The host checks the place belongs to a trip the user can
+// access, and writes need place_edit.
+//
+// An index of (trip, place) pairs that HAVE a record, in the plugin's own db, lets the
+// planner columns read only those places (ctx.* calls are rate-limited, and a trip can
+// hold hundreds of places). It holds ids only; a stale entry is dropped on read.
+// Every value may be "unknown": nothing is ever guessed.
 const { toNum, pmap } = require('./util');
+const { t, money, num } = require('./i18n');
 
 const META_KEY = 'info.v1';
 const TRISTATE = ['yes', 'no', 'unknown'];
@@ -24,49 +28,51 @@ const AMENITIES = {
   rooftop_tent: TRISTATE,
 };
 const PER = ['night', 'person'];
+const LIMITS = { max_height_m: [1, 6], max_length_m: [2, 25], max_weight_t: [0.5, 60] };
 const MIGRATION = 'CREATE TABLE IF NOT EXISTS place_info_index (trip_id INTEGER NOT NULL, place_id INTEGER NOT NULL, PRIMARY KEY (trip_id, place_id))';
 
 class InfoError extends Error {}
 
 const blank = () => ({
-  price: { amount: null, currency: 'EUR', per: 'night' },
+  per: 'night',
   dog_fee: null,
   max_height_m: null,
+  max_length_m: null,
+  max_weight_t: null,
   amenities: Object.fromEntries(Object.keys(AMENITIES).map((k) => [k, 'unknown'])),
   source: null,
   checked: null,
 });
 
+function numberField(p, k, min, max) {
+  if (!(k in p)) return undefined;
+  if (p[k] === null || p[k] === '') return null;
+  const n = toNum(p[k]);
+  if (n == null || n < min || n > max) throw new InfoError(`${k} must be a number between ${min} and ${max}, or null for unknown`);
+  return Math.round(n * 100) / 100;
+}
+
 /**
  * Merge a patch onto a stored record (or a blank one), validating every field.
- * Patch shape: { price_amount, currency, per, dog_fee, max_height_m, source, checked,
- *                dog, water, electricity, shower, toilets, dump_station, wifi, rooftop_tent }
+ * Patch: { per, dog_fee, max_height_m, max_length_m, max_weight_t, source, checked,
+ *          dog, water, electricity, shower, toilets, dump_station, wifi, rooftop_tent }.
  * null clears a number back to unknown. Throws InfoError with a readable message.
  */
 function merge(stored, patch) {
-  const out = JSON.parse(JSON.stringify(stored || blank()));
+  const out = { ...blank(), ...(stored || {}) };
+  out.amenities = { ...blank().amenities, ...((stored && stored.amenities) || {}) };
+  delete out.price; // an older record carried its own price: TREK's field is the only one now
   const p = patch || {};
-  const num = (k, min, max) => {
-    if (!(k in p)) return undefined;
-    if (p[k] === null || p[k] === '') return null;
-    const n = toNum(p[k]);
-    if (n == null || n < min || n > max) throw new InfoError(`${k} must be a number between ${min} and ${max}, or null for unknown`);
-    return Math.round(n * 100) / 100;
-  };
-  const amount = num('price_amount', 0, 10000);
-  if (amount !== undefined) out.price.amount = amount;
-  if ('currency' in p) {
-    if (!/^[A-Z]{3}$/.test(String(p.currency))) throw new InfoError('currency must be a 3-letter ISO code (EUR, CHF...)');
-    out.price.currency = String(p.currency);
-  }
   if ('per' in p) {
     if (!PER.includes(p.per)) throw new InfoError(`per must be one of ${PER.join(', ')}`);
-    out.price.per = p.per;
+    out.per = p.per;
   }
-  const fee = num('dog_fee', 0, 1000);
+  const fee = numberField(p, 'dog_fee', 0, 1000);
   if (fee !== undefined) out.dog_fee = fee;
-  const h = num('max_height_m', 1, 6);
-  if (h !== undefined) out.max_height_m = h;
+  for (const [k, [min, max]] of Object.entries(LIMITS)) {
+    const v = numberField(p, k, min, max);
+    if (v !== undefined) out[k] = v;
+  }
   for (const [k, allowed] of Object.entries(AMENITIES)) {
     if (!(k in p)) continue;
     if (!allowed.includes(p[k])) throw new InfoError(`${k} must be one of ${allowed.join(', ')}`);
@@ -81,55 +87,68 @@ function merge(stored, patch) {
   return out;
 }
 
-/** Price of one night for the whole party, or null when unknown. */
-function nightTotal(info, settings) {
-  if (!info || info.price.amount == null) return null;
-  const people = info.price.per === 'person' ? (settings.travellers || 2) : 1;
-  const dog = settings.dog && info.amenities.dog === 'fee' && info.dog_fee != null ? info.dog_fee : 0;
-  return Math.round((info.price.amount * people + dog) * 100) / 100;
+/** The native price fields of a patch: { price, currency } to send to TREK, or null. */
+function nativePrice(p) {
+  if (!p || (!('price_amount' in p) && !('currency' in p))) return null;
+  const out = {};
+  if ('price_amount' in p) {
+    const v = numberField(p, 'price_amount', 0, 100000);
+    out.price = v === undefined ? null : v;
+  }
+  if ('currency' in p) {
+    if (!/^[A-Z]{3}$/.test(String(p.currency))) throw new InfoError('currency must be a 3-letter ISO code (EUR, CHF...)');
+    out.currency = String(p.currency);
+  }
+  return out;
 }
 
-const LABELS = {
-  en: { per: { night: '/night', person: '/person' }, dog: 'dog', water: 'water', electricity: 'power', shower: 'shower', toilets: 'WC', dump_station: 'dump', wifi: 'wifi', rooftop_tent: 'roof tent', price: 'Price', amenities: 'Amenities', edit: 'Price & amenities', fee: 'fee' },
-  fr: { per: { night: '/nuit', person: '/pers.' }, dog: 'chien', water: 'eau', electricity: 'élec.', shower: 'douche', toilets: 'WC', dump_station: 'vidange', wifi: 'wifi', rooftop_tent: 'tente de toit', price: 'Prix', amenities: 'Commodités', edit: 'Prix et commodités', fee: 'suppl.' },
-};
-const lbl = (lang) => LABELS[lang === 'fr' ? 'fr' : 'en'];
-
-function money(amount, currency) {
-  if (amount == null) return null;
-  const v = Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
-  return currency === 'EUR' ? `${v} €` : `${v} ${currency}`;
+/** Price of one night for the whole party, from TREK's price and the recorded details. */
+function nightTotal(price, info, settings) {
+  if (price == null) return null;
+  const people = info && info.per === 'person' ? (settings.travellers || 2) : 1;
+  const dog = settings.dog && info && info.amenities.dog === 'fee' && info.dog_fee != null ? info.dog_fee : 0;
+  return Math.round((price * people + dog) * 100) / 100;
 }
 
-/** "25 €/night" (+ " + dog 2.5 €"), or null when no price is known. */
-function priceText(info, lang) {
-  if (!info || info.price.amount == null) return null;
-  const L = lbl(lang);
-  let s = `${money(info.price.amount, info.price.currency)}${L.per[info.price.per]}`;
-  if (info.amenities.dog === 'fee' && info.dog_fee != null) s += ` + ${L.dog} ${money(info.dog_fee, info.price.currency)}`;
+/** "22,00 €/nuit" (+ " + chien 2,50 €"), or null when TREK has no price for the place. */
+function priceText(price, currency, info, lang) {
+  if (price == null) return null;
+  let s = `${money(price, currency, lang)}${t(lang, `per.${info && info.per === 'person' ? 'person' : 'night'}`)}`;
+  if (info && info.amenities.dog === 'fee' && info.dog_fee != null) s += ` + ${t(lang, 'am.dog')} ${money(info.dog_fee, currency, lang)}`;
   return s;
 }
 
 /**
  * Compact amenities line, emoji-free (the host strips emoji from planner columns):
- * "✓ dog · water · shower ✗ power ↕ 2.1 m". Unknown values are left out. null when empty.
+ * "✓ chien · eau · douche  ✗ élec.  ↕ 2,1 m". Unknown values are left out. null when empty.
  */
 function amenitiesText(info, lang) {
   if (!info) return null;
-  const L = lbl(lang);
   const yes = [];
   const no = [];
   for (const k of Object.keys(AMENITIES)) {
     const v = info.amenities[k];
-    if (v === 'yes') yes.push(L[k]);
-    else if (v === 'fee') yes.push(`${L[k]} (${L.fee})`);
-    else if (v === 'no') no.push(L[k]);
+    if (v === 'yes') yes.push(t(lang, `am.${k}`));
+    else if (v === 'fee') yes.push(`${t(lang, `am.${k}`)} (${t(lang, 'fee')})`);
+    else if (v === 'no') no.push(t(lang, `am.${k}`));
   }
   const parts = [];
   if (yes.length) parts.push(`✓ ${yes.join(' · ')}`);
   if (no.length) parts.push(`✗ ${no.join(' · ')}`);
-  if (info.max_height_m != null) parts.push(`↕ ${info.max_height_m} m`);
+  if (info.max_height_m != null) parts.push(`↕ ${num(info.max_height_m, lang)} m`);
+  if (info.max_length_m != null) parts.push(`↔ ${num(info.max_length_m, lang)} m`);
+  if (info.max_weight_t != null) parts.push(`${num(info.max_weight_t, lang)} t max`);
   return parts.length ? parts.join('  ') : null;
+}
+
+/** Does the place refuse this vehicle or party? (rooftop tent refused, dog refused, a limit exceeded) */
+function refuses(info, settings) {
+  if (!info) return false;
+  return (settings.vehicle === 'rooftop_tent' && info.amenities.rooftop_tent === 'no')
+    || (settings.dog && info.amenities.dog === 'no')
+    || (info.max_height_m != null && info.max_height_m < settings.vehicle_height_m)
+    || (info.max_length_m != null && info.max_length_m < settings.vehicle_length_m)
+    || (info.max_weight_t != null && info.max_weight_t < settings.vehicle_weight_t);
 }
 
 async function migrate(ctx) {
@@ -138,13 +157,18 @@ async function migrate(ctx) {
 
 async function get(ctx, placeId) {
   const v = await ctx.meta.get('place', Number(placeId), META_KEY);
-  return v && typeof v === 'object' && v.price && v.amenities ? v : null;
+  return v && typeof v === 'object' && v.amenities ? merge(v, {}) : null;
 }
 
-/** Validate, write on the place, index it. Returns the stored record. */
+/** Validate; write the price on TREK's own place, the rest on the place's plugin data; index it. */
 async function set(ctx, tripId, placeId, patch) {
+  const price = nativePrice(patch);
+  const rest = { ...(patch || {}) };
+  delete rest.price_amount;
+  delete rest.currency;
   const current = await get(ctx, placeId);
-  const next = merge(current, patch);
+  const next = merge(current, rest);
+  if (price) await ctx.places.update(Number(tripId), Number(placeId), price);
   await ctx.meta.set('place', Number(placeId), META_KEY, next);
   try {
     await ctx.db.exec('INSERT OR IGNORE INTO place_info_index (trip_id, place_id) VALUES (?, ?)', Number(tripId), Number(placeId));
@@ -158,8 +182,8 @@ async function clear(ctx, tripId, placeId) {
 }
 
 /**
- * Map(placeId → record) for a trip. `placeIds` limits the read to places that still
- * exist on the trip; index rows pointing to deleted places or cleared values are pruned.
+ * Map(placeId → record) for a trip. `placeIds` limits the read to places that still exist
+ * on the trip; index rows pointing to deleted places or cleared values are pruned.
  */
 async function getAll(ctx, tripId, placeIds) {
   let rows = [];
@@ -183,4 +207,4 @@ async function getAll(ctx, tripId, placeIds) {
   return out;
 }
 
-module.exports = { merge, nightTotal, priceText, amenitiesText, get, set, clear, getAll, migrate, blank, AMENITIES, PER, META_KEY, MIGRATION, InfoError, LABELS };
+module.exports = { merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

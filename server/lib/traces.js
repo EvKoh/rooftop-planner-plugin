@@ -57,7 +57,7 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
     const motorway = highwayAllowed(settings, day.index, model.days.length);
     if (network === false) { results[i] = { day: { id: day.id, number: day.n }, skipped: 'network disabled' }; return; }
     try {
-      const r = await routing.route(pts, { tolls: motorway, height: settings.vehicle_height_m, maxPoints: 800, timeoutMs: deadline ? Math.min(12000, deadline.left() - 2000) : 12000 });
+      const r = await routing.route(pts, { ...routing.vehicleOpts(settings, motorway), maxPoints: 800, timeoutMs: deadline ? Math.min(12000, deadline.left() - 2000) : 12000 });
       results[i] = { day: { id: day.id, number: day.n, date: day.date }, from: names[0], to: names[names.length - 1], via: names.slice(1, -1), motorway, km: r.km, minutes: r.minutes, drive: hhmm(r.minutes).replace(/^0/, ''), legs: r.legs, points: r.points };
     } catch (e) {
       results[i] = { day: { id: day.id, number: day.n }, error: String(e.message || e) };
@@ -77,7 +77,7 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
         route_geometry: JSON.stringify(r.points),
         route_color: old?.raw?.route_color || COLORS[day.index % COLORS.length],
         category_id: routeCategoryId(model, trace),
-        notes: `Computed by rooftop-planner-plugin (Valhalla, ${r.motorway ? 'motorway allowed' : 'no tolls'}, height ${settings.vehicle_height_m} m). Legs: ${r.legs.map((l) => `${l.km} km / ${l.minutes} min`).join('; ')}.`.slice(0, 2000),
+        notes: `Computed by the vanlife plugin (Valhalla, ${r.motorway ? 'motorway allowed' : 'no tolls'}, height ${settings.vehicle_height_m} m). Legs: ${r.legs.map((l) => `${l.km} km / ${l.minutes} min`).join('; ')}.`.slice(0, 2000),
       });
       const asg = await ctx.itinerary.assign(model.tripId, day.id, place.id, null);
       if (old) await ctx.places.delete(model.tripId, old.id);

@@ -10,6 +10,8 @@ const overpass = require('./overpass');
 const routing = require('./routing');
 const rules = require('./rules');
 const { statusAt } = require('./opening-hours');
+const park4night = require('./park4night');
+const { t } = require('./i18n');
 const { highwayAllowed, fuelPerKm } = require('./settings');
 const { dayPlan } = require('./check');
 const { findDay } = require('./schedule');
@@ -52,10 +54,19 @@ function kindOf(tags) {
   return 'unknown';
 }
 
-function overpassBody(center, radiusM) {
+/** Campsites and farms for every vehicle; motorhome areas too for a van or a motorhome. */
+function overpassBody(center, radiusM, vehicle = 'rooftop_tent') {
   const a = `(around:${Math.round(radiusM)},${center[0].toFixed(5)},${center[1].toFixed(5)})`;
-  return `(nwr["tourism"="camp_site"]${a};nwr["tourism"="caravan_site"]${a};nwr["agriturismo"="yes"]${a};nwr["tourism"~"guest_house|farm"]["name"~"agritur|agricamp|bauernhof|ferme|farm",i]${a};);out center tags 120;`;
+  const aires = vehicle === 'rooftop_tent' ? '' : `nwr["tourism"="caravan_site"]${a};`;
+  return `(nwr["tourism"="camp_site"]${a};${aires}nwr["agriturismo"="yes"]${a};nwr["tourism"~"guest_house|farm"]["name"~"agritur|agricamp|bauernhof|ferme|farm",i]${a};);out center tags 120;`;
 }
+
+/** The legal note of a night, in the user's language (zone rule, or the finding's short form). */
+function riskText(legal, L) {
+  return legal.params.rule ? t(L, `zone.${legal.params.zoneId || 'unknown'}.${legal.params.rule}`) : t(L, `s.${legal.key}`);
+}
+
+const KIND_CATEGORY = { farm: 'farm', campsite: 'campsite', aire: 'motorhome area', private: 'private', parking: 'parking' };
 
 /**
  * @param o.evening {lat,lng,name?}  last visit of the evening (required)
@@ -67,13 +78,28 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
   const mo = o.morning ? [+o.morning.lat, +o.morning.lng] : ev;
   const center = [(ev[0] + mo[0]) / 2, (ev[1] + mo[1]) / 2];
   const radiusKm = Math.min(50, Math.max(o.radiusKm ?? 15, distKm(ev, mo) / 2 + 5));
+  const vehicle = settings.vehicle || 'rooftop_tent';
+  const sources = (o.sources && o.sources.length ? o.sources : ['osm', ...(settings.park4night ? ['park4night'] : [])])
+    .filter((x) => x === 'osm' || (x === 'park4night' && settings.park4night));
   let els = [];
   let osmError = null;
-  try {
-    els = (await overpass.query(ctx, overpassBody(center, radiusKm * 1000), { network, timeoutMs: deadline ? Math.min(9000, deadline.left() - 4000) : 9000 })) || [];
-  } catch (e) {
-    if (!(e instanceof overpass.OverpassBusy)) throw e;
-    osmError = e.message; // a busy public server is an answer, not a crash
+  if (sources.includes('osm')) {
+    try {
+      els = (await overpass.query(ctx, overpassBody(center, radiusKm * 1000, vehicle), { network, timeoutMs: deadline ? Math.min(9000, deadline.left() - 4000) : 9000 })) || [];
+    } catch (e) {
+      if (!(e instanceof overpass.OverpassBusy)) throw e;
+      osmError = e.message; // a busy public server is an answer, not a crash
+    }
+  }
+  let p4n = [];
+  let park4nightError = null;
+  if (sources.includes('park4night') && network !== false) {
+    try {
+      const r = await park4night.search({ lat: center[0], lng: center[1], radius_km: radiusKm, vehicle, dog: false, limit: 30, lang: 'en' });
+      p4n = r.places;
+    } catch (e) {
+      park4nightError = String(e.message || e); // unofficial API: may change or refuse
+    }
   }
 
   const seen = new Set();
@@ -87,25 +113,42 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     seen.add(key);
     const kind = kindOf(tg);
     const reasons = [];
-    if (kind === 'aire') reasons.push('motorhome area: an opened rooftop tent is camping');
+    if (kind === 'aire' && vehicle === 'rooftop_tent') reasons.push('motorhome area: an opened rooftop tent is camping');
     const banned = rules.tentBanned(`${tg.description || ''} ${tg.note || ''}`, tg);
     if (banned) reasons.push(`tents not allowed (${banned})`);
     if (settings.dog && tg.dog === 'no') reasons.push('dogs not allowed');
     const open = o.date && tg.opening_hours ? statusAt(tg.opening_hours, o.date, 18 * 60) : 'unknown';
     if (open === 'closed') reasons.push(`closed on ${o.date} (${tg.opening_hours})`);
     if (reasons.length && kind === 'aire') { excluded++; continue; }
-    const legal = rules.nightLegality({ categoryName: kind === 'farm' ? 'farm' : kind === 'campsite' ? 'campsite' : '', placeName: name, lat: e.lat, lng: e.lng, text: tg.description || '' });
+    const legal = rules.nightLegality({ categoryName: KIND_CATEGORY[kind] || '', placeName: name, lat: e.lat, lng: e.lng, text: tg.description || '', vehicle });
     const price = parsePrice(tg);
     cands.push({
-      name: name || '(unnamed)', kind, lat: e.lat, lng: e.lng, osm: overpass.osmUrl(e.id),
+      name: name || '(unnamed)', kind, source: 'osm', lat: e.lat, lng: e.lng, osm: overpass.osmUrl(e.id),
       price, priceText: tg.charge || null,
       website: tg.website || tg['contact:website'] || null,
       dog: tg.dog || null, tents: tg.tents || null,
       water: tg.drinking_water || null, toilets: tg.toilets || null, shower: tg.shower || null, power: tg.power_supply || null,
       openOnDate: open, openingHours: tg.opening_hours || null,
-      legalRisk: legal ? legal.params.note || legal.key : null,
+      legalRisk: legal ? riskText(legal, settings.language) : null,
       blocked: reasons,
       straightKm: Math.round((distKm(ev, [e.lat, e.lng]) + distKm([e.lat, e.lng], mo)) * 10) / 10,
+    });
+  }
+  for (const p of p4n) {
+    const key = norm(p.name);
+    if (seen.has(key)) continue; // OSM already has it: keep one row
+    seen.add(key);
+    const legal = rules.nightLegality({ categoryName: KIND_CATEGORY[p.kind] || '', placeName: p.name, lat: p.lat, lng: p.lng, vehicle });
+    cands.push({
+      name: p.name, kind: p.kind, source: 'park4night', lat: p.lat, lng: p.lng, page: p.page,
+      price: p.priceHint, priceText: null, rating: p.rating, reviews: p.reviews,
+      dog: p.services.includes('dogs') ? 'yes' : null, tents: null,
+      water: p.services.includes('water') ? 'yes' : null, toilets: p.services.includes('toilets') ? 'yes' : null,
+      shower: p.services.includes('shower') ? 'yes' : null, power: p.services.includes('electricity') ? 'yes' : null,
+      openOnDate: 'unknown', openingHours: null,
+      legalRisk: legal ? riskText(legal, settings.language) : null,
+      blocked: [],
+      straightKm: Math.round((distKm(ev, [p.lat, p.lng]) + distKm([p.lat, p.lng], mo)) * 10) / 10,
     });
   }
   cands.sort((a, b) => a.straightKm - b.straightKm);
@@ -113,7 +156,7 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
 
   // Real detour, in drive minutes: evening → night → morning, minus evening → morning.
   const pairs = [[ev, mo], ...top.map((c) => [ev, [c.lat, c.lng]]), ...top.map((c) => [[c.lat, c.lng], mo])];
-  const r = await routing.legs(ctx, pairs, { tolls: highway, height: settings.vehicle_height_m, deadline, network });
+  const r = await routing.legs(ctx, pairs, { ...routing.vehicleOpts(settings, highway), deadline, network });
   const v = (i) => r.values.get(i)?.minutes ?? null;
   const km = (i) => r.values.get(i)?.km ?? null;
   const direct = v(0);
@@ -135,10 +178,11 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
   for (const c of top) {
     const tv = [];
     if (c.price == null) tv.push('price');
-    if (c.tents !== 'yes') tv.push('rooftop tent accepted');
+    if (settings.vehicle === 'rooftop_tent' && c.tents !== 'yes') tv.push('rooftop tent accepted');
+    if (settings.vehicle !== 'rooftop_tent' && (c.kind === 'parking' || c.kind === 'unknown')) tv.push('overnight parking allowed there (local rule, signs)');
     if (settings.dog && !['yes', 'leashed'].includes(c.dog)) tv.push('dog accepted');
     if (c.openOnDate !== 'open') tv.push(`open on ${o.date || 'the date'}`);
-    tv.push('recent reviews (rating >= 4/5)');
+    if (c.rating == null) tv.push('recent reviews (rating >= 4/5)');
     c.toVerify = tv;
     // Night + fuel of the detour: what the option really costs compared to the others.
     if (c.price != null && c.detourKm != null) c.totalCost = Math.round((c.price + Math.max(0, c.detourKm) * fuelPerKm(settings)) * 100) / 100;
@@ -148,8 +192,10 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     directMinutes: direct, searchRadiusKm: Math.round(radiusKm),
     found: cands.length, excludedMotorhomeAreas: excluded, pendingRoutes: r.pending,
     osmError,
+    park4nightError,
+    sources,
     candidates: top,
-    source: 'OpenStreetMap contributors (ODbL) via Overpass; drive times via Valhalla',
+    source: `${sources.includes('osm') ? 'OpenStreetMap contributors (ODbL) via Overpass' : ''}${sources.includes('park4night') ? '; park4night (unofficial API, may change without notice; nothing stored, open each page)' : ''}; drive times via Valhalla`.replace(/^; /, ''),
     note: `Price target ${settings.night_price_target}, ceiling ${settings.night_price_max}. OSM has no reviews and rarely prices: verify each "toVerify" item from the official site first, or ask the host (message validated by the user before sending). Never book without an explicit order from the user.`,
   };
 }
@@ -160,7 +206,7 @@ async function findNightsForDay(ctx, model, ref, opts) {
   if (!day) throw new Error('day not found in this trip');
   const a = anchors(model, day);
   if (!a.evening) throw new Error(`day ${day.n} has no located stop or night to search from`);
-  const res = await findNights(ctx, { evening: a.evening, morning: a.morning, date: day.date, radiusKm: opts.radiusKm }, {
+  const res = await findNights(ctx, { evening: a.evening, morning: a.morning, date: day.date, radiusKm: opts.radiusKm, sources: ref.sources }, {
     ...opts, highway: highwayAllowed(opts.settings, day.index, model.days.length),
   });
   res.day = { id: day.id, number: day.n, date: day.date };

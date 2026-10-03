@@ -10,7 +10,6 @@ const { findNights, findNightsForDay } = require('./nights');
 const { computeRoutes } = require('./traces');
 const { scheduleDay } = require('./schedule');
 const { suppliesForDay } = require('./supplies');
-const { tripBudget } = require('./budget');
 const { planTrip, planRequest } = require('./plan');
 const { sunset, sunrise } = require('./sun');
 const { hhmm, deadline: makeDeadline } = require('./util');
@@ -62,7 +61,13 @@ function sunTable(model, settings) {
 /** Read all / read one / write one / clear one place's price and amenities. */
 async function placeInfoTool(ctx, model, a, settings) {
   const L = settings.language;
-  const view = (p, info) => ({ placeId: p.id, name: p.name, price: placeInfo.priceText(info, L), amenities: placeInfo.amenitiesText(info, L), nightTotal: placeInfo.nightTotal(info, settings), record: info });
+  const view = (p, info) => ({
+    placeId: p.id, name: p.name,
+    price: placeInfo.priceText(p.price, p.raw ? p.raw.currency || model.currency : model.currency, info, L),
+    amenities: placeInfo.amenitiesText(info, L),
+    nightTotal: placeInfo.nightTotal(p.price, info, settings),
+    record: info,
+  });
   if (!a.placeId) {
     const withInfo = model.pool.filter((p) => p.info).map((p) => view(p, p.info));
     const planned = new Set(model.nights.map((n) => n.placeId));
@@ -76,7 +81,8 @@ async function placeInfoTool(ctx, model, a, settings) {
   if (a.clear) { await placeInfo.clear(ctx, model.tripId, place.id); return { placeId: place.id, cleared: true }; }
   if (a.set) {
     const rec = await placeInfo.set(ctx, model.tripId, place.id, a.set);
-    return { saved: true, ...view(place, rec) };
+    const priced = 'price_amount' in a.set ? { ...place, price: a.set.price_amount, raw: { ...place.raw, currency: a.set.currency || place.raw.currency } } : place;
+    return { saved: true, ...view(priced, rec) };
   }
   // One place: read its value directly, not through the index.
   return view(place, (await placeInfo.get(ctx, place.id)) || placeInfo.blank());
@@ -95,10 +101,10 @@ async function callTool({ name, args }, ctx, { now } = {}) {
 
   let res;
   switch (name) {
-    case 'rooftop_tools_plan_trip':
+    case 'vanlife_plan_trip':
       res = model ? await planTrip(ctx, model, a, opts) : a.request ? planRequest(a.request) : (() => { throw new Error('give tripId, or request for a new trip'); })();
       break;
-    case 'rooftop_tools_check_trip': {
+    case 'vanlife_check_trip': {
       needTrip();
       const r = await checkTrip(ctx, model, opts);
       const levels = a.levels && a.levels.length ? a.levels : null;
@@ -106,11 +112,11 @@ async function callTool({ name, args }, ctx, { now } = {}) {
       if (a.sun) res.sun = { ...timezone, marginMinutes: settings.sunset_margin_min, days: sunTable(model, settings) };
       break;
     }
-    case 'rooftop_tools_find_nights':
-      if (model && a.dayNumber) res = await findNightsForDay(ctx, model, { dayNumber: a.dayNumber }, { ...opts, radiusKm: a.radius_km });
+    case 'vanlife_find_nights':
+      if (model && a.dayNumber) res = await findNightsForDay(ctx, model, { dayNumber: a.dayNumber, sources: a.sources }, { ...opts, radiusKm: a.radius_km });
       else if (a.lat != null && a.lng != null) {
         res = await findNights(ctx, {
-          evening: { lat: a.lat, lng: a.lng }, morning: a.morning_lat != null && a.morning_lng != null ? { lat: a.morning_lat, lng: a.morning_lng } : null, date: a.date, radiusKm: a.radius_km,
+          evening: { lat: a.lat, lng: a.lng }, morning: a.morning_lat != null && a.morning_lng != null ? { lat: a.morning_lat, lng: a.morning_lng } : null, date: a.date, radiusKm: a.radius_km, sources: a.sources,
         }, opts);
       } else throw new Error('give tripId and dayNumber, or lat and lng');
       if (res.date && res.evening) {
@@ -118,27 +124,23 @@ async function callTool({ name, args }, ctx, { now } = {}) {
         res.sun = { sunset: hhmm(ss), latestArrival: hhmm(ss == null ? null : ss - settings.sunset_margin_min) };
       }
       break;
-    case 'rooftop_tools_compute_routes':
+    case 'vanlife_compute_routes':
       needTrip();
       res = await computeRoutes(ctx, model, { days: (a.dayNumbers || []).map((n) => ({ dayNumber: n })), apply: a.apply, startAt: a.startAt }, opts);
       break;
-    case 'rooftop_tools_schedule_day': {
+    case 'vanlife_schedule_day': {
       needTrip();
       const stays = Object.fromEntries((a.stays || []).map((s) => [s.assignmentId, s.minutes]));
       res = await scheduleDay(ctx, model, { dayNumber: a.dayNumber }, { ...opts, departure: a.departure, stays });
       break;
     }
-    case 'rooftop_tools_place_info':
+    case 'vanlife_place_info':
       needTrip();
       res = await placeInfoTool(ctx, model, a, settings);
       break;
-    case 'rooftop_tools_supplies_on_route':
+    case 'vanlife_supplies_on_route':
       needTrip();
       res = await suppliesForDay(ctx, model, { dayNumber: a.dayNumber }, { kinds: a.kinds, at: a.at, corridorKm: a.corridor_km }, opts);
-      break;
-    case 'rooftop_tools_trip_budget':
-      needTrip();
-      res = await tripBudget(ctx, model, { options: a.options }, opts);
       break;
     default:
       throw new Error(`unhandled tool ${name}`);

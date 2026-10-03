@@ -3,268 +3,163 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rooftop</title>
+  <title>Vanlife</title>
   <!-- trek:ui -->
   <style>
-    /* Phone first (360–430 px), columns on wide screens. Colours come from the TREK
-       tokens only; red is kept for what changes the plan (blocking, late arrival). */
-    .wrap { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-    .head { display: flex; flex-direction: column; gap: 4px; }
-    .head h1 { margin: 0; font-size: 18px; font-weight: 650; overflow-wrap: anywhere; }
-    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
-    .kpi { padding: 10px 12px; border-radius: 12px; background: var(--bg-secondary); border: 1px solid var(--border-primary); }
-    .kpi b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
-    .kpi span { font-size: 12px; color: var(--text-muted); }
-    .tabs { display: flex; gap: 6px; }
-    .tabs button { flex: 1; min-height: 44px; border-radius: 12px; border: 1px solid var(--border-primary); background: var(--bg-card); color: var(--text-secondary); font: inherit; font-weight: 600; cursor: pointer; }
-    .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-text, #fff); border-color: var(--accent); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 12px; }
-    .night { display: flex; flex-direction: column; gap: 8px; }
-    .night .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-    .night h2 { margin: 0; font-size: 16px; font-weight: 650; overflow-wrap: anywhere; }
-    .price { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .line { font-size: 14px; color: var(--text-secondary); }
-    .late { color: var(--danger); font-weight: 600; }
-    details { border-top: 1px solid var(--border-primary); padding-top: 6px; }
-    summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--text-secondary); }
-    .alt { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border-primary); font-size: 14px; }
-    .alt:last-child { border-bottom: 0; }
-    .alt span:first-child { overflow-wrap: anywhere; }
-    .map { min-height: 44px; align-self: flex-start; }
-    .group { padding: 4px 14px; }
-    .group summary { gap: 8px; }
-    .finding { padding: 10px 0; border-bottom: 1px solid var(--border-primary); font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
-    .finding:last-child { border-bottom: 0; }
-    .empty { padding: 24px 0; text-align: center; color: var(--text-muted); }
-    .foot { font-size: 12px; color: var(--text-muted); }
-    .form { display: flex; flex-direction: column; gap: 12px; }
-    .form .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-    .form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-muted); }
-    .form input, .form select { font-size: 16px; min-height: 44px; }
-    .form .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .form .actions button { min-height: 44px; }
-    .amen { font-size: 14px; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 2px 12px; }
-    .amen-part { white-space: nowrap; }
-    /* No text under 12 px: the kit's eyebrow (10 px) and count pill (11 px) are raised. */
-    .trek-eyebrow { font-size: 12px; }
-    .trek-countpill { font-size: 12px; }
-    @media (min-width: 900px) { .wrap { padding: 20px 24px; } .checkgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; } }
+    /* A widget at the foot of TREK's place panel: a summary read at a glance, the editor
+       folded until asked for. TREK's header already shows the place's price, so only what
+       it cannot show (per person, dog fee) is repeated here. Text is never under 12 px. */
+    body.trek-ui { margin: 0; }
+    .w { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); }
+    .line { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 14px; color: var(--text-secondary); }
+    .line span { white-space: nowrap; }
+    .muted { font-size: 13px; color: var(--text-muted); overflow-wrap: anywhere; }
+    .edit-btn { min-height: 44px; }
+    form { display: flex; flex-direction: column; gap: 10px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-muted); }
+    input, select { font-size: 16px; min-height: 44px; box-sizing: border-box; width: 100%; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .actions button { min-height: 44px; }
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body class="trek-ui">
-  <main class="wrap" id="app"><div class="trek-skeleton" style="height:120px;border-radius:12px"></div></main>
+  <main class="w" id="app"><div class="trek-skeleton" style="height:44px;border-radius:10px"></div></main>
   <script>
-    // Everything shown comes from POST /report (server/lib/report.js). Place names are
-    // user data: they are always set with textContent, never parsed as HTML.
-    var L = {
-      en: { nights: 'Nights', check: 'Check', total: 'nights, known prices', booked: 'booked', late: 'late arrivals', unknown: 'unknown prices',
-        night: 'Night', arrival: 'Arrival', latest: 'latest', sunset: 'sunset', noArrival: 'no arrival time', alts: 'Alternatives nearby',
-        map: 'Open map', none: 'No night planned in this trip yet.', ok: 'Nothing blocking.', pending: 'Some drive times are not cached yet: run the check tool once.',
-        kind: { campsite: 'Campsite', farm: 'Farm', aire: 'Motorhome area', private: 'Private ground', hut: 'Hut', unknown: 'Night' },
-        status: { booked: 'Booked', 'confirmed-unverified': 'Confirmed?', 'not-booked': 'Not booked' },
-        level: { blocking: 'Blocking', fix: 'To fix', verify: 'To verify', info: 'Info' }, perNight: '/night', km: 'km',
-        places: 'Places', place: 'Place', plannedNight: 'night', price: 'Price', currency: 'Currency', per: 'Per', perOpt: { night: 'night', person: 'person' },
-        dogFee: 'Dog fee', maxHeight: 'Max height (m)', source: 'Source (official site, dated review, host\u2019s answer)', checked: 'Checked on', save: 'Save', clear: 'Clear', saved: 'Saved', cleared: 'Cleared', confirmClear: 'Remove the price and amenities of this place?',
-        opt: { yes: 'Yes', no: 'No', fee: 'With a fee', unknown: 'Unknown' },
-        am: { dog: 'Dog', water: 'Water', electricity: 'Electricity', shower: 'Shower', toilets: 'Toilets', dump_station: 'Dump station', wifi: 'Wi-Fi', rooftop_tent: 'Rooftop tent accepted' }, onlySourced: 'Enter only what a source states; leave the rest unknown.' },
-      fr: { nights: 'Nuits', check: 'Contrôle', total: 'nuits, prix connus', booked: 'réservées', late: 'arrivées tardives', unknown: 'prix inconnus',
-        night: 'Nuit', arrival: 'Arrivée', latest: 'au plus tard', sunset: 'coucher', noArrival: 'heure d’arrivée inconnue', alts: 'Replis à proximité',
-        map: 'Ouvrir la carte', none: 'Aucune nuit planifiée dans ce voyage.', ok: 'Rien de bloquant.', pending: 'Certains temps de route ne sont pas encore en cache : lancer une fois l’outil de contrôle.',
-        kind: { campsite: 'Camping', farm: 'Ferme', aire: 'Aire', private: 'Particulier', hut: 'Refuge', unknown: 'Nuitée' },
-        status: { booked: 'Réservé', 'confirmed-unverified': 'Confirmé ?', 'not-booked': 'Non réservé' },
-        level: { blocking: 'Bloquant', fix: 'À corriger', verify: 'À vérifier', info: 'Info' }, perNight: '/nuit', km: 'km',
-        places: 'Lieux', place: 'Lieu', plannedNight: 'nuit', price: 'Prix', currency: 'Devise', per: 'Par', perOpt: { night: 'nuit', person: 'personne' },
-        dogFee: 'Supplément chien', maxHeight: 'Hauteur max (m)', source: 'Source (site officiel, avis daté, réponse de l\u2019hôte)', checked: 'Vérifié le', save: 'Enregistrer', clear: 'Effacer', saved: 'Enregistré', cleared: 'Effacé', confirmClear: 'Effacer le prix et les commodités de ce lieu ?',
-        opt: { yes: 'Oui', no: 'Non', fee: 'Avec supplément', unknown: 'Inconnu' },
-        am: { dog: 'Chien', water: 'Eau', electricity: 'Électricité', shower: 'Douche', toilets: 'WC', dump_station: 'Vidange', wifi: 'Wi-Fi', rooftop_tent: 'Tente de toit acceptée' }, onlySourced: 'Ne saisir que ce qu\u2019une source dit ; laisser le reste inconnu.' },
-    };
-    var state = { tripId: null, data: null, tab: 'nights', locale: 'en', loading: false, places: null, placeId: null };
-    // A place to open directly: from the host context (placeId) or from ?place= in the frame URL.
-    var wanted = (function () { try { return Number(new URLSearchParams(location.search).get('place')) || null; } catch (e) { return null; } })();
+    // All text comes from POST /amenities (server/i18n), in the frame's language unless the
+    // user chose one in the plugin settings: no string is written here.
+    var st = { tripId: null, placeId: null, locale: 'en', data: null, open: false };
+    var S = function (k) { return (st.data && st.data.strings[k]) || ''; };
 
     function h(tag, attrs, kids) {
       var el = document.createElement(tag);
       Object.keys(attrs || {}).forEach(function (k) {
         if (k === 'text') el.textContent = attrs[k];
         else if (k === 'on') Object.keys(attrs.on).forEach(function (ev) { el.addEventListener(ev, attrs.on[ev]); });
-        else el.setAttribute(k, attrs[k]);
+        else if (attrs[k] !== null && attrs[k] !== undefined) el.setAttribute(k, attrs[k]);
       });
       (kids || []).forEach(function (c) { if (c) el.appendChild(c); });
       return el;
     }
     function money(v, cur) {
-      if (v == null) return '?';
-      try { return new Intl.NumberFormat(state.locale, { style: 'currency', currency: cur || 'EUR', maximumFractionDigits: 2 }).format(v); } catch (e) { return v + ' ' + (cur || ''); }
-    }
-    function dateLabel(iso) {
-      if (!iso) return '';
-      try { return new Intl.DateTimeFormat(state.locale, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(iso + 'T12:00:00Z')); } catch (e) { return iso; }
-    }
-    function chip(text, tone) { return h('span', { class: 'trek-chip' + (tone ? ' trek-chip--' + tone : ''), text: text }); }
-
-    function nightCard(n, t, cur) {
-      var kindTone = n.kind === 'aire' ? 'danger' : n.kind === 'campsite' || n.kind === 'farm' ? 'success' : 'warning';
-      var statusTone = n.status === 'booked' ? 'success' : n.status === 'confirmed-unverified' ? 'warning' : 'info';
-      var arr = n.arrival
-        ? h('div', { class: 'line' + (n.onTime === false ? ' late' : ''), text: t.arrival + ' ' + n.arrival + ' · ' + t.latest + ' ' + (n.latest || '?') + ' · ' + t.sunset + ' ' + (n.sunset || '?') })
-        : h('div', { class: 'line late', text: t.noArrival });
-      var kids = [
-        h('div', { class: 'trek-eyebrow', text: t.night + ' ' + n.index + ' · ' + dateLabel(n.date) + (n.nights > 1 ? ' · ×' + n.nights : '') }),
-        h('div', { class: 'top' }, [h('h2', { text: n.name }), h('span', { class: 'price', text: money(n.price, cur) + (n.price != null ? t.perNight : '') })]),
-        h('div', { class: 'chips' }, [chip(t.kind[n.kind] || n.kind, kindTone), chip(t.status[n.status] || n.status, statusTone), n.zone ? chip(n.zone, n.kind === 'farm' && /Tyrol/.test(n.zone) ? 'warning' : '') : null]),
-        arr,
-        // The entered price detail (per person, dog fee) under the night total above.
-        n.priceText && /[+]|\/(person|pers)/.test(n.priceText) ? h('div', { class: 'amen', text: n.priceText }) : null,
-        n.amenities ? h('div', { class: 'amen' }, n.amenities.split('  ').map(function (part) { return h('span', { class: 'amen-part', text: part }); })) : null,
-      ];
-      if (n.lat != null) {
-        kids.push(h('button', { class: 'trek-btn trek-btn--ghost map', type: 'button', text: t.map, on: { click: function () { trek.openExternal('https://www.openstreetmap.org/?mlat=' + n.lat + '&mlon=' + n.lng + '#map=14/' + n.lat + '/' + n.lng); } } }));
-      }
-      if (n.alternatives && n.alternatives.length) {
-        kids.push(h('details', {}, [h('summary', { text: t.alts + ' (' + n.alternatives.length + ')' })].concat(n.alternatives.map(function (a) {
-          return h('div', { class: 'alt' }, [h('span', { text: a.name + ' · ' + (t.kind[a.kind] || '') }), h('span', { text: money(a.price, cur) + ' · ' + a.km + ' ' + t.km })]);
-        }))));
-      }
-      return h('article', { class: 'trek-card night' }, kids);
+      try { return new Intl.NumberFormat(st.locale, { style: 'currency', currency: cur || 'EUR' }).format(v); } catch (e) { return v + ' ' + (cur || ''); }
     }
 
-    function checkView(d, t) {
-      var c = d.check;
-      var wrap = h('div', { class: 'checkgrid' });
-      ['blocking', 'fix', 'verify', 'info'].forEach(function (lv) {
-        var items = c.findings.filter(function (f) { return f.level === lv; });
-        if (!items.length) return;
-        var det = h('details', { class: 'trek-card group' }, [h('summary', {}, [
-          h('span', { class: 'trek-statusdot', 'data-status': lv === 'blocking' ? 'danger' : lv === 'fix' ? 'pending' : 'info' }),
-          h('span', { text: t.level[lv] }), h('span', { class: 'trek-countpill', text: String(items.length) }),
-        ])].concat(items.map(function (f) { return h('div', { class: 'finding', text: f.message }); })));
-        if (lv === 'blocking') det.open = true;
-        wrap.appendChild(det);
-      });
-      if (!c.counts.blocking) wrap.insertBefore(h('div', { class: 'trek-card', text: t.ok }), wrap.firstChild);
-      var box = h('div', {}, [wrap]);
-      if (c.pendingRoutes) box.appendChild(h('p', { class: 'foot', text: t.pending }));
-      return box;
+    function summary(d) {
+      var kids = [];
+      // What TREK's header cannot say about the price.
+      var extra = [];
+      if (d.info.per === 'person') extra.push(S('per.person'));
+      if (d.info.amenities.dog === 'fee' && d.info.dog_fee != null) extra.push(S('am.dog') + ' + ' + money(d.info.dog_fee, d.currency));
+      if (d.refused) kids.push(h('span', { class: 'trek-chip trek-chip--danger', text: S('ui.vehicleRefused') }));
+      if (d.summary) kids.push(h('div', { class: 'line' }, d.summary.split('  ').map(function (p) { return h('span', { text: p }); })));
+      else kids.push(h('div', { class: 'muted', text: S('ui.none') }));
+      if (extra.length) kids.push(h('div', { class: 'muted', text: extra.join(' · ') }));
+      if (d.info.source) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.source) + (d.info.checked ? ' · ' + new Intl.DateTimeFormat(st.locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(d.info.checked + 'T12:00:00Z')) : '') }));
+      return kids;
     }
-
 
     function field(label, input) { return h('label', {}, [h('span', { text: label }), input]); }
-    function sel(name, options, value, labels) {
-      var s = h('select', { class: 'trek-select', name: name }, options.map(function (o) { var e = h('option', { value: o, text: labels[o] || o }); if (o === value) e.selected = true; return e; }));
+    function select(name, options, value, labelOf) {
+      var s = h('select', { class: 'trek-select', name: name }, options.map(function (o) { var e = h('option', { value: o, text: labelOf(o) }); if (o === value) e.selected = true; return e; }));
       return s;
     }
-    function num(name, value, step) { var i = h('input', { class: 'trek-input', type: 'number', name: name, step: step || '0.01', min: '0', inputmode: 'decimal' }); if (value != null) i.value = String(value); return i; }
+    function number(name, value, step) {
+      var i = h('input', { class: 'trek-input', type: 'number', name: name, step: step || '0.01', min: '0', inputmode: 'decimal' });
+      if (value != null) i.value = String(value);
+      return i;
+    }
 
-    function placesView(t) {
-      var box = h('div', { class: 'trek-card form' });
-      if (!state.places) { box.appendChild(h('div', { class: 'trek-skeleton', style: 'height:80px;border-radius:12px' })); loadPlaces(); return box; }
-      var list = state.places.places;
-      if (!list.length) { box.appendChild(h('p', { class: 'empty', text: t.none })); return box; }
-      if (!state.placeId || !list.some(function (p) { return p.id === state.placeId; })) state.placeId = list[0].id;
-      var pick = h('select', { class: 'trek-select', on: { change: function (e) { state.placeId = Number(e.target.value); render(); } } }, list.map(function (p) {
-        var o = h('option', { value: String(p.id), text: (p.plannedNight ? '\u2605 ' : '') + p.name + (p.plannedNight ? ' (' + t.plannedNight + ')' : '') });
-        if (p.id === state.placeId) o.selected = true;
-        return o;
-      }));
-      var place = list.filter(function (p) { return p.id === state.placeId; })[0];
-      var info = place.info || { price: { amount: null, currency: 'EUR', per: 'night' }, dog_fee: null, max_height_m: null, amenities: {}, source: null, checked: null };
-      var am = state.places.amenities;
-      var form = h('form', { class: 'form' });
-      form.appendChild(field(t.place, pick));
-      form.appendChild(h('div', { class: 'grid2' }, [
-        field(t.price, num('price_amount', info.price.amount)),
-        field(t.currency, (function () { var i = h('input', { class: 'trek-input', name: 'currency', maxlength: '3', autocapitalize: 'characters' }); i.value = info.price.currency || 'EUR'; return i; })()),
-        field(t.per, sel('per', ['night', 'person'], info.price.per, t.perOpt)),
-        field(t.dogFee, num('dog_fee', info.dog_fee)),
-        field(t.maxHeight, num('max_height_m', info.max_height_m, '0.01')),
-      ]));
-      form.appendChild(h('div', { class: 'grid2' }, Object.keys(am).map(function (k) {
-        return field(t.am[k] || k, sel(k, am[k], info.amenities[k] || 'unknown', t.opt));
-      })));
-      var src = h('input', { class: 'trek-input', name: 'source', maxlength: '300' }); if (info.source) src.value = info.source;
-      var chk = h('input', { class: 'trek-input', name: 'checked', type: 'date' }); if (info.checked) chk.value = info.checked;
-      form.appendChild(h('div', { class: 'grid2' }, [field(t.source, src), field(t.checked, chk)]));
-      form.appendChild(h('p', { class: 'foot', text: t.onlySourced }));
-      form.appendChild(h('div', { class: 'actions' }, [
-        h('button', { class: 'trek-btn trek-btn--primary', type: 'submit', text: t.save }),
-        place.info ? h('button', { class: 'trek-btn trek-btn--ghost', type: 'button', text: t.clear, on: { click: function () { clearPlace(t); } } }) : null,
-      ]));
-      form.addEventListener('submit', function (e) { e.preventDefault(); savePlace(form, t); });
+    function editor(d) {
+      var opt = function (o) { return S('opt.' + o); };
+      var cur = h('input', { class: 'trek-input', name: 'currency', maxlength: '3', autocapitalize: 'characters' });
+      cur.value = d.currency || 'EUR';
+      var src = h('input', { class: 'trek-input', name: 'source', maxlength: '300' });
+      if (d.info.source) src.value = d.info.source;
+      var chk = h('input', { class: 'trek-input', name: 'checked', type: 'date' });
+      if (d.info.checked) chk.value = d.info.checked;
+      var form = h('form', {}, [
+        h('div', { class: 'grid' }, [
+          field(S('ui.price'), number('price_amount', d.price)),
+          field(S('ui.currency'), cur),
+          field(S('ui.per'), select('per', ['night', 'person'], d.info.per, function (o) { return S(o === 'night' ? 'ui.perNight' : 'ui.perPerson'); })),
+          field(S('ui.dogFee'), number('dog_fee', d.info.dog_fee)),
+        ]),
+        h('div', { class: 'grid' }, Object.keys(d.amenities).map(function (k) {
+          return field(S('amLong.' + k), select(k, d.amenities[k], d.info.amenities[k] || 'unknown', opt));
+        })),
+        h('div', { class: 'grid' }, [
+          field(S('ui.maxHeight'), number('max_height_m', d.info.max_height_m)),
+          field(S('ui.maxLength'), number('max_length_m', d.info.max_length_m)),
+          field(S('ui.maxWeight'), number('max_weight_t', d.info.max_weight_t)),
+        ]),
+        h('div', { class: 'grid' }, [field(S('ui.source'), src), field(S('ui.checked'), chk)]),
+        h('p', { class: 'muted', text: S('ui.onlySourced') }),
+        h('div', { class: 'actions' }, [
+          h('button', { class: 'trek-btn trek-btn--primary', type: 'submit', text: S('ui.save') }),
+          d.recorded ? h('button', { class: 'trek-btn trek-btn--ghost', type: 'button', text: S('ui.clear'), on: { click: clearIt } }) : null,
+        ]),
+      ]);
+      form.addEventListener('submit', function (e) { e.preventDefault(); save(form); });
       return form;
     }
 
-    async function loadPlaces() {
-      try {
-        state.places = await trek.invoke('/places', { method: 'POST', body: { tripId: Number(state.tripId) } });
-        render();
-      } catch (e) { trek.notify('error', e.message); }
-    }
-    async function savePlace(form, t) {
-      var fd = new FormData(form);
-      var set = {};
-      fd.forEach(function (v, k) { set[k] = v; });
-      ['price_amount', 'dog_fee', 'max_height_m'].forEach(function (k) { set[k] = set[k] === '' ? null : Number(set[k]); });
-      set.currency = String(set.currency || 'EUR').toUpperCase();
-      try {
-        await trek.invoke('/place-info', { method: 'POST', body: { tripId: Number(state.tripId), placeId: state.placeId, set: set } });
-        trek.notify('success', t.saved);
-        state.places = null; state.data = null; load();
-      } catch (e) { trek.notify('error', e.message); }
-    }
-    async function clearPlace(t) {
-      if (!(await trek.confirm({ message: t.confirmClear, danger: true }))) return;
-      try {
-        await trek.invoke('/place-info', { method: 'POST', body: { tripId: Number(state.tripId), placeId: state.placeId, clear: true } });
-        trek.notify('success', t.cleared);
-        state.places = null; state.data = null; load();
-      } catch (e) { trek.notify('error', e.message); }
-    }
-
     function render() {
-      var d = state.data;
+      var app = document.getElementById('app');
+      var d = st.data;
       if (!d) return;
-      var t = L[d.language] || L.en;
-      var k = d.kpis;
-      var cur = d.trip.currency;
-      document.getElementById('app').replaceChildren(
-        h('header', { class: 'head' }, [h('div', { class: 'trek-eyebrow', text: 'Rooftop' }), h('h1', { text: d.trip.title })]),
-        h('section', { class: 'kpis' }, [
-          h('div', { class: 'kpi' }, [h('b', { text: money(k.nightsTotal, cur) }), h('span', { text: k.nights + ' ' + t.total })]),
-          h('div', { class: 'kpi' }, [h('b', { text: k.booked + ' / ' + d.nights.length }), h('span', { text: t.booked })]),
-          h('div', { class: 'kpi' }, [h('b', { class: k.late ? 'late' : '', text: String(k.late) }), h('span', { text: t.late })]),
-          h('div', { class: 'kpi' }, [h('b', { class: d.check.counts.blocking ? 'late' : '', text: String(d.check.counts.blocking) }), h('span', { text: t.level.blocking })]),
-        ]),
-        h('nav', { class: 'tabs', role: 'tablist' }, ['nights', 'check', 'places'].map(function (id) {
-          return h('button', { role: 'tab', type: 'button', 'aria-selected': String(state.tab === id), text: t[id], on: { click: function () { state.tab = id; render(); } } });
-        })),
-        state.tab === 'nights'
-          ? (d.nights.length ? h('section', { class: 'grid' }, d.nights.map(function (n) { return nightCard(n, t, cur); })) : h('p', { class: 'empty', text: t.none }))
-          : state.tab === 'check' ? checkView(d, t) : placesView(t)
+      document.documentElement.lang = d.language;
+      app.replaceChildren(
+        h('div', { class: 'head' }, [
+          h('span', { class: 'eyebrow', text: S('ui.title') }),
+          h('button', { class: 'trek-btn trek-btn--ghost edit-btn', type: 'button', 'aria-expanded': String(st.open), text: st.open ? S('ui.close') : S('ui.edit'), on: { click: function () { st.open = !st.open; render(); } } }),
+        ])
       );
+      summary(d).forEach(function (n) { app.appendChild(n); });
+      if (st.open) app.appendChild(editor(d));
     }
 
     async function load() {
-      if (!state.tripId || state.loading) return;
-      state.loading = true;
+      if (!st.tripId || !st.placeId) return;
       try {
-        state.data = await trek.invoke('/report', { method: 'POST', body: { tripId: Number(state.tripId) } });
+        st.data = await trek.invoke('/amenities', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId), locale: st.locale } });
         render();
       } catch (e) {
-        document.getElementById('app').replaceChildren(h('p', { class: 'empty', text: e.message }));
-      } finally {
-        state.loading = false;
+        document.getElementById('app').replaceChildren(h('p', { class: 'muted', text: '⚠ ' + e.message }));
       }
     }
+    async function save(form) {
+      var set = {};
+      new FormData(form).forEach(function (v, k) { set[k] = v; });
+      ['price_amount', 'dog_fee', 'max_height_m', 'max_length_m', 'max_weight_t'].forEach(function (k) { set[k] = set[k] === '' ? null : Number(set[k]); });
+      set.currency = String(set.currency || 'EUR').toUpperCase();
+      try {
+        await trek.invoke('/amenities/save', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId), set: set } });
+        trek.notify('success', S('ui.saved'));
+        st.open = false;
+        load();
+      } catch (e) { trek.notify('error', e.message); }
+    }
+    async function clearIt() {
+      if (!(await trek.confirm({ message: S('ui.confirmClear'), danger: true }))) return;
+      try {
+        await trek.invoke('/amenities/clear', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId) } });
+        trek.notify('success', S('ui.cleared'));
+        st.open = false;
+        load();
+      } catch (e) { trek.notify('error', e.message); }
+    }
 
-    var timer = null;
     trek.onContext(function (ctx) {
-      state.locale = ctx.locale || 'en';
-      var asked = Number(ctx.placeId) || wanted;
-      if (asked && asked !== state.placeId) { state.placeId = asked; state.tab = 'places'; wanted = null; }
-      if (ctx.tripId && ctx.tripId !== state.tripId) { state.tripId = ctx.tripId; load(); }
+      var changed = ctx.placeId !== st.placeId || ctx.tripId !== st.tripId || (ctx.locale || 'en') !== st.locale;
+      st.tripId = ctx.tripId; st.placeId = ctx.placeId; st.locale = ctx.locale || navigator.language || 'en';
+      if (changed) { st.open = false; load(); }
     });
-    // Core events carry names only: refetch, debounced (a bulk edit fires many).
+    // A place edited elsewhere (price in TREK's own form): refetch, debounced.
+    var timer = null;
     trek.onEvent(function () { clearTimeout(timer); timer = setTimeout(load, 800); });
   </script>
 </body>

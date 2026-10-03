@@ -5,8 +5,10 @@
 const { norm } = require('./util');
 
 const RE = {
-  // A rooftop tent may only be opened on a campsite or a farm that hosts campers.
-  aire: /\baire\b|stellplatz|area (di )?sosta|area camper|motorhome|camper ?stop|camping-?car|\bparking\b|parcheggio|parkplatz|geospot|wild ?camp/,
+  // A motorhome area (a night for a van or a motorhome, never for an opened rooftop tent)
+  // and a car park or wild spot (the local rule decides) are told apart.
+  aire: /\baire\b|stellplatz|wohnmobil|area (di )?sosta|area camper|motorhome|camper ?stop|camping-?car/,
+  parking: /\bparking\b|parcheggio|parkplatz|geospot|wild ?camp|bivouac|bivacco|spot nature|nature spot/,
   campsite: /camping|campsite|camp ?site|campeggio|campingplatz|camp_site/,
   farm: /\bferme\b|\bfarm\b|agri|bauernhof|\bhof\b|masseria|agricamp/,
   privateGround: /habitant|particulier|private (ground|garden|land|pitch)|privat|homecamp|backyard|jardin/,
@@ -21,17 +23,19 @@ const RE = {
 
 const test = (re, ...texts) => re.test(norm(texts.filter(Boolean).join(' \n ')));
 
-/** Kind of ground a night is spent on: 'campsite' | 'farm' | 'aire' | 'private' | 'hut' | 'unknown'. */
+/** Kind of ground a night is spent on: 'campsite' | 'farm' | 'aire' | 'parking' | 'private' | 'hut' | 'unknown'. */
 function nightKind(categoryName, placeName) {
   const cat = norm(categoryName);
   const name = norm(placeName);
   // The category is the user's own decision, so it wins over words in the name.
   if (RE.aire.test(cat)) return 'aire';
+  if (RE.parking.test(cat)) return 'parking';
   if (RE.farm.test(cat)) return 'farm';
   if (RE.campsite.test(cat)) return 'campsite';
   if (RE.privateGround.test(cat)) return 'private';
   if (RE.hut.test(cat)) return 'hut';
   if (RE.aire.test(name) && !RE.campsite.test(name)) return 'aire';
+  if (RE.parking.test(name) && !RE.campsite.test(name)) return 'parking';
   if (RE.campsite.test(name)) return 'campsite';
   if (RE.farm.test(name)) return 'farm';
   if (RE.hut.test(name)) return 'hut';

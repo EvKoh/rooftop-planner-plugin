@@ -29,7 +29,7 @@ async function dayGeometry(ctx, model, day, settings, opts) {
   if (nuit && located(nuit) && !pts.some((p) => p[0] === nuit.lat && p[1] === nuit.lng)) pts.push([nuit.lat, nuit.lng]);
   if (pts.length < 2) return null;
   if (opts.network === false) return null;
-  const r = await routing.route(pts, { tolls: highwayAllowed(settings, day.index, model.days.length), height: settings.vehicle_height_m, timeoutMs: opts.deadline ? Math.min(10000, opts.deadline.left() - 4000) : 10000 });
+  const r = await routing.route(pts, { ...routing.vehicleOpts(settings, highwayAllowed(settings, day.index, model.days.length)), timeoutMs: opts.deadline ? Math.min(10000, opts.deadline.left() - 4000) : 10000 });
   return { points: r.points, source: 'computed (Valhalla)' };
 }
 

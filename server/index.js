@@ -1,12 +1,13 @@
-// rooftop-planner-plugin — plans car + rooftop-tent road trips in TREK.
+// vanlife — plans road trips with a rooftop tent, a campervan or a motorhome in TREK.
 //
-// What it plugs into:
-//   • mcpToolProvider  → 8 MCP tools `rooftop_tools_*` (advertised as
-//                        plugin_rooftop-planner-plugin_rooftop_tools_*)
+// What it plugs into (TREK's own surfaces only; the plugin has a single screen):
+//   • widget, slot "place-detail" → the place's amenities and price details, at the foot of
+//                                   the place panel (client/index.html)
+//   • mcpToolProvider  → 7 MCP tools `vanlife_*` (advertised as plugin_vanlife_vanlife_*)
 //   • warningProvider  → the planner's warnings banner (cache-only, 5 s budget)
 //   • routeProvider    → two route profiles in the planner's route toggle
 //   • tableContributor → price and amenities columns on each place (view "places")
-//   • POST /report, /places, /place-info → data and editor of the "Rooftop" trip tab
+// Settings are TREK's native forms (user: vehicle and rules; instance: defaults).
 //
 // Every trip read is membership-checked by the host against the acting user; the plugin
 // never names a user. Nothing here books, pays or messages anyone.
@@ -17,12 +18,24 @@ const { TOOL_NAMES } = require('./lib/tool-specs');
 const { callTool } = require('./lib/tools');
 const { readSettings } = require('./lib/settings');
 const { loadTrip } = require('./lib/trip');
-const { warnings, tripReport } = require('./lib/report');
+const { warnings } = require('./lib/report');
 const placeInfo = require('./lib/place-info');
 const { placeColumns } = require('./lib/contributions');
 const { gentle } = require('./lib/gentle');
+const { bundle, lang } = require('./lib/i18n');
 
 const json = (status, body) => ({ status, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+const ids = (b) => {
+  const tripId = Number(b && b.tripId);
+  const placeId = Number(b && b.placeId);
+  return Number.isInteger(tripId) && tripId > 0 && Number.isInteger(placeId) && placeId > 0 ? { tripId, placeId } : null;
+};
+
+/** The place, if it belongs to the trip (the host checks the user may read the trip). */
+async function placeOf(ctx, tripId, placeId) {
+  const places = await ctx.trips.getPlaces(tripId);
+  return places.find((p) => p.id === placeId) || null;
+}
 
 module.exports = definePlugin({
   async onLoad(ctx) {
@@ -48,17 +61,17 @@ module.exports = definePlugin({
       async getContributions(view, tripId, raw) {
         if (view !== 'places') return [];
         const ctx = gentle(raw);
-        return placeColumns(ctx, tripId, await readSettings(ctx, ['language', 'dog', 'vehicle_height_m']));
+        return placeColumns(ctx, tripId, await readSettings(ctx, ['language', 'dog', 'vehicle', 'vehicle_height_m', 'vehicle_length_m', 'vehicle_weight_t']));
       },
     },
 
     routeProvider: {
-      // `rooftop`: no tolls (on-site days); `rooftop-highway`: tolls allowed (getting
-      // there and back). Both use the vehicle height from the user's settings.
+      // `vanlife`: no tolls (on-site days); `vanlife-highway`: tolls allowed (getting there
+      // and back). The vehicle's height (and length/weight for a motorhome) from the settings.
       async getRoute(request, ctx) {
-        const settings = await readSettings(gentle(ctx), ['vehicle_height_m']);
+        const settings = await readSettings(gentle(ctx), ['vehicle', 'vehicle_height_m', 'vehicle_length_m', 'vehicle_weight_t']);
         const r = await routing.route(request.waypoints.map((w) => [w.lat, w.lng]), {
-          tolls: request.profile === 'rooftop-highway', height: settings.vehicle_height_m, maxPoints: 5000, timeoutMs: 17000,
+          ...routing.vehicleOpts(settings, request.profile === 'vanlife-highway'), maxPoints: 5000, timeoutMs: 17000,
         });
         return {
           coordinates: r.points,
@@ -72,43 +85,51 @@ module.exports = definePlugin({
 
   routes: [
     {
-      // The editor's list: every place that is not a route, nights first, with its record.
+      // The widget: the place's record, its TREK price, and the strings in the frame's language.
       method: 'POST',
-      path: '/places',
+      path: '/amenities',
       auth: true,
       async handler(req, raw) {
         const ctx = gentle(raw);
-        const tripId = Number(req.body && req.body.tripId);
-        if (!Number.isInteger(tripId) || tripId < 1) return json(400, { error: 'tripId required' });
+        const at = ids(req.body);
+        if (!at) return json(400, { error: 'tripId and placeId required' });
         try {
-          const settings = await readSettings(ctx);
-          const model = await loadTrip(ctx, tripId, settings);
-          const planned = new Set(model.nights.map((n) => n.placeId));
-          const places = model.pool.filter((p) => !p.geometry).map((p) => ({
-            id: p.id, name: p.name, category: p.categoryName, plannedNight: planned.has(p.id), info: p.info,
-          })).sort((a, b) => b.plannedNight - a.plannedNight || a.name.localeCompare(b.name));
-          return json(200, { language: settings.language, places, amenities: placeInfo.AMENITIES });
+          const place = await placeOf(ctx, at.tripId, at.placeId);
+          if (!place) return json(404, { error: 'place not in this trip' });
+          const settings = await readSettings(ctx, ['language', 'vehicle', 'dog', 'vehicle_height_m', 'vehicle_length_m', 'vehicle_weight_t']);
+          // The user's own language setting wins; "auto" follows the language TREK gives the frame.
+          const own = await ctx.settings.get('language').catch(() => undefined);
+          const L = own && own !== 'auto' ? lang(own) : req.body.locale ? lang(req.body.locale) : settings.language;
+          const info = await placeInfo.get(ctx, at.placeId);
+          return json(200, {
+            language: L,
+            strings: bundle(L, ['ui.', 'am', 'opt.', 'per.', 'fee']),
+            vehicle: settings.vehicle,
+            price: place.price == null ? null : +place.price,
+            currency: place.currency || null,
+            info: info || placeInfo.blank(),
+            recorded: !!info,
+            summary: placeInfo.amenitiesText(info, L),
+            refused: placeInfo.refuses(info, settings),
+            amenities: placeInfo.AMENITIES,
+          });
         } catch (e) {
-          return json(404, { error: String((e && e.message) || e) });
+          return json(403, { error: String((e && e.message) || e) });
         }
       },
     },
     {
-      // Save (or clear) one place's price and amenities.
+      // Save: the price on TREK's own place, the rest on the place's plugin data.
       method: 'POST',
-      path: '/place-info',
+      path: '/amenities/save',
       auth: true,
       async handler(req, raw) {
         const ctx = gentle(raw);
-        const b = req.body || {};
-        const tripId = Number(b.tripId);
-        const placeId = Number(b.placeId);
-        if (!Number.isInteger(tripId) || !Number.isInteger(placeId) || tripId < 1 || placeId < 1) return json(400, { error: 'tripId and placeId required' });
+        const at = ids(req.body);
+        if (!at) return json(400, { error: 'tripId and placeId required' });
         try {
-          const places = await ctx.trips.getPlaces(tripId);
-          if (!places.some((p) => p.id === placeId)) return json(404, { error: 'place not in this trip' });
-          if (b.clear) { await placeInfo.clear(ctx, tripId, placeId); return json(200, { cleared: true }); }
-          return json(200, { saved: true, info: await placeInfo.set(ctx, tripId, placeId, b.set || {}) });
+          if (!(await placeOf(ctx, at.tripId, at.placeId))) return json(404, { error: 'place not in this trip' });
+          return json(200, { saved: true, info: await placeInfo.set(ctx, at.tripId, at.placeId, (req.body && req.body.set) || {}) });
         } catch (e) {
           return json(e instanceof placeInfo.InfoError ? 400 : 403, { error: String((e && e.message) || e) });
         }
@@ -116,17 +137,18 @@ module.exports = definePlugin({
     },
     {
       method: 'POST',
-      path: '/report',
+      path: '/amenities/clear',
       auth: true,
       async handler(req, raw) {
         const ctx = gentle(raw);
-        const tripId = Number(req.body && req.body.tripId);
-        if (!Number.isInteger(tripId) || tripId < 1) return json(400, { error: 'tripId required' });
+        const at = ids(req.body);
+        if (!at) return json(400, { error: 'tripId and placeId required' });
         try {
-          const settings = await readSettings(ctx);
-          return json(200, await tripReport(ctx, await loadTrip(ctx, tripId, settings), settings));
+          if (!(await placeOf(ctx, at.tripId, at.placeId))) return json(404, { error: 'place not in this trip' });
+          await placeInfo.clear(ctx, at.tripId, at.placeId);
+          return json(200, { cleared: true });
         } catch (e) {
-          return json(404, { error: String((e && e.message) || e) });
+          return json(403, { error: String((e && e.message) || e) });
         }
       },
     },

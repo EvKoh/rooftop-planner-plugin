@@ -4,7 +4,7 @@
 // in one batch (cache, then a Valhalla matrix), then evaluate the rules day by day.
 // It never writes anything. Levels: blocking > fix > verify > info.
 const { hhmm, distKm, norm } = require('./util');
-const { t, dayName } = require('./i18n');
+const { t, dayName, money, num } = require('./i18n');
 const { sunset } = require('./sun');
 const { isShopping, isHike, isTrace, isNightCategory, parkingFromNotes } = require('./classify');
 const rules = require('./rules');
@@ -13,6 +13,12 @@ const { highwayAllowed } = require('./settings');
 const { nightOf, nightBefore, nameKey, unplannedNights } = require('./trip');
 
 const LEVELS = ['blocking', 'fix', 'verify', 'info'];
+
+/** Zone name and legal note of a legality finding, in language L (texts live in the catalogues). */
+function zoneText(L, p) {
+  const id = p.zoneId || 'unknown';
+  return { zone: t(L, `zone.${id}.name`), note: t(L, `zone.${id}.${p.rule}`) };
+}
 const fmtDur = (m) => (m == null ? '—' : `${Math.floor(m / 60)} h ${String(Math.round(m % 60)).padStart(2, '0')}`);
 const located = (p) => p && p.lat != null && p.lng != null;
 const pos = (p) => [p.lat, p.lng];
@@ -71,7 +77,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang 
   let pending = 0;
   for (const group of byTolls) {
     if (!group.length) continue;
-    const r = await routing.legs(ctx, group.map(([p]) => [p.a, p.b]), { tolls: group[0][0].tolls, height: settings.vehicle_height_m, network, deadline });
+    const r = await routing.legs(ctx, group.map(([p]) => [p.a, p.b]), { ...routing.vehicleOpts(settings, group[0][0].tolls), network, deadline });
     group.forEach(([, i], j) => { const v = r.values.get(j); minutes[i] = v ? v.minutes : null; });
     pending += r.pending;
   }
@@ -152,14 +158,21 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang 
       if (arr != null && written != null && Math.abs(written - arr) > 5) add('fix', J, 'checkin_mismatch', { name: nuit.name, checkin: hhmm(written), arr: hhmm(arr) }, extra);
       else if (arr != null && cs != null && arr <= limit) add('info', J, 'night_margin', { name: nuit.name, arr: hhmm(arr), sunset: hhmm(cs), margin: fmtDur(cs - arr) }, extra);
 
-      const legal = rules.nightLegality({ categoryName: nuit.categoryName, placeName: nuit.name, lat: nuit.lat, lng: nuit.lng, text: nuit.text });
-      if (legal) add(legal.level, J, legal.key, { name: nuit.name, ...legal.params, note: L === 'fr' && legal.params.noteFr ? legal.params.noteFr : legal.params.note, zone: L === 'fr' && legal.params.zoneFr ? legal.params.zoneFr : legal.params.zone }, extra);
+      const legal = rules.nightLegality({ categoryName: nuit.categoryName, placeName: nuit.name, lat: nuit.lat, lng: nuit.lng, text: nuit.text, vehicle: settings.vehicle });
+      if (legal) add(legal.level, J, legal.key, { name: nuit.name, ...zoneText(L, legal.params) }, extra);
       const am = nuit.info ? nuit.info.amenities : {};
-      const banned = am.rooftop_tent === 'no' ? 'rooftop_tent = no' : rules.tentBanned(nuit.text);
+      // A tent ban only matters to a rooftop tent: a van or a motorhome deploys nothing.
+      const banned = settings.vehicle !== 'rooftop_tent' ? null : am.rooftop_tent === 'no' ? 'rooftop_tent = no' : rules.tentBanned(nuit.text);
       if (banned) add('blocking', J, 'tent_banned', { name: nuit.name, quote: banned }, extra);
       if (settings.dog && am.dog === 'no') add('blocking', J, 'dog_refused', { name: nuit.name }, extra);
       if (nuit.info && nuit.info.max_height_m != null && nuit.info.max_height_m < settings.vehicle_height_m) {
-        add('blocking', J, 'too_low', { name: nuit.name, max: nuit.info.max_height_m, height: settings.vehicle_height_m }, extra);
+        add('blocking', J, 'too_low', { name: nuit.name, max: num(nuit.info.max_height_m, L), height: num(settings.vehicle_height_m, L) }, extra);
+      }
+      if (nuit.info && nuit.info.max_length_m != null && nuit.info.max_length_m < settings.vehicle_length_m) {
+        add('blocking', J, 'too_long', { name: nuit.name, max: num(nuit.info.max_length_m, L), length: num(settings.vehicle_length_m, L) }, extra);
+      }
+      if (nuit.info && nuit.info.max_weight_t != null && nuit.info.max_weight_t < settings.vehicle_weight_t) {
+        add('blocking', J, 'too_heavy', { name: nuit.name, max: num(nuit.info.max_weight_t, L), weight: num(settings.vehicle_weight_t, L) }, extra);
       }
       const win = rules.welcomeWindow(nuit.text);
       if (win && arr != null && (arr < win[0] || arr > win[1])) add('blocking', J, 'welcome_window', { arr: hhmm(arr), name: nuit.name, open: hhmm(win[0]), close: hhmm(win[1]) }, extra);
@@ -167,7 +180,8 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang 
       if (mini && nuit.nights < mini) add('blocking', J, 'min_nights', { name: nuit.name, n: nuit.nights }, extra);
       if (nuit.startDayId === d.id) {
         const pv = rules.priceVerdict(nuit.price, settings);
-        if (pv) add(pv.level, J, pv.key, { name: nuit.name, price: nuit.price, max: settings.night_price_max, target: settings.night_price_target }, extra);
+        const cur = model.currency;
+        if (pv) add(pv.level, J, pv.key, { name: nuit.name, price: money(nuit.price, cur, L), max: money(settings.night_price_max, cur, L), target: money(settings.night_price_target, cur, L) }, extra);
       }
       // Entered amenities win over words in the notes.
       const dry = am.water === 'no' || (am.water !== 'yes' && rules.noWater(nuit.text));
@@ -209,7 +223,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang 
     if (lodging.length) {
       const inBudget = lodging.reduce((s, b) => s + (+b.total_price || 0), 0);
       const planned = model.nights.reduce((s, n) => s + (n.price || 0) * n.nights, 0);
-      if (Math.abs(inBudget - planned) > 1) add('fix', budgetScope, 'budget_total', { budget: inBudget.toFixed(2), nights: planned.toFixed(2) });
+      if (Math.abs(inBudget - planned) > 1) add('fix', budgetScope, 'budget_total', { budget: money(inBudget, model.currency, L), nights: money(planned, model.currency, L) });
     }
   }
   const todoScope = t(L, 'scope.todos');

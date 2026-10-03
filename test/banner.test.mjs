@@ -32,41 +32,42 @@ describe('warnings banner', () => {
     expect(lines.every((x) => x.message.length <= 60)).toBe(true);
     expect(lines[0]).toMatchObject({ dayId: 101, placeId: 13 });
     const sum = w[w.length - 1];
-    expect(sum).toEqual({ level: 'warning', message: expect.stringMatching(/^\+ \d+ more points \(Rooftop tab\)$/) });
+    expect(sum).toEqual({ level: 'warning', message: expect.stringMatching(/^\+ \d+ more points to check$/) });
     // every warning counted once: shown + summed up = blocking + fix + verify
     const total = +sum.message.match(/\d+/)[0] + lines.length;
     const check = await h2check();
     expect(total).toBe(check.counts.blocking + check.counts.fix + check.counts.verify);
   });
 
-  const price = (day) => ({ level: 'verify', key: 'price_high', dayNumber: day, dayId: 100 + day, params: { name: `Camping ${day} Example`, price: 41, max: 35 } });
+  const price = (day) => ({ level: 'verify', key: 'price_high', dayNumber: day, dayId: 100 + day, params: { name: `Camping ${day} Example`, price: '41,00 €', max: '35,00 €' } });
   const fix = (day) => ({ level: 'fix', key: 'no_trace', dayNumber: day, dayId: 100 + day, params: {} });
-  const fr = { language: 'fr', night_price_max: 35 };
+  const fr = { language: 'fr', night_price_max: 35, currency: 'EUR' };
+  const nb = (m) => m.replace(/\u202f|\u00a0/g, ' ');
 
   it('groups prices above the ceiling into ONE chip, never one chip each', () => {
     const w = bannerFrom([1, 2, 3, 4, 5].map(price), fr);
-    expect(w).toEqual([{ level: 'info', message: '+ 5 nuits au-dessus de 35 €' }]);
+    expect(w.map((x) => [x.level, nb(x.message)])).toEqual([['info', '+ 5 nuits au-dessus de 35,00 €']]);
   });
 
   it('shows to-verify points one by one only when 3 at most remain', () => {
-    expect(bannerFrom([price(1), price(2)], fr).map((x) => x.message)).toEqual(['J1 Camping 1 Example : 41 € > 35 €', 'J2 Camping 2 Example : 41 € > 35 €']);
-    expect(bannerFrom([fix(1), price(2), price(3)], fr).map((x) => x.message)).toEqual(['J1 : pas de tracé', 'J2 Camping 2 Example : 41 € > 35 €', 'J3 Camping 3 Example : 41 € > 35 €']);
+    expect(bannerFrom([price(1), price(2)], fr).map((x) => x.message)).toEqual(['J1 Camping 1 Example : 41,00 € > 35,00 €', 'J2 Camping 2 Example : 41,00 € > 35,00 €']);
+    expect(bannerFrom([fix(1), price(2), price(3)], fr).map((x) => x.message)).toEqual(['J1 : pas de tracé', 'J2 Camping 2 Example : 41,00 € > 35,00 €', 'J3 Camping 3 Example : 41,00 € > 35,00 €']);
     const w = bannerFrom([fix(1), fix(2), price(3), price(4)], fr);
-    expect(w.map((x) => x.message)).toEqual(['J1 : pas de tracé', 'J2 : pas de tracé', '+ 2 nuits au-dessus de 35 €']);
+    expect(w.map((x) => nb(x.message))).toEqual(['J1 : pas de tracé', 'J2 : pas de tracé', '+ 2 nuits au-dessus de 35,00 €']);
     // the real case of 2026-10-03: one farm risk and five prices — the farm keeps its own chip
-    const farm = { level: 'verify', key: 'night_farm_zone', dayNumber: 2, dayId: 102, params: { name: 'Farm Example — farm (Town)', zone: 'South Tyrol (Bolzano)' } };
-    expect(bannerFrom([farm, price(3), price(4), price(5), price(6), price(7)], fr).map((x) => x.message))
-      .toEqual(['J2 Farm Example : ferme au South Tyrol', '+ 5 nuits au-dessus de 35 €']); // zone as given in params
+    const farm = { level: 'verify', key: 'night_farm_zone', dayNumber: 2, dayId: 102, params: { name: 'Farm Example — farm (Town)', zone: 'Tyrol du Sud' } };
+    expect(bannerFrom([farm, price(3), price(4), price(5), price(6), price(7)], fr).map((x) => nb(x.message)))
+      .toEqual(['J2 Farm Example : ferme au Tyrol du Sud', '+ 5 nuits au-dessus de 35,00 €']);
   });
 
   it('caps severe points at 3 chips and sums up the rest, severe or not', () => {
     const w = bannerFrom([fix(1), fix(2), fix(3), fix(4), price(5)], fr);
     expect(w).toHaveLength(4);
-    expect(w[3]).toEqual({ level: 'warning', message: '+ 2 autres points (onglet Rooftop)' });
+    expect(w[3]).toEqual({ level: 'warning', message: '+ 2 autres points à vérifier' });
     expect(bannerFrom([], fr)).toEqual([]);
     expect(bannerFrom([{ level: 'info', key: 'night_margin', params: {} }], fr)).toEqual([]); // info never reaches the banner
     expect(bannerFrom([fix(1), fix(2), fix(3), { level: 'verify', key: 'night_private', dayNumber: 4, params: {} }], { language: 'en', night_price_max: 35 })[3])
-      .toEqual({ level: 'info', message: '+ 1 points to verify (Rooftop tab)' });
+      .toEqual({ level: 'info', message: '+ 1 points to verify' });
   });
 
   it('end to end in French: the farm risk keeps its own chip, with the zone in French', async () => {

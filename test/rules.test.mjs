@@ -7,8 +7,8 @@ const { zoneAt, ZONES } = require('../server/lib/zones.js');
 const oh = require('../server/lib/opening-hours.js');
 const cls = require('../server/lib/classify.js');
 const u = require('../server/lib/util.js');
-const { t, dayName, MESSAGES } = require('../server/lib/i18n.js');
-const { DEFAULTS, readSettings, highwayAllowed, fuelPerKm } = require('../server/lib/settings.js');
+const { t, dayName, MESSAGES, lang, money, num, bundle, CODES } = require('../server/lib/i18n.js');
+const { DEFAULTS, readSettings, highwayAllowed, fuelPerKm, instance } = require('../server/lib/settings.js');
 
 describe('sun', () => {
   it('computes sunset for the date and place, in local time with DST', () => {
@@ -30,7 +30,7 @@ describe('zones', () => {
     expect(zoneAt(44.4056, 8.9463).id).toBe('liguria'); // Genoa
     expect(zoneAt(46.07, 11.12)).toBeNull(); // Trento: no rule known
     expect(zoneAt(null, 1)).toBeNull();
-    expect(ZONES.every((z) => z.note && z.polygon.length >= 3)).toBe(true);
+    expect(ZONES.every((z) => z.id && z.polygon.length >= 3)).toBe(true);
   });
 });
 
@@ -74,6 +74,22 @@ describe('rules', () => {
     expect(rules.nightLegality({ categoryName: 'Chez l\'habitant', placeName: 'Garden' }).key).toBe('night_private');
     expect(rules.nightLegality({ categoryName: 'Night – Campsite', placeName: 'Camping', lat: 46.64, lng: 11.72 })).toBeNull();
   });
+  it('judges the night by the vehicle: a van may sleep on an aire, a tent may not', () => {
+    const aire = { categoryName: 'Night – Motorhome area', placeName: 'X', lat: 46.5405, lng: 12.1357 };
+    expect(rules.nightLegality({ ...aire, vehicle: 'rooftop_tent' }).key).toBe('night_aire');
+    expect(rules.nightLegality({ ...aire, vehicle: 'campervan' })).toBeNull();
+    expect(rules.nightLegality({ ...aire, vehicle: 'motorhome' })).toBeNull();
+    const park = { categoryName: 'Nuitée – geoSpot', placeName: 'Forest', lat: 46.4983, lng: 11.3548 };
+    expect(rules.nightLegality({ ...park, vehicle: 'rooftop_tent' }).key).toBe('night_aire');
+    expect(rules.nightLegality({ ...park, vehicle: 'campervan' })).toMatchObject({ key: 'night_wild', level: 'verify', params: { zoneId: 'south-tyrol', rule: 'van' } });
+    expect(rules.nightLegality({ categoryName: 'parking', placeName: 'P', lat: 46.07, lng: 11.12, vehicle: 'motorhome' }).params).toEqual({ zoneId: null, rule: 'van' });
+    // a farm in South Tyrol is a legal risk for a tent only
+    const farm = { categoryName: 'Night – Farm', placeName: 'Hof', lat: 46.64, lng: 11.72 };
+    expect(rules.nightLegality({ ...farm, vehicle: 'rooftop_tent' }).key).toBe('night_farm_zone');
+    expect(rules.nightLegality({ ...farm, vehicle: 'campervan' })).toBeNull();
+    expect(rules.nightLegality({ categoryName: 'Campsite', placeName: 'C', vehicle: 'motorhome' })).toBeNull();
+  });
+
   it('rates prices against the target and the ceiling', () => {
     const s = { night_price_target: 25, night_price_max: 35 };
     expect(rules.priceVerdict(null, s).key).toBe('price_unknown');
@@ -162,6 +178,28 @@ describe('i18n and settings', () => {
     expect(t('en', 'unknown_key')).toBe('unknown_key');
     expect(dayName('fr', 1)).toBe('lundi');
   });
+  it('maps any language tag to a TREK language and formats like that language', () => {
+    expect(lang('fr-FR')).toBe('fr');
+    expect(lang('pt-BR')).toBe('br');
+    expect(lang('pt')).toBe('br');
+    expect(lang('zh-Hant-TW')).toBe('zh-TW');
+    expect(lang('zh-CN')).toBe('zh');
+    expect(lang('el')).toBe('gr');
+    expect(lang('xx')).toBe('en');
+    expect(lang(null)).toBe('en');
+    expect(lang('zh-TW')).toBe('zh-TW');
+    expect(CODES).toHaveLength(27);
+    const nb = (x) => x.replace(/\u202f|\u00a0/g, ' ');
+    expect(nb(money(44.6, 'EUR', 'fr'))).toBe('44,60 €');
+    expect(money(44.6, 'EUR', 'en')).toBe('€44.60');
+    expect(money(5, 'ZZZ1', 'en')).toBe('5.00 ZZZ1');
+    expect(money(null, 'EUR', 'en')).toBeNull();
+    expect(num(2.1, 'fr')).toBe('2,1');
+    expect(num(null, 'fr')).toBeNull();
+    expect(Object.keys(bundle('fr', ['ui.'])).every((k) => k.startsWith('ui.'))).toBe(true);
+    expect(dayName('xx', 0)).toBe('Sunday');
+  });
+
   it('coerces settings and falls back to defaults', async () => {
     const vals = { vehicle_height_m: '2.1', dog: 'false', highway_days: 'weird', language: 'xx', night_price_max: -3, timezone: 'Europe/Rome' };
     const s = await readSettings({ settings: { get: async (k) => vals[k] } });
@@ -172,12 +210,17 @@ describe('i18n and settings', () => {
     expect(s.night_price_max).toBe(DEFAULTS.night_price_max);
     expect(s.timezone).toBe('Europe/Rome');
     const broken = await readSettings({ settings: { get: async () => { throw new Error('no user'); } } });
-    expect(broken).toEqual({ ...DEFAULTS });
+    expect(broken).toEqual({ ...DEFAULTS, language: 'en', park4night: true });
     expect(highwayAllowed({ highway_days: 'first_last' }, 0, 5)).toBe(true);
     expect(highwayAllowed({ highway_days: 'first_last' }, 2, 5)).toBe(false);
     expect(highwayAllowed({ highway_days: 'always' }, 2, 5)).toBe(true);
     expect(highwayAllowed({ highway_days: 'never' }, 0, 5)).toBe(false);
     expect(fuelPerKm({ fuel_l_per_100km: 6, fuel_price_per_l: 2 })).toBeCloseTo(0.12);
+    const van = await readSettings({ settings: { get: async (k) => ({ vehicle: 'campervan', language: 'auto' })[k] }, config: { default_language: 'de-DE', park4night_enabled: false } });
+    expect(van).toMatchObject({ vehicle: 'campervan', language: 'de', park4night: false });
+    expect((await readSettings({ settings: { get: async (k) => ({ vehicle: 'tank' })[k] } })).vehicle).toBe('rooftop_tent');
+    expect(instance({ config: { park4night_enabled: 'false' } })).toEqual({ park4night: false, defaultLanguage: 'en' });
+    expect(instance(null)).toEqual({ park4night: true, defaultLanguage: 'en' });
   });
 });
 

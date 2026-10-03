@@ -91,19 +91,35 @@ function tentBanned(text, tags = {}) {
 }
 
 /**
- * Is this night's ground legal and fit for a rooftop tent? Returns a finding or null.
- * { key: night_aire | night_farm_zone | night_private, level, params }.
+ * Is this night's ground legal for the traveller's vehicle? Returns a finding or null.
+ *  - rooftop tent: opening the tent is camping. Campsite or farm only; a motorhome area or a
+ *    car park is blocking; a farm in a zone that forbids farm camping is a risk.
+ *  - campervan / motorhome: sleeping inside without deploying anything is parking (Italy:
+ *    Codice della strada art. 185), so a motorhome area is a valid night; a car park or a
+ *    wild spot depends on the local rule (zone note), so it is a point to verify.
  */
-function nightLegality({ categoryName, placeName, lat, lng, text = '' }) {
+function nightLegality({ categoryName, placeName, lat, lng, text = '', vehicle = 'rooftop_tent' }) {
   const kind = nightKind(categoryName, placeName);
-  if (kind === 'aire') return { key: 'night_aire', level: 'blocking', params: {}, kind };
   const zone = zoneAt(lat, lng);
-  const authorised = /autoris|authori[sz]ed|agricampeggio|campingplatz|licen[cs]ed/.test(norm(text));
-  if (kind === 'farm' && zone && zone.farm === 'risk' && !authorised) {
-    return { key: 'night_farm_zone', level: 'verify', params: { zone: zone.name, zoneFr: zone.nameFr, note: zone.note, noteFr: zone.noteFr }, kind, zone: zone.id };
+  const zp = { zoneId: zone ? zone.id : null };
+  if (vehicle === 'rooftop_tent') {
+    if (kind === 'aire' || kind === 'parking') return { key: 'night_aire', level: 'blocking', params: {}, kind };
+    const authorised = /autoris|authori[sz]ed|agricampeggio|campingplatz|licen[cs]ed/.test(norm(text));
+    if (kind === 'farm' && zone && zone.farm === 'risk' && !authorised) {
+      return { key: 'night_farm_zone', level: 'verify', params: { ...zp, rule: 'farm' }, kind, zone: zone.id };
+    }
+    if (kind === 'private' || kind === 'hut') return { key: 'night_private', level: 'verify', params: {}, kind };
+    return null;
   }
-  if (kind === 'private' || kind === 'hut') return { key: 'night_private', level: 'verify', params: {}, kind };
-  return null;
+  if (kind === 'campsite' || kind === 'farm' || kind === 'aire') return null;
+  // A car park, a wild spot, a private garden or a hut: the local rule decides.
+  return {
+    key: 'night_wild',
+    level: 'verify',
+    params: { ...zp, rule: 'van' },
+    kind,
+    zone: zone ? zone.id : null,
+  };
 }
 
 /** Price verdict for a night: null when within target. */

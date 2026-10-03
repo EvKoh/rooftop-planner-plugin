@@ -11,7 +11,7 @@
 const cache = require('./cache');
 
 const OVERPASS = 'https://overpass-api.de/api/interpreter';
-const UA = 'rooftop-planner-plugin (TREK plugin; +https://github.com/EvKoh/rooftop-planner-plugin)';
+const UA = 'vanlife (TREK plugin; +https://github.com/EvkohLand/Vanlife)';
 const COOL_DOWN_MS = 60000;
 
 class OverpassBusy extends Error {
