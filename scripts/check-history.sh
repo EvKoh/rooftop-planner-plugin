@@ -4,7 +4,13 @@
 # Patterns come from the environment (PRIVATE_PATTERNS) so the list itself stays out of the repo.
 set -euo pipefail
 PAT="${PRIVATE_PATTERNS:?set PRIVATE_PATTERNS to an extended regex}"
-hits=$(git log -p --all --format= -- . ':!package-lock.json' ':!scripts/check-history.sh' | grep -E '^\+' | grep -vE '^\+\+\+' | grep -E "$PAT" | grep -vE '@vitest|@media|@param|@deprecated|noreply|@clack' || true)
+# Accepted, already-public commits (never rewritten: main is protected, history stays as is).
+#  b56b101 — a comment quoted a real farm's public business name as an example. Not personal
+#            data, and that trip is published elsewhere by its owner; reviewed 2026-10-03.
+ALLOW_COMMITS="b56b101"
+hits=$(git log -p --all --format='@@commit %h' -- . ':!package-lock.json' ':!scripts/check-history.sh' \
+  | awk -v allow=" $ALLOW_COMMITS " '/^@@commit /{skip = index(allow, " " $2 " ") > 0; next} !skip' \
+  | grep -E '^\+' | grep -vE '^\+\+\+' | grep -E "$PAT" | grep -vE '@vitest|@media|@param|@deprecated|noreply|@clack' || true)
 lock=$(git log -p --all --format= -- package-lock.json | grep -E '/home/|file:' || true)
 trailers=$(git log --all --format=%B | grep -i 'co-authored' || true)
 authors=$(git log --all --format='%ae %ce' | sort -u)
