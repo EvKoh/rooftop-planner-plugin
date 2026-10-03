@@ -1,0 +1,7 @@
+node_modules/
+coverage/
+*.zip
+.trek-plugin-dev/
+dev-data/
+dev-fixtures.json
+.trek-dev/
