@@ -8,6 +8,8 @@ supplies, and the price and amenities of every place — as MCP tools any assist
 TREK can call, as warnings in the planner, as chips on each place (hover card, places list) and as
 a small panel at the foot of the place view.
 
+![At a glance: day route on the map, price and amenity chips on each night, sunset and drive time, camping portals](./docs/overview.jpg)
+
 ![screenshot](./docs/screenshot.png)
 
 ## What it does
