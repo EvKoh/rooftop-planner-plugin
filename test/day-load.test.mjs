@@ -177,6 +177,14 @@ describe('the day\'s load in the check', () => {
     const one = makeHost({ userSettings: { timezone: 'Europe/Rome' }, queryResults: { [pi.INDEX_SQL]: [{ place_id: 17 }] } });
     await one.ctx.meta.set('place', 17, pi.META_KEY, pi.merge(null, { visit_min_minutes: 240 }));
     expect(of(await check(one), 'too_many_activities').some((f) => f.dayNumber === 3)).toBe(false);
+    // a big hike plus a 20-minute stop on the way is still one activity
+    const stop = makeHost({ userSettings: { timezone: 'Europe/Rome' }, queryResults: { [pi.INDEX_SQL]: [{ place_id: 14 }, { place_id: 15 }] } });
+    await stop.ctx.meta.set('place', 14, pi.META_KEY, pi.merge(null, { visit_min_minutes: 240 }));
+    await stop.ctx.meta.set('place', 15, pi.META_KEY, pi.merge(null, { visit_min_minutes: 20 }));
+    expect(of(await check(stop), 'too_many_activities').some((f) => f.dayNumber === 2)).toBe(false);
+    // but a 45-minute visit next to it counts as a second (small) activity
+    await stop.ctx.meta.set('place', 15, pi.META_KEY, pi.merge(null, { visit_min_minutes: 45 }));
+    expect(of(await check(stop), 'too_many_activities').some((f) => f.dayNumber === 2)).toBe(true);
   });
 
   it('lists the visits whose duration nobody knows, not the shop', async () => {

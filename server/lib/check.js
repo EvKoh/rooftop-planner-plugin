@@ -44,6 +44,8 @@ const isVisit = (p) => !isShopping(p.categoryName, p.stopType) && !isNightCatego
 const MEAL_MIN = 30;
 const LONG_DAY_MIN = 6 * 60;
 const SMALL_MIN = 60;
+// A stop this short (a photo, a lake by the road, a market on the way) is not an activity.
+const STOP_MIN = 30;
 
 /**
  * Is the day overloaded? Usable window: the day's start (setting, or the first stop when
@@ -70,9 +72,9 @@ function dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L,
 
   const acts = visits.filter((v) => v.visit && v.minutes != null);
   const big = settings.big_activity_minutes;
-  const load = acts.reduce((n, v) => n + (v.minutes <= SMALL_MIN ? 0.5 : 1), 0);
+  const load = acts.reduce((n, v) => n + (v.minutes <= STOP_MIN ? 0 : v.minutes <= SMALL_MIN ? 0.5 : 1), 0);
   if (load > 1) {
-    add('fix', J, 'too_many_activities', { list: acts.map((v) => `${v.s.place.name} (${fmtDur(v.minutes)})`).join(', '), big: fmtDur(big), small: fmtDur(SMALL_MIN), nBig: acts.filter((v) => v.minutes >= big).length }, ids);
+    add('fix', J, 'too_many_activities', { list: acts.filter((v) => v.minutes > STOP_MIN).map((v) => `${v.s.place.name} (${fmtDur(v.minutes)})`).join(', '), big: fmtDur(big), small: fmtDur(SMALL_MIN), nBig: acts.filter((v) => v.minutes >= big).length }, ids);
   }
 
   if (!complete || !nuit || !located(nuit) || !d.date) return;
