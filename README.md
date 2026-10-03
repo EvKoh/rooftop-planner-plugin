@@ -1,19 +1,73 @@
-![Vanlife Planner: a car with an open rooftop tent and a dog at sunset in the Dolomites](./docs/banner.jpg)
+<p align="center">
+  <img src="./docs/banner.jpg" alt="A car with an open rooftop tent and a dog at sunset in the Dolomites" width="100%">
+</p>
 
 # Vanlife Planner
 
-Plans road trips with a **rooftop tent, a campervan or a motorhome** in
-[TREK](https://github.com/liketrek/TREK): legal nights, sunset-safe arrivals, routes, schedules,
+**Plan a road trip in a rooftop tent, a campervan or a motorhome, and let your assistant check
+every night, route and arrival time against the rules of the road and the hour of sunset.**
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-2ea44f)](./LICENSE)
+[![TREK ≥ 4](https://img.shields.io/badge/TREK-%E2%89%A5%204.0-0b7285)](https://github.com/liketrek/TREK)
+[![MCP tools: 7](https://img.shields.io/badge/MCP%20tools-7-7048e8)](#mcp-tools)
+[![Works with ChatGPT and Claude](https://img.shields.io/badge/works%20with-ChatGPT%20%C2%B7%20Claude-555)](#works-with-chatgpt-and-claude)
+
+A plugin for [TREK](https://github.com/liketrek/TREK), the self-hosted trip planner: legal nights, sunset-safe arrivals, routes, schedules,
 supplies, the price and amenities of every place, the hosts' contacts and where each night stands
 (spotted, in discussion, booked, dropped) — as MCP tools any assistant connected to TREK can call
 (ChatGPT, Claude…), as warnings in the planner, as chips on each place (hover card, places list)
 and as a small panel at the foot of the place view.
 
-## Screenshots
-
 ![At a glance: day route on the map, price and amenity chips on each night, sunset and drive time, camping portals](./docs/overview.jpg)
 
-![screenshot](./docs/screenshot.png)
+## Screenshots
+
+![Day routes in the Dolomites on TREK's map, and the hover card of a campsite with its price and amenity chips](./docs/screenshot.png)
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="./docs/shot-hover-card.png" alt="Hover card of a campsite with price and amenity chips">
+      <br><sub><b>Hover card on the map.</b> The price per person and one chip per amenity
+      (dog, water, electricity, toilets, shower, dump station, wifi, bins, laundry, pool, mobile data),
+      filled from park4night and OpenStreetMap.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="./docs/shot-dolomites-routes.jpg" alt="Colored day routes between the trip's places in the Dolomites">
+      <br><sub><b>Day routes.</b> Each day's road computed with Valhalla for the vehicle's height,
+      length and weight, drawn in the day's color.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="./docs/shot-route-overview.jpg" alt="Whole trip on the map, from the coast to the Alps">
+      <br><sub><b>The whole trip.</b> Driving days from the coast to the mountains, with every
+      candidate night clustered on the map.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="./docs/shot-chatgpt-tools.png" alt="ChatGPT listing the Vanlife tools it can call">
+      <br><sub><b>From ChatGPT.</b> Asked which Vanlife tools it has, ChatGPT lists them through
+      TREK's MCP server (captured with version 0.3.0; since 0.4.0 the day and place tools are
+      merged into <code>vanlife_day</code> and <code>vanlife_place</code>).</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="./docs/shot-admin-plugin.png" alt="The plugin card in TREK's Admin, Plugins tab, with its permissions">
+      <br><sub><b>Admin → Plugins.</b> Every permission and outbound host shown on the card
+      before the admin turns the plugin on.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="./docs/shot-admin-settings.png" alt="Instance settings of the plugin: park4night and default language">
+      <br><sub><b>Instance settings.</b> park4night on or off, and the default language of
+      warnings and columns.</sub>
+      <br><br>
+      <img src="./docs/shot-warnings.png" alt="Warning chips in the planner's top bar">
+      <br><sub><b>Warnings in the planner.</b> Blocking points in red, points to verify in amber
+      (place names blurred here).</sub>
+    </td>
+  </tr>
+</table>
 
 ## What it does
 
@@ -75,7 +129,25 @@ No tool books, pays or writes to anyone. `vanlife_night` records what you declar
 that deals with hosts tells the assistant to show you the exact text and wait for your explicit
 validation.
 
+## Works with ChatGPT and Claude
+
+The tools live on TREK's own MCP server, so any assistant that speaks MCP can use them.
+
+1. In TREK, an admin installs and turns on the plugin (Admin → Plugins) and enables MCP access.
+2. In the assistant, add TREK as a connector or custom app: the MCP address is
+   `https://<your-trek>/mcp`, and the sign-in must grant the **`plugins:use`** scope (no client
+   preset asks for it, so request it by name). ChatGPT: Settings → Apps → create an app with that
+   address. Claude: Settings → Connectors → add a custom connector.
+3. Ask in plain words: *"Check trip 1 for my rooftop tent"*, *"Find a cheaper legal night near
+   day 4"*, *"Draft a message to the host of day 6 asking about dogs and late arrival"*.
+
+After a plugin update, the assistant keeps the old tool list until it is told to reload it: in
+ChatGPT, open the app's settings and click **Refresh tools** (*Actualiser les outils*); in Claude,
+reconnect the connector.
+
 ## Where it shows in TREK
+
+<img src="./docs/nights.jpg" alt="Illustrated map of a mountain valley with a dotted route and lit tents marking each night" width="380" align="right">
 
 - **Warnings banner** — blocking and to-verify points, in the user's language.
 - **Place chips** — the night's status first (*Booked ✓* green, *In discussion* orange, *Dropped*
@@ -89,6 +161,16 @@ validation.
   nothing recorded looks it up once.
 - **Settings** — TREK's native forms: per user (vehicle, dimensions, dog, target and ceiling price,
   sunset margin, language…) and per instance (park4night on or off, default language).
+
+## Setup
+
+1. Install the plugin from its zip (Admin → Plugins), and grant the permissions it asks for.
+2. Optionally, in Admin → Plugins → Instance settings: turn park4night off, choose the default
+   language.
+3. Each traveller sets the vehicle, its dimensions, the dog, the prices and the sunset margin in
+   Settings → Plugins.
+4. To use the tools from ChatGPT, Claude or another assistant, connect it to TREK's MCP server
+   with the `plugins:use` scope; the tools appear as `plugin_vanlife_vanlife_*`.
 
 ## Permissions
 
@@ -123,16 +205,6 @@ off in the instance settings, and the plugin then uses OpenStreetMap alone.
 Zone outlines are coarse (check a night near a border by hand). The public Overpass server allows
 few queries per server, so searches may answer "busy, try again in a minute". OpenStreetMap often
 lacks amenities, and has no reviews. Nothing here books, pays or messages anyone.
-
-## Setup
-
-1. Install the plugin from its zip (Admin → Plugins), and grant the permissions it asks for.
-2. Optionally, in Admin → Plugins → Instance settings: turn park4night off, choose the default
-   language.
-3. Each traveller sets the vehicle, its dimensions, the dog, the prices and the sunset margin in
-   Settings → Plugins.
-4. To use the tools from ChatGPT, Claude or another assistant, connect it to TREK's MCP server
-   with the `plugins:use` scope; the tools appear as `plugin_vanlife_vanlife_*`.
 
 ## Development
 
