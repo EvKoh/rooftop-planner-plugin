@@ -61,7 +61,7 @@ function sunTable(model, settings) {
 
 /** Read all / read one / write one / clear one place's price and amenities. */
 async function placeInfoTool(ctx, model, a, settings) {
-  if (a.fill) return amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night });
+  if (a.fill) return amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, budgetMs: 6000 });
   const L = settings.language;
   const view = (p, info) => ({
     placeId: p.id, name: p.name,

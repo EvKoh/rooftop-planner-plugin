@@ -128,6 +128,13 @@ describe('amenities filled from open sources', () => {
     expect(logged).not.toContain(18);
   });
 
+  it('stops starting new places when its time is up, and counts them as remaining', async () => {
+    sources();
+    const h = host({ park4night: false });
+    const r = await fillLib.fill(h.ctx, 1, { park4night: false, budgetMs: -1 });
+    expect(r).toMatchObject({ looked: 0, filled: 0, remaining: 10 });
+  });
+
   it('is reachable from the MCP tool and from the widget route, and a free stop shows no price', async () => {
     sources();
     const h = host({ park4night: false, queryResults: { 'SELECT place_id FROM place_info_index WHERE trip_id = ?': [{ place_id: 13 }] } });

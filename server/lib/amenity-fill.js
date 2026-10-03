@@ -19,6 +19,8 @@ const OSM_RADIUS_M = 150;
 const P4N_RADIUS_M = 60;
 const RECHECK_DAYS = 30;
 const BATCH = 20;
+// TREK cuts a route at 30 s and a tool at 15 s: stop starting new places after this.
+const BUDGET_MS = 11000;
 const MIGRATION = 'CREATE TABLE IF NOT EXISTS amenity_fill_log (place_id INTEGER PRIMARY KEY, checked_at TEXT NOT NULL)';
 
 const yesNo = (v) => (v == null ? null : /^(yes|designated|free|hot|leashed|wlan|wifi|customers)$/.test(v) ? 'yes' : v === 'no' ? 'no' : null);
@@ -100,19 +102,27 @@ function candidates(places) {
  * → { looked, filled, nothing, remaining, park4nightLimited, osmBusy }
  */
 async function fill(ctx, tripId, opts = {}) {
+  const until = Date.now() + (opts.budgetMs ?? BUDGET_MS);
   const all = candidates(await ctx.trips.getPlaces(Number(tripId)));
   const only = opts.placeIds ? new Set(opts.placeIds.map(Number)) : null;
   const pool = only ? all.filter((p) => only.has(p.id)) : all;
-  const records = await placeInfo.getAll(ctx, tripId, pool.map((p) => p.id));
-  const open = (p) => {
-    const r = records.get(p.id);
-    return !r || Object.values(r.amenities).some((v) => v === 'unknown');
-  };
   const seen = only ? new Set() : await recentlyChecked(ctx, pool.map((p) => p.id));
-  const todo = pool.filter((p) => open(p) && !seen.has(p.id));
-  const batch = todo.slice(0, BATCH);
-  const res = { looked: batch.length, filled: 0, nothing: 0, remaining: Math.max(0, todo.length - batch.length), park4nightLimited: false, osmBusy: false };
-  if (!batch.length) return res;
+  const todo = pool.filter((p) => !seen.has(p.id));
+  // Read records only until the batch is full: a trip can hold hundreds of places.
+  const batch = [];
+  const records = new Map();
+  const complete = [];
+  let read = 0;
+  for (const p of todo) {
+    if (batch.length >= BATCH || Date.now() > until) break;
+    read++;
+    const r = await placeInfo.get(ctx, p.id);
+    if (r && !Object.values(r.amenities).some((v) => v === 'unknown')) { complete.push(p.id); continue; }
+    records.set(p.id, r);
+    batch.push(p);
+  }
+  const res = { looked: batch.length, filled: 0, nothing: 0, remaining: todo.length - read, park4nightLimited: false, osmBusy: false };
+  if (!batch.length) { await remember(ctx, complete); return res; }
 
   let osm = [];
   try {
@@ -123,8 +133,11 @@ async function fill(ctx, tripId, opts = {}) {
   }
 
   const p4nAreas = [];
-  const looked = [];
+  const looked = [...complete];
+  let done = 0;
   for (const place of batch) {
+    if (Date.now() > until) break;
+    done++;
     const found = {};
     const sources = [];
     const camp = nearest(place, osm, OSM_RADIUS_M);
@@ -152,7 +165,7 @@ async function fill(ctx, tripId, opts = {}) {
     }
     // A linked place whose park4night lookup was cut short by the rate limit is retried later.
     if (!(res.park4nightLimited && id && !sources.some((x) => x.startsWith('park4night')))) looked.push(place.id);
-    const current = await placeInfo.get(ctx, place.id);
+    const current = records.get(place.id) || null;
     const patch = {};
     for (const [k, v] of Object.entries(found)) if (!current || current.amenities[k] === 'unknown') patch[k] = v;
     if (!Object.keys(patch).length) { res.nothing++; continue; }
@@ -161,6 +174,8 @@ async function fill(ctx, tripId, opts = {}) {
     await placeInfo.set(ctx, tripId, place.id, patch);
     res.filled++;
   }
+  res.remaining += batch.length - done;
+  res.looked = done;
   await remember(ctx, looked);
   return res;
 }

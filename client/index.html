@@ -156,12 +156,12 @@
     async function fillTrip() {
       if (st.filling) return;
       st.filling = true; render();
-      var total = 0, r = null;
+      var total = 0, r = null, rounds = 0;
       try {
         do {
           r = await trek.invoke('/amenities/fill', { method: 'POST', body: { tripId: Number(st.tripId) } });
           total += r.filled;
-        } while (r.remaining > 0 && r.looked > 0 && !r.osmBusy && !r.park4nightLimited);
+        } while (r.remaining > 0 && ++rounds < 40 && !r.osmBusy && !r.park4nightLimited);
         trek.notify('success', S('ui.filledN').replace('{n}', String(total)));
         if (r.osmBusy) trek.notify('info', S('ui.fillOsmBusy'));
         if (r.park4nightLimited) trek.notify('info', S('ui.fillLater'));
