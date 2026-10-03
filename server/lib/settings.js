@@ -25,6 +25,8 @@ const DEFAULTS = Object.freeze({
   fuel_price_per_l: 1.9,
   travellers: 2,
   highway_days: 'first_last',
+  // Day numbers with motorway allowed, e.g. "1,8,9": when set, it wins over highway_days.
+  highway_day_numbers: '',
   shop_detour_max_min: 20,
   timezone: 'Europe/Paris',
   language: 'auto',
@@ -64,6 +66,8 @@ async function readSettings(ctx, keys) {
 
 /** Does `dayIndex` (0-based) of `dayCount` days allow motorways under this setting? */
 function highwayAllowed(settings, dayIndex, dayCount) {
+  const listed = String(settings.highway_day_numbers || '').split(/[\s,;]+/).map(Number).filter((n) => Number.isInteger(n) && n > 0);
+  if (listed.length) return listed.includes(dayIndex + 1);
   if (settings.highway_days === 'always') return true;
   if (settings.highway_days === 'never') return false;
   return dayIndex === 0 || dayIndex === dayCount - 1;

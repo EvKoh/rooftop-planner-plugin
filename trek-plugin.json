@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -164,6 +164,13 @@
           "label": "Never"
         }
       ]
+    },
+    {
+      "key": "highway_day_numbers",
+      "label": "Motorway days by number, e.g. 1,8,9 (overrides the choice above when filled)",
+      "scope": "user",
+      "input_type": "text",
+      "default": ""
     },
     {
       "key": "shop_detour_max_min",

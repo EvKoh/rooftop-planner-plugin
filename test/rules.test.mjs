@@ -213,6 +213,11 @@ describe('i18n and settings', () => {
     expect(broken).toEqual({ ...DEFAULTS, language: 'en', park4night: true });
     expect(highwayAllowed({ highway_days: 'first_last' }, 0, 5)).toBe(true);
     expect(highwayAllowed({ highway_days: 'first_last' }, 2, 5)).toBe(false);
+    // A list of day numbers wins: a return split over two days keeps the motorway on both.
+    expect(highwayAllowed({ highway_days: 'first_last', highway_day_numbers: '1, 8;9' }, 7, 9)).toBe(true);
+    expect(highwayAllowed({ highway_days: 'first_last', highway_day_numbers: '1,8,9' }, 0, 9)).toBe(true);
+    expect(highwayAllowed({ highway_days: 'always', highway_day_numbers: '1,8,9' }, 3, 9)).toBe(false);
+    expect(highwayAllowed({ highway_days: 'never', highway_day_numbers: 'x, 0' }, 3, 9)).toBe(false);
     expect(highwayAllowed({ highway_days: 'always' }, 2, 5)).toBe(true);
     expect(highwayAllowed({ highway_days: 'never' }, 0, 5)).toBe(false);
     expect(fuelPerKm({ fuel_l_per_100km: 6, fuel_price_per_l: 2 })).toBeCloseTo(0.12);
