@@ -4,6 +4,7 @@ import { require, makeHost } from './helpers.mjs';
 const plugin = require('../server/index.js');
 const fillLib = require('../server/lib/amenity-fill.js');
 const pi = require('../server/lib/place-info.js');
+const p4nLib = require('../server/lib/park4night.js');
 const { build } = require('./fixtures/trip.js');
 
 // FICTIONAL sources. OSM: a campsite 50 m from "Camping Example" (place 13), one 2 km from
@@ -15,7 +16,7 @@ const OSM = [
 ];
 const P4N = [
   { id: 777, lat: 46.5802, lng: 12.2501, type: { code: 'ACC_P' }, services: ['point_eau', 'eau_noire', 'wc_public'] },
-  { id: 888, lat: 46.7, lng: 11.8, type: { code: 'F' }, services: ['animaux', 'electricite', 'douche', 'laverie'] },
+  { id: 888, lat: 46.7, lng: 11.8, type: { code: 'F' }, services: ['animaux', 'electricite', 'douche', 'laverie'], activities: ['jeux_enfants', 'vtt'] },
 ];
 
 function sources({ overpassStatus = 200, p4nStatus = 200 } = {}) {
@@ -49,12 +50,31 @@ describe('amenities filled from open sources', () => {
 
   it('maps OSM tags and park4night services, writing "no" only when OSM says so', () => {
     expect(fillLib.fromOsm({ dog: 'leashed', drinking_water: 'yes', power_supply: 'cee_blue', shower: 'hot', toilets: 'no', internet_access: 'wlan', sanitary_dump_station: 'yes' }))
-      .toEqual({ dog: 'yes', water: 'yes', electricity: 'yes', shower: 'yes', toilets: 'no', dump_station: 'yes', wifi: 'yes', rooftop_tent: null });
+      .toMatchObject({ dog: 'yes', water: 'yes', electricity: 'yes', shower: 'yes', toilets: 'no', dump_station: 'yes', wifi: 'yes', pool: null, bar: null });
     expect(fillLib.fromOsm({ power_supply: 'no', fee: 'yes' })).toMatchObject({ electricity: 'no', dog: null, water: null });
-    expect(fillLib.fromP4n(['animaux', 'eau_usee', 'laverie'])).toEqual({ dog: 'yes', dump_station: 'yes' });
+    expect(fillLib.fromP4n(['animaux', 'eau_usee', 'vtt'])).toEqual({ dog: 'yes', dump_station: 'yes' });
     expect(fillLib.p4nId({ website: 'https://park4night.com/fr/place/434199' })).toBe(434199);
     expect(fillLib.p4nId({ notes: 'see park4night.com/lieu/12 for photos' })).toBe(12);
     expect(fillLib.p4nId({ website: 'https://www.campingcortina.it' })).toBeNull();
+  });
+
+  it('maps the campsite tags OSM documents for the newer amenities', () => {
+    expect(fillLib.fromOsm({ washing_machine: 'yes', swimming_pool: 'no', shop: 'convenience', restaurant: 'snack', bar: 'yes', playground: 'yes', bbq: 'no' }))
+      .toMatchObject({ laundry: 'yes', pool: 'no', shop: 'yes', restaurant: 'yes', bar: 'yes', playground: 'yes', bbq: 'no' });
+    expect(fillLib.fromOsm({ shop: 'no', restaurant: 'no', bar: 'no' })).toMatchObject({ shop: 'no', restaurant: 'no', bar: 'no' });
+    // every key it returns is an amenity the record can hold
+    expect(Object.keys(fillLib.fromOsm({})).every((k) => k in pi.AMENITIES)).toBe(true);
+  });
+
+  it('maps every park4night service code onto an amenity', () => {
+    const codes = ['animaux', 'point_eau', 'electricite', 'wc_public', 'douche', 'eau_noire', 'eau_usee', 'wifi', 'poubelle', 'laverie', 'piscine', 'boulangerie', 'donnees_mobile', 'gaz', 'gpl', 'lavage', 'caravaneige'];
+    expect(fillLib.fromP4n([...codes, 'jeux_enfants'])).toEqual({
+      dog: 'yes', water: 'yes', electricity: 'yes', toilets: 'yes', shower: 'yes', dump_station: 'yes', wifi: 'yes', bins: 'yes', laundry: 'yes',
+      pool: 'yes', bakery: 'yes', mobile_data: 'yes', gas: 'yes', lpg: 'yes', vehicle_wash: 'yes', winter: 'yes', playground: 'yes',
+    });
+    expect(Object.values(fillLib.P4N).every((k) => k in pi.AMENITIES)).toBe(true);
+    // the search tool names every code the filler knows
+    for (const c of codes) expect(Object.keys(p4nLib.SERVICES)).toContain(c);
   });
 
   it('fills the campsite from OSM, the area and the linked farm from park4night, and cites them', { timeout: 20000 }, async () => {
@@ -77,7 +97,7 @@ describe('amenities filled from open sources', () => {
     expect(aire.source).toBe('park4night #777 (auto)');
 
     const farm = await pi.get(ctx, 18); // 9 km from #888, matched by its link
-    expect(farm.amenities).toMatchObject({ dog: 'yes', electricity: 'yes', shower: 'yes', water: 'unknown' });
+    expect(farm.amenities).toMatchObject({ dog: 'yes', electricity: 'yes', shower: 'yes', laundry: 'yes', playground: 'yes', water: 'unknown' });
 
     // Places with nothing near them get no record (no empty line in the planner).
     expect(await pi.get(ctx, 14)).toBeNull();
@@ -151,7 +171,8 @@ describe('amenities filled from open sources', () => {
     const notHere = await post('/amenities/fill', { tripId: 1, placeId: 9999 });
     expect(notHere.status).toBe(404);
     const cols = await h.run(plugin).hook('tableContributor', 'getContributions', 'places', 1);
-    expect(cols.find((c) => c.id === 'vanlife-amenities' && c.entityId === 13).value).toMatch(/^✓ /);
+    expect(cols.find((c) => c.id === 'vanlife-am-water' && c.entityId === 13)).toMatchObject({ value: 'Water', icon: 'Droplet' });
+    expect(cols.some((c) => c.id === 'vanlife-amenities')).toBe(false);
     // Passo Giau has price 0 and no record: a free stop, no "0.00/night" chip.
     expect(cols.some((c) => c.id === 'vanlife-price' && c.entityId === 14)).toBe(false);
   });

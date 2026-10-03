@@ -25,24 +25,42 @@ const MIGRATION = 'CREATE TABLE IF NOT EXISTS amenity_fill_log (place_id INTEGER
 
 const yesNo = (v) => (v == null ? null : /^(yes|designated|free|hot|leashed|wlan|wifi|customers)$/.test(v) ? 'yes' : v === 'no' ? 'no' : null);
 
-/** OSM tags → amenity values (null = the tag says nothing). */
+// Any value but "no" means there is one ("shop=convenience", "restaurant=snack").
+const present = (v) => (v == null ? null : v === 'no' ? 'no' : 'yes');
+
+/**
+ * OSM tags of a campsite or motorhome area → amenity values (null = the tag says nothing).
+ * Only tags OSM documents on tourism=camp_site / caravan_site; amenities with no such tag
+ * (bins, bakery, mobile data, gas, LPG, vehicle wash, winter) come from park4night alone.
+ */
 function fromOsm(tags) {
-  const power = tags.power_supply;
   return {
     dog: yesNo(tags.dog),
     water: yesNo(tags.drinking_water),
-    electricity: power == null ? null : power === 'no' ? 'no' : 'yes',
-    shower: yesNo(tags.shower),
+    electricity: present(tags.power_supply),
     toilets: yesNo(tags.toilets),
+    shower: yesNo(tags.shower),
     dump_station: yesNo(tags.sanitary_dump_station),
     wifi: yesNo(tags.internet_access),
-    rooftop_tent: null,
+    laundry: yesNo(tags.washing_machine),
+    pool: yesNo(tags.swimming_pool),
+    shop: present(tags.shop),
+    restaurant: present(tags.restaurant),
+    bar: present(tags.bar),
+    playground: yesNo(tags.playground),
+    bbq: yesNo(tags.bbq),
   };
 }
 
-const P4N = { animaux: 'dog', point_eau: 'water', electricite: 'electricity', douche: 'shower', wc_public: 'toilets', eau_noire: 'dump_station', eau_usee: 'dump_station', wifi: 'wifi' };
+// park4night service codes (and the one activity that is an amenity) → amenity keys.
+const P4N = {
+  animaux: 'dog', point_eau: 'water', electricite: 'electricity', wc_public: 'toilets', douche: 'shower',
+  eau_noire: 'dump_station', eau_usee: 'dump_station', wifi: 'wifi', poubelle: 'bins', laverie: 'laundry',
+  piscine: 'pool', boulangerie: 'bakery', donnees_mobile: 'mobile_data', jeux_enfants: 'playground',
+  gaz: 'gas', gpl: 'lpg', lavage: 'vehicle_wash', caravaneige: 'winter',
+};
 
-/** park4night services → amenity values: only what the place has. */
+/** park4night services (and activities) → amenity values: only what the place has. */
 function fromP4n(services) {
   const out = {};
   for (const s of services || []) if (P4N[s]) out[P4N[s]] = 'yes';
@@ -168,7 +186,7 @@ async function fill(ctx, tripId, opts = {}) {
         }
         const hit = (id && list.places.find((x) => x.id === id)) || nearest(place, list.places, P4N_RADIUS_M);
         if (hit) {
-          for (const [k, v] of Object.entries(fromP4n(hit.services))) if (!found[k]) found[k] = v;
+          for (const [k, v] of Object.entries(fromP4n([...(hit.services || []), ...(hit.activities || [])]))) if (!found[k]) found[k] = v;
           sources.push(`park4night #${hit.id}`);
         }
       } catch (e) {
@@ -194,4 +212,4 @@ async function fill(ctx, tripId, opts = {}) {
   return res;
 }
 
-module.exports = { LOG_SQL, fill, fromOsm, fromP4n, p4nId, migrate, MIGRATION, BATCH, OSM_RADIUS_M, P4N_RADIUS_M };
+module.exports = { P4N, LOG_SQL, fill, fromOsm, fromP4n, p4nId, migrate, MIGRATION, BATCH, OSM_RADIUS_M, P4N_RADIUS_M };

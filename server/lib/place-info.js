@@ -20,14 +20,29 @@ const { t, money, num } = require('./i18n');
 
 const META_KEY = 'info.v1';
 const TRISTATE = ['yes', 'no', 'unknown'];
+// In the order the planner shows them, most useful first.
 const AMENITIES = {
   dog: ['yes', 'no', 'fee', 'unknown'],
   water: TRISTATE,
   electricity: TRISTATE,
-  shower: TRISTATE,
   toilets: TRISTATE,
+  shower: TRISTATE,
   dump_station: TRISTATE,
   wifi: TRISTATE,
+  bins: TRISTATE,
+  laundry: TRISTATE,
+  pool: TRISTATE,
+  shop: TRISTATE,
+  bakery: TRISTATE,
+  restaurant: TRISTATE,
+  bar: TRISTATE,
+  mobile_data: TRISTATE,
+  playground: TRISTATE,
+  bbq: TRISTATE,
+  gas: TRISTATE,
+  lpg: TRISTATE,
+  vehicle_wash: TRISTATE,
+  winter: TRISTATE,
   rooftop_tent: TRISTATE,
 };
 const PER = ['night', 'person'];
@@ -64,7 +79,7 @@ function numberField(p, k, min, max) {
 /**
  * Merge a patch onto a stored record (or a blank one), validating every field.
  * Patch: { per, dog_fee, max_height_m, max_length_m, max_weight_t, source, checked,
- *          dog, water, electricity, shower, toilets, dump_station, wifi, rooftop_tent }.
+ *          and one value per key of AMENITIES (dog, water, electricity...) }.
  * null clears a number back to unknown. Throws InfoError with a readable message.
  */
 function merge(stored, patch) {

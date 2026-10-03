@@ -15,7 +15,9 @@ const DAY = { type: 'integer', minimum: 1, maximum: 400, description: 'Day numbe
 const HHMM = { type: 'string', pattern: '^[0-2]?[0-9]:[0-5][0-9]$', description: 'Local time, HH:MM.' };
 const LAT = { type: 'number', minimum: -90, maximum: 90 };
 const LNG = { type: 'number', minimum: -180, maximum: 180 };
-const TRI = { type: 'string', enum: ['yes', 'no', 'unknown'] };
+const { AMENITIES } = require('./place-info');
+// One yes/no/unknown property per amenity (dog also takes "fee"), in place-info's order.
+const AMENITY_PROPS = Object.fromEntries(Object.entries(AMENITIES).map(([k, v]) => [k, { type: 'string', enum: v }]));
 
 const TOOL_SPECS = [
   {
@@ -124,7 +126,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_place_info',
     title: 'Read or record the amenities and price details of places',
-    description: 'Amenities and price details of the places of a trip, shown in the planner (columns on each place, the place widget) and used by the check and the budget. Without placeId: lists the places that have them, and the nights still to fill. With placeId and "set": the price goes to TREK\'s own place price (price_amount, currency); TREK has no field for the rest, kept by the plugin: per night or per person, dog fee, max height/length/weight, amenities (dog yes/no/fee, water, electricity, shower, toilets, dump station, wifi, rooftop tent accepted), each yes, no or unknown. Record only what a cited source states (official site first, then a dated review or the host\'s written answer, in "source"); leave everything else unknown, never estimate. "clear": true removes the record. "fill": true fills unknown amenities from OpenStreetMap and park4night, citing them in "source". Writes only the plugin\'s own data on the place, never the trip itself. Never book or message a host without the user\'s explicit validation.',
+    description: 'Amenities and price details of the places of a trip, shown in the planner (columns on each place, the place widget) and used by the check and the budget. Without placeId: lists the places that have them, and the nights still to fill. With placeId and "set": the price goes to TREK\'s own place price (price_amount, currency); TREK has no field for the rest, kept by the plugin: per night or per person, dog fee, max height/length/weight, amenities (one key each in \"set\": water, shower, wifi, pool, bar...; dog also takes fee), each yes, no or unknown. Record only what a cited source states (official site first, then a dated review or the host\'s written answer, in "source"); leave everything else unknown, never estimate. "clear": true removes the record. "fill": true fills unknown amenities from OpenStreetMap and park4night, citing them in "source". Writes only the plugin\'s own data on the place, never the trip itself. Never book or message a host without the user\'s explicit validation.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -145,8 +147,7 @@ const TOOL_SPECS = [
             max_height_m: { type: 'number', minimum: 1, maximum: 6, nullable: true },
             max_length_m: { type: 'number', minimum: 2, maximum: 25, nullable: true },
             max_weight_t: { type: 'number', minimum: 0.5, maximum: 60, nullable: true },
-            dog: { type: 'string', enum: ['yes', 'no', 'fee', 'unknown'] },
-            water: TRI, electricity: TRI, shower: TRI, toilets: TRI, dump_station: TRI, wifi: TRI, rooftop_tent: TRI,
+            ...AMENITY_PROPS,
             source: { type: 'string', maxLength: 300 },
             checked: { type: 'string', format: 'date', description: 'Date the source was read.' },
           },

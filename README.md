@@ -31,7 +31,9 @@ campsites.
 - **Schedules** — start and end of every stop from real drive times.
 - **Supplies** — supermarkets, fuel and drinking water along the day's route, with that day's hours.
 - **Price and amenities** — per night or per person, dog fee, height/length/weight limits, and the
-  amenities (dog, water, electricity, shower, toilets, dump station, wifi, rooftop tent accepted).
+  amenities park4night and OpenStreetMap know (dog, water, electricity, toilets, shower, dump
+  station, wifi, bins, laundry, pool, shop, bakery, restaurant or snack bar, bar, mobile data,
+  playground, barbecue, gas bottles, LPG, vehicle wash, open in winter, rooftop tent accepted).
   The price is TREK's own field; the rest is kept on the place by the plugin. Unknown amenities are
   **filled automatically** from OpenStreetMap (the campsite mapped within 150 m) and from
   park4night (the place a park4night link points to), citing the source; a value a person recorded
@@ -55,7 +57,8 @@ Advertised to assistants as `plugin_vanlife_<name>`; the MCP client needs the op
 ## Where it shows in TREK
 
 - **Warnings banner** — blocking and to-verify points, in the user's language.
-- **Place chips** — price and amenities on each place: the places list, and the map's hover card
+- **Place chips** — the price and one chip per amenity the place has (dog, water, electricity
+  first), plus a red chip listing what it lacks when that rules it out: the places list, and the map's hover card
   once an admin lets the plugin in (Admin → Default user settings → *Plugin info on places*).
 - **Place panel** — a widget at the foot of the place view shows and edits the amenities, and has a
   *Fill the trip's amenities* button. Opening a place with nothing recorded looks it up once.

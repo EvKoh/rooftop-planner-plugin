@@ -24,7 +24,7 @@ const KINDS_FOR = {
 const SERVICES = {
   animaux: 'dogs', point_eau: 'water', eau_usee: 'grey water', eau_noire: 'black water', poubelle: 'bins', wc_public: 'toilets',
   douche: 'shower', electricite: 'electricity', wifi: 'wifi', laverie: 'laundry', boulangerie: 'bakery', donnees_mobile: 'mobile data',
-  lavage: 'washing', gaz: 'gas', caravaneige: 'winter camping',
+  lavage: 'vehicle wash', gaz: 'gas', gpl: 'LPG', piscine: 'swimming pool', caravaneige: 'winter camping',
 };
 
 class RateLimited extends Error {
@@ -74,11 +74,11 @@ async function fetchAround(lat, lng, radiusKm, lng2, now) {
 
 /**
  * The places park4night lists around a point, reduced to what identifies one (id, position)
- * and its services: used to read the amenities of a place already in a trip.
+ * its services and activities: used to read the amenities of a place already in a trip.
  */
 async function around(lat, lng, radiusKm, { now } = {}) {
   const list = await fetchAround(lat, lng, radiusKm, 'en', now);
-  return list.map((p) => ({ id: p.id, lat: p.lat, lng: p.lng, code: p.type && p.type.code, services: p.services || [] }));
+  return list.map((p) => ({ id: p.id, lat: p.lat, lng: p.lng, code: p.type && p.type.code, services: p.services || [], activities: p.activities || [] }));
 }
 
 /**

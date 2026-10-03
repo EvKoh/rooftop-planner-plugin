@@ -8,6 +8,8 @@ const { checkTrip } = require('../server/lib/check.js');
 const { readSettings } = require('../server/lib/settings.js');
 const { deadline } = require('../server/lib/util.js');
 const { build } = require('./fixtures/trip.js');
+const contrib = require('../server/lib/contributions.js');
+const { MESSAGES, CODES } = require('../server/lib/i18n.js');
 
 const INDEX_SQL = 'SELECT place_id FROM place_info_index WHERE trip_id = ?';
 const call = (h, name, args) => h.run(plugin).hook('mcpToolProvider', 'callTool', { name, args });
@@ -133,8 +135,11 @@ describe('place info through the plugin', () => {
     const c = await drv.hook('tableContributor', 'getContributions', 'places', 1);
     expect(c.every((x) => x.kind === 'column')).toBe(true);
     expect(c.find((x) => x.entityId === 13 && x.id === 'vanlife-price')).toMatchObject({ label: 'Price', value: '€38.00/night', icon: 'Euro' });
-    expect(c.find((x) => x.entityId === 13 && x.id === 'vanlife-amenities')).toMatchObject({ value: '✓ dog · water', icon: 'Caravan', tone: 'default' });
-    expect(c.find((x) => x.entityId === 16 && x.id === 'vanlife-amenities')).toMatchObject({ value: '✗ roof tent', tone: 'danger' });
+    // one chip per amenity the place has, dog first, then water; the old grouped line is gone
+    expect(c.filter((x) => x.entityId === 13 && x.id.startsWith('vanlife-am-')).map((x) => [x.id, x.value, x.icon]))
+      .toEqual([['vanlife-am-dog', 'Dog', 'Dog'], ['vanlife-am-water', 'Water', 'Droplet']]);
+    expect(c.some((x) => x.id === 'vanlife-amenities')).toBe(false);
+    expect(c.find((x) => x.entityId === 16 && x.id === 'vanlife-am-no')).toMatchObject({ value: '✗ roof tent', tone: 'danger', icon: 'Ban' });
     expect(c.find((x) => x.entityId === 16 && x.id === 'vanlife-price').value).toBe('€15.00/night');
     expect(c.some((x) => x.entityId === 20)).toBe(false); // route places get nothing
     expect(c.some((x) => x.entityId === 10)).toBe(false); // no price, no record: nothing
@@ -144,6 +149,40 @@ describe('place info through the plugin', () => {
     const cf = await fr.run(plugin).hook('tableContributor', 'getContributions', 'places', 1);
     expect(cf.find((x) => x.id === 'vanlife-price' && x.entityId === 13)).toMatchObject({ label: 'Prix' });
     expect(cf.find((x) => x.id === 'vanlife-price' && x.entityId === 13).value.replace(/ | /g, ' ')).toBe('38,00 €/nuit');
+  });
+
+  it('gives each amenity its own chip, in a fixed order, and lists what is missing only when it refuses', async () => {
+    const order = Object.keys(pi.AMENITIES);
+    expect(order.slice(0, 7)).toEqual(['dog', 'water', 'electricity', 'toilets', 'shower', 'dump_station', 'wifi']);
+    expect(order[order.length - 1]).toBe('rooftop_tent');
+    const all = pi.merge(null, Object.fromEntries(order.map((k) => [k, 'yes'])));
+    const h = makeHost({ userSettings: { language: 'fr' }, queryResults: { [INDEX_SQL]: [{ place_id: 13 }, { place_id: 18 }] } });
+    await h.ctx.meta.set('place', 13, pi.META_KEY, all);
+    await h.ctx.meta.set('place', 18, pi.META_KEY, pi.merge(null, { dog: 'fee', wifi: 'yes', bar: 'yes', pool: 'no' }));
+    const c = await h.run(plugin).hook('tableContributor', 'getContributions', 'places', 1);
+    const chips = (id) => c.filter((x) => x.entityId === id && x.id.startsWith('vanlife-am-'));
+    expect(chips(13).map((x) => x.id)).toEqual(order.map((k) => `vanlife-am-${k}`));
+    expect(chips(13).every((x) => x.icon && x.label && x.value && x.tone === 'default')).toBe(true);
+    expect(new Set(chips(13).map((x) => x.icon)).size).toBe(order.length); // one icon per amenity
+    expect(chips(18).map((x) => x.value)).toEqual(['Chien (suppl.)', 'Wifi', 'Bar']);
+    // a pool marked "no" refuses nothing: no "missing" chip
+    expect(c.some((x) => x.entityId === 18 && x.id === 'vanlife-am-no')).toBe(false);
+    const dogNo = pi.merge(null, { dog: 'no', pool: 'no', max_height_m: 2.1 });
+    expect(contrib.missingText(dogNo, 'fr')).toBe('✗ chien · piscine  ↕ 2,1 m');
+    expect(contrib.missingText(pi.merge(null, { max_length_m: 7.5, max_weight_t: 3.5 }), 'en')).toBe('↔ 7.5 m  3.5 t max');
+    expect(contrib.missingText(pi.blank(), 'en')).toBeNull();
+  });
+
+  it('has a translated short and long name for every amenity in every language', () => {
+    for (const code of CODES) {
+      for (const k of Object.keys(pi.AMENITIES)) {
+        expect(MESSAGES[code][`am.${k}`], `${code} am.${k}`).toBeTruthy();
+        expect(MESSAGES[code][`amLong.${k}`], `${code} amLong.${k}`).toBeTruthy();
+      }
+      for (const k of ['fee', 'col.price', 'col.amenities']) expect(MESSAGES[code][k], `${code} ${k}`).toBeTruthy();
+    }
+    // a language other than English really is translated, not copied
+    expect(MESSAGES.de['am.water']).not.toBe(MESSAGES.en['am.water']);
   });
 
   it('prunes index rows whose place is gone or whose value was cleared', async () => {
