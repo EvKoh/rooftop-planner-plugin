@@ -45,7 +45,7 @@ describe('place record (what TREK has no field for)', () => {
     expect(pi.nightTotal(12, r, { travellers: 3, dog: false })).toBe(36);
     expect(pi.nightTotal(12, null, { travellers: 3 })).toBe(12);
     expect(pi.nightTotal(null, r, {})).toBeNull();
-    expect(pi.priceText(44.6, 'EUR', null, 'fr').replace(/ | /g, ' ')).toBe('44,60 €/nuit');
+    expect(pi.priceText(44.6, 'EUR', null, 'fr', { night: true }).replace(/ | /g, ' ')).toBe('44,60 €/nuit');
     expect(pi.priceText(12, 'EUR', r, 'en')).toBe('€12.00/person + dog €2.50');
     expect(pi.priceText(null, 'EUR', r, 'en')).toBeNull();
     const am = pi.amenitiesText(r, 'en');

@@ -106,7 +106,7 @@ describe('contacts on the place record', () => {
 
   it('turns a list of fields into the patch that clears them', () => {
     expect(pi.clearPatch(['water', 'dog_fee', 'per', 'source', 'contacts.email', 'phone', 'log'])).toEqual({
-      water: 'unknown', dog_fee: null, per: 'night', source: null, log: null, contacts: { email: null, phone: null },
+      water: 'unknown', dog_fee: null, per: null, source: null, log: null, contacts: { email: null, phone: null },
     });
     expect(Object.keys(pi.clearPatch(['amenities'])).length).toBe(Object.keys(pi.AMENITIES).length);
     expect(Object.keys(pi.clearPatch(['contacts']).contacts)).toEqual(c.FIELDS);
@@ -166,7 +166,10 @@ describe('vanlife_place', () => {
     const h = makeHost({ queryResults: { [pi.COPY_SQL]: [{ place_id: 13, rec: JSON.stringify(pi.merge(null, { contacts: { email: 'host@example.com' } })) }] } });
     const r = await call(h, 'vanlife_place', { tripId: 1, filter: 'missing_contacts' });
     expect(r.places.map((p) => p.placeId)).not.toContain(13);
-    expect(r.places.map((p) => p.placeId)).toEqual(expect.arrayContaining([16, 18, 19]));
+    // the planned nights only by default: the unplanned campsite 19 is a candidate
+    expect(r.places.map((p) => p.placeId)).toEqual([16, 18]);
+    const all = await call(h, 'vanlife_place', { tripId: 1, filter: 'missing_contacts', scope: 'all_nights' });
+    expect(all.places.map((p) => p.placeId)).toEqual(expect.arrayContaining([16, 18, 19]));
     expect(r.places.every((p) => p.missing[0] === 'contact')).toBe(true);
   });
 });

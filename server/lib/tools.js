@@ -71,15 +71,20 @@ function keyAmenities(settings) {
 function placeView(model, p, info, settings, { full = false } = {}) {
   const L = settings.language;
   const rec = info || placeInfo.blank();
+  const plannedNights = model.nights.filter((n) => n.placeId === p.id).map((n) => (model.days.find((d) => d.id === n.startDayId) || {}).n).filter(Boolean);
+  // A night place: planned as a night, or of a night category. Only a night has a night total.
+  const night = plannedNights.length > 0 || isNightCategory(p.categoryName);
+  const site = (p.raw && p.raw.website) || null;
   const statuses = (model.reservations || []).filter((r) => nightStatus.placeOfReservation(r) != null && Number(nightStatus.placeOfReservation(r)) === p.id && (r.type === 'hotel' || r.accommodation_id != null));
   const out = {
     placeId: p.id, name: p.name,
-    plannedNights: model.nights.filter((n) => n.placeId === p.id).map((n) => (model.days.find((d) => d.id === n.startDayId) || {}).n).filter(Boolean),
-    price: placeInfo.priceText(p.price, (p.raw && p.raw.currency) || model.currency, info, L),
-    nightTotal: placeInfo.nightTotal(p.price, info, settings),
+    plannedNights,
+    price: placeInfo.priceText(p.price, (p.raw && p.raw.currency) || model.currency, info, L, { night }),
+    nightTotal: night ? placeInfo.nightTotal(p.price, info, settings) : null,
     amenities: placeInfo.amenitiesText(info, L),
     contacts: { ...rec.contacts, ...(full ? {} : { notes: undefined, languages: undefined }) },
-    trekFields: { website: (p.raw && p.raw.website) || null, phone: (p.raw && p.raw.phone) || null },
+    // TREK's own website field, unless it is a platform page (park4night, Google Maps...).
+    trekFields: { website: site && !contacts.notOwnSite(site) ? site : null, phone: (p.raw && p.raw.phone) || null },
     lastExchange: rec.log[0] || null,
     nightStatus: statuses.map((r) => ({ reservationId: r.id, status: nightStatus.statusOf(r), confirmation: r.confirmation_number || null })),
   };
@@ -94,7 +99,15 @@ async function placeTool(ctx, model, a, settings) {
     if (a.set || a.log || a.clear || (a.clear_fields && a.clear_fields.length)) throw new Error('placeId is required to set, log or clear');
     const planned = new Set(model.nights.map((n) => n.placeId));
     const real = model.pool.filter((p) => !p.geometry);
-    const nightish = real.filter((p) => planned.has(p.id) || isNightCategory(p.categoryName));
+    // Three sets of nights: planned (a lodging in the trip), candidates (a night category but
+    // no lodging), and both together.
+    const sets = {
+      planned: real.filter((p) => planned.has(p.id)),
+      candidates: real.filter((p) => !planned.has(p.id) && isNightCategory(p.categoryName)),
+    };
+    sets.all_nights = [...sets.planned, ...sets.candidates];
+    const scope = sets[a.scope] ? a.scope : 'planned';
+    const nightish = sets[scope];
     const keys = keyAmenities(settings);
     const missingContact = (p) => !contacts.hasContact(p.info && p.info.contacts) && !(p.raw && p.raw.phone);
     const missingAmenities = (p) => keys.filter((k) => !p.info || p.info.amenities[k] === 'unknown');
@@ -106,7 +119,12 @@ async function placeTool(ctx, model, a, settings) {
       const missing = [...(missingContact(p) ? ['contact'] : []), ...missingAmenities(p)];
       return { ...placeView(model, p, p.info, settings), missing };
     }).sort((x, y) => (y.plannedNights.length > 0) - (x.plannedNights.length > 0)).slice(0, 80);
-    return { filter, count: chosen.length, places: rows, note: 'Fill from cited sources only; unknown stays unknown. fill=true looks the empty ones up.' };
+    return {
+      filter, scope: filter === 'all' ? null : scope, count: chosen.length,
+      nights: { planned: sets.planned.length, candidates: sets.candidates.length, all_nights: sets.all_nights.length },
+      places: rows,
+      note: 'Fill from cited sources only; unknown stays unknown. fill=true looks the empty ones up. scope: planned = nights with a lodging in the trip (default); candidates = night-category places with no lodging; all_nights = both.',
+    };
   }
   const place = model.poolById.get(a.placeId);
   if (!place) throw new Error(`place ${a.placeId} is not in trip ${model.tripId}`);

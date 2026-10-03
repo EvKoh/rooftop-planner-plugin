@@ -100,7 +100,7 @@ function list(model, settings, { now } = {}) {
       contact: contactView(info, place && place.raw),
       lastExchange: info && info.log && info.log.length ? info.log[0] : null,
       waitingDays: waitingDays(res, info, now),
-      price: place ? placeInfo.priceText(place.price, (place.raw && place.raw.currency) || model.currency, info, L) : null,
+      price: place ? placeInfo.priceText(place.price, (place.raw && place.raw.currency) || model.currency, info, L, { night: true }) : null,
       ...(others.length ? { alsoAsked: others.map((r) => ({ placeId: placeOfReservation(r), title: r.title, status: statusOf(r), reservationId: r.id })) } : {}),
     });
   });

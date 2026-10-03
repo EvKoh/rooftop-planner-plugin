@@ -78,10 +78,9 @@
     function summary(d) {
       var kids = [];
       if (d.nightStatus && STATUS_TONE[d.nightStatus]) kids.push(h('span', { class: 'trek-chip trek-chip--' + STATUS_TONE[d.nightStatus], text: S('ui.night').replace('{status}', S('st.' + d.nightStatus)) }));
-      // What TREK's header cannot say about the price.
+      // What TREK's header cannot say about the price: its unit, the free note, the dog fee.
       var extra = [];
-      if (d.info.per === 'person') extra.push(S('per.person'));
-      if (d.info.amenities.dog === 'fee' && d.info.dog_fee != null) extra.push(S('am.dog') + ' + ' + money(d.info.dog_fee, d.currency));
+      if (d.priceText && (d.info.per || d.info.price_note || (d.info.amenities.dog === 'fee' && d.info.dog_fee != null))) extra.push(d.priceText);
       if (d.refused) kids.push(h('span', { class: 'trek-chip trek-chip--danger', text: S('ui.vehicleRefused') }));
       if (d.summary) kids.push(h('div', { class: 'line' }, d.summary.split('  ').map(function (p) { return h('span', { text: p }); })));
       else kids.push(h('div', { class: 'muted', text: S('ui.none') }));
@@ -119,9 +118,10 @@
         h('div', { class: 'grid' }, [
           field(S('ui.price'), number('price_amount', d.price)),
           field(S('ui.currency'), cur),
-          field(S('ui.per'), select('per', ['night', 'person'], d.info.per, function (o) { return S(o === 'night' ? 'ui.perNight' : 'ui.perPerson'); })),
+          field(S('ui.per'), select('per', [''].concat(d.units || []), d.info.per || '', function (o) { return o ? S('ui.per.' + o) : S('ui.perNone'); })),
           field(S('ui.dogFee'), number('dog_fee', d.info.dog_fee)),
         ]),
+        field(S('ui.priceNote'), textInput('price_note', d.info.price_note, 'text', { maxlength: '120', placeholder: S('ui.priceNoteHint') })),
         h('div', { class: 'grid' }, Object.keys(d.amenities).map(function (k) {
           return field(S('amLong.' + k), select(k, d.amenities[k], d.info.amenities[k] || 'unknown', opt));
         })),
@@ -196,6 +196,9 @@
       set.contacts = contacts;
       ['price_amount', 'dog_fee', 'max_height_m', 'max_length_m', 'max_weight_t'].forEach(function (k) { set[k] = set[k] === '' ? null : Number(set[k]); });
       set.currency = String(set.currency || 'EUR').toUpperCase();
+      // An empty unit or note means "not said".
+      set.per = set.per ? set.per : null;
+      set.price_note = String(set.price_note || '').trim() || null;
       try {
         await trek.invoke('/amenities/save', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId), set: set } });
         trek.notify('success', S('ui.saved'));

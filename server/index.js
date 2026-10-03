@@ -27,6 +27,7 @@ const nightStatus = require('./lib/night-status');
 const contacts = require('./lib/contacts');
 const { gentle } = require('./lib/gentle');
 const { bundle, lang } = require('./lib/i18n');
+const { isNightCategory } = require('./lib/classify');
 
 const json = (status, body) => ({ status, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const ids = (b) => {
@@ -105,8 +106,16 @@ module.exports = definePlugin({
           // The user's own language setting wins; "auto" follows the language TREK gives the frame.
           const own = await ctx.settings.get('language').catch(() => undefined);
           const L = own && own !== 'auto' ? lang(own) : req.body.locale ? lang(req.body.locale) : settings.language;
-          const [info, resas] = await Promise.all([placeInfo.get(ctx, at.placeId), ctx.trips.getReservations(at.tripId).catch(() => [])]);
+          const [info, resas, accs, cats] = await Promise.all([
+            placeInfo.get(ctx, at.placeId),
+            ctx.trips.getReservations(at.tripId).catch(() => []),
+            ctx.trips.getAccommodations(at.tripId).catch(() => []),
+            ctx.categories.list().catch(() => []),
+          ]);
           const status = nightStatus.statusByPlace(resas).get(at.placeId) || null;
+          const catName = (cats || []).find((c) => c.id === place.category_id);
+          const night = (accs || []).some((a) => a.place_id === at.placeId) || isNightCategory(place.category_name || (catName && catName.name) || '');
+          const site = place.website && !contacts.notOwnSite(place.website) ? place.website : null;
           return json(200, {
             language: L,
             strings: bundle(L, ['ui.', 'am', 'opt.', 'per.', 'fee', 'st.', 'ch.']),
@@ -114,13 +123,18 @@ module.exports = definePlugin({
             price: place.price == null ? null : +place.price,
             currency: place.currency || null,
             info: info || placeInfo.blank(),
+            night,
+            // The price as the planner chip shows it (unit, free note, dog fee).
+            priceText: placeInfo.priceText(place.price == null ? null : +place.price, place.currency || 'EUR', info, L, { night }),
+            units: placeInfo.PER,
             recorded: !!info,
             summary: placeInfo.amenitiesText(info, L),
             refused: placeInfo.refuses(info, settings),
             amenities: placeInfo.AMENITIES,
             channels: contacts.CHANNELS,
             // TREK's own fields, shown when the plugin's record has nothing.
-            trek: { website: place.website || null, phone: place.phone || null },
+            // A platform page (park4night, Google Maps...) is not the host's site.
+            trek: { website: site, phone: place.phone || null },
             nightStatus: status,
           });
         } catch (e) {

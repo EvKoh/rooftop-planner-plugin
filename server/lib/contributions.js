@@ -11,6 +11,7 @@
 const placeInfo = require('./place-info');
 const nightStatus = require('./night-status');
 const { t, num, locale } = require('./i18n');
+const { isNightCategory } = require('./classify');
 
 // Night status chip: TREK's tones are default | success | warn | danger. A spotted place
 // (no booking) gets no chip.
@@ -57,11 +58,18 @@ function missingText(rec, L) {
 async function placeColumns(ctx, tripId, settings) {
   const L = settings.language;
   // Places and bookings in parallel: one request each, under the columns' short time limit.
-  const [places, resas] = await Promise.all([
+  const [places, resas, accs, cats] = await Promise.all([
     ctx.trips.getPlaces(Number(tripId)),
     ctx.trips.getReservations(Number(tripId)).catch(() => []),
+    ctx.trips.getAccommodations(Number(tripId)).catch(() => []),
+    ctx.categories.list().catch(() => []),
   ]);
   const status = nightStatus.statusByPlace(resas);
+  // A night place (a lodging in the trip, or a night category) reads "/night" when no unit is
+  // recorded; any other place (lake, museum, car park) shows the amount alone.
+  const lodged = new Set((accs || []).map((a) => a.place_id));
+  const catName = new Map((cats || []).map((c) => [c.id, c.name]));
+  const isNight = (p) => lodged.has(p.id) || isNightCategory(p.category_name || catName.get(p.category_id) || '');
   // Route places carry a road geometry, not a price.
   const real = places.filter((p) => !p.route_geometry);
   const info = await placeInfo.getAll(ctx, tripId, real.map((p) => p.id));
@@ -71,7 +79,7 @@ async function placeColumns(ctx, tripId, settings) {
     // First, so the host's cap of 20 columns per place never drops it.
     const st = status.get(p.id);
     if (STATUS_CHIP[st]) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-night', label: t(L, 'col.night'), value: t(L, `st.chip.${st}`), ...STATUS_CHIP[st] });
-    const price = placeInfo.priceText(p.price == null ? null : +p.price, p.currency || 'EUR', rec, L);
+    const price = placeInfo.priceText(p.price == null ? null : +p.price, p.currency || 'EUR', rec, L, { night: isNight(p) });
     // A free stop (lunch break, viewpoint) is not a night: no "0,00 €/night" on it.
     if (price && !(+p.price === 0 && !rec)) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-price', label: t(L, 'col.price'), value: price.slice(0, 256), icon: 'Euro' });
     if (!rec) continue;

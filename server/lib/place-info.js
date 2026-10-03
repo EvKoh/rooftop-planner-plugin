@@ -48,7 +48,13 @@ const AMENITIES = {
   winter: TRISTATE,
   rooftop_tent: TRISTATE,
 };
-const PER = ['night', 'person'];
+// The unit the price is for. null = not said: a night place then reads "/night", any
+// other place shows the amount alone. 'flat' is a lump sum with no unit.
+const PER = ['night', 'person', 'person_night', 'day', 'hour', 'entry', 'vehicle', 'flat'];
+const PRICE_NOTE_MAX = 120;
+// Units that make a night price for the party: per person ones are multiplied by the travellers.
+const PER_PERSON = ['person', 'person_night'];
+const NOT_A_NIGHT_PRICE = ['hour', 'entry'];
 const LIMITS = { max_height_m: [1, 6], max_length_m: [2, 25], max_weight_t: [0.5, 60] };
 const MIGRATION = 'CREATE TABLE IF NOT EXISTS place_info_index (trip_id INTEGER NOT NULL, place_id INTEGER NOT NULL, PRIMARY KEY (trip_id, place_id))';
 const COPY_MIGRATION = 'CREATE TABLE IF NOT EXISTS place_info_copy (place_id INTEGER PRIMARY KEY, trip_id INTEGER NOT NULL, rec TEXT NOT NULL)';
@@ -61,7 +67,8 @@ const BACKFILL = 24;
 class InfoError extends Error {}
 
 const blank = () => ({
-  per: 'night',
+  per: null,
+  price_note: null,
   dog_fee: null,
   max_height_m: null,
   max_length_m: null,
@@ -84,7 +91,7 @@ function numberField(p, k, min, max) {
 
 /**
  * Merge a patch onto a stored record (or a blank one), validating every field.
- * Patch: { per, dog_fee, max_height_m, max_length_m, max_weight_t, source, checked,
+ * Patch: { per, price_note, dog_fee, max_height_m, max_length_m, max_weight_t, source, checked,
  *          and one value per key of AMENITIES (dog, water, electricity...) }.
  * null clears a number back to unknown. Throws InfoError with a readable message.
  */
@@ -92,10 +99,19 @@ function merge(stored, patch) {
   const out = { ...blank(), ...(stored || {}) };
   out.amenities = { ...blank().amenities, ...((stored && stored.amenities) || {}) };
   delete out.price; // an older record carried its own price: TREK's field is the only one now
+  // A record written before 0.4.2 (no price_note key) carried per 'night' as a default, even
+  // on a lake or a museum: read as "not said", which still shows "/night" on a night place.
+  if (stored && !('price_note' in stored) && stored.per === 'night') out.per = null;
   const p = patch || {};
   if ('per' in p) {
-    if (!PER.includes(p.per)) throw new InfoError(`per must be one of ${PER.join(', ')}`);
-    out.per = p.per;
+    if (p.per == null || p.per === '') out.per = null;
+    else if (!PER.includes(p.per)) throw new InfoError(`per must be one of ${PER.join(', ')}, or null when not said`);
+    else out.per = p.per;
+  }
+  if ('price_note' in p) {
+    const note = p.price_note == null ? '' : String(p.price_note).replace(/\s+/g, ' ').trim();
+    if (note.length > PRICE_NOTE_MAX) throw new InfoError(`price_note is too long (${PRICE_NOTE_MAX} characters at most)`);
+    out.price_note = note || null;
   }
   const fee = numberField(p, 'dog_fee', 0, 1000);
   if (fee !== undefined) out.dog_fee = fee;
@@ -140,6 +156,10 @@ function mergeContacts(out, stored, p) {
   } catch (e) {
     throw new InfoError(e.message);
   }
+  // A platform page (park4night, Google Maps...) an automatic source wrote as the website is
+  // not the host's site: dropped, so the next fill can find the real one. Typed by a person
+  // (no source), it stays.
+  if (out.contacts.website && out.contact_sources.website && contacts.notOwnSite(out.contacts.website)) out.contacts.website = null;
   for (const k of Object.keys(out.contact_sources)) if (out.contacts[k] == null || (Array.isArray(out.contacts[k]) && !out.contacts[k].length)) delete out.contact_sources[k];
 }
 
@@ -156,13 +176,12 @@ function clearPatch(fields) {
     const k = String(f).replace(/^contacts\./, '');
     if (k in AMENITIES) patch[k] = 'unknown';
     else if (NUMBER_FIELDS.includes(k)) patch[k] = null;
-    else if (k === 'per') patch.per = 'night';
-    else if (k === 'source' || k === 'checked') patch[k] = null;
+    else if (k === 'per' || k === 'price_note' || k === 'source' || k === 'checked') patch[k] = null;
     else if (k === 'amenities') for (const a of Object.keys(AMENITIES)) patch[a] = 'unknown';
     else if (k === 'contacts') for (const c of contacts.FIELDS) contactPatch[c] = null;
     else if (k === 'log') patch.log = null;
     else if (contacts.FIELDS.includes(k)) contactPatch[k] = null;
-    else throw new InfoError(`cannot clear "${f}": name an amenity (${Object.keys(AMENITIES).slice(0, 4).join(', ')}...), ${NUMBER_FIELDS.join(', ')}, per, source, checked, a contact field (${contacts.FIELDS.join(', ')}), or amenities / contacts / log`);
+    else throw new InfoError(`cannot clear "${f}": name an amenity (${Object.keys(AMENITIES).slice(0, 4).join(', ')}...), ${NUMBER_FIELDS.join(', ')}, per, price_note, source, checked, a contact field (${contacts.FIELDS.join(', ')}), or amenities / contacts / log`);
   }
   if (Object.keys(contactPatch).length) patch.contacts = contactPatch;
   return patch;
@@ -175,7 +194,7 @@ function clearPatch(fields) {
 function nativeContacts(place, rec) {
   if (!place || !rec || !rec.contacts) return null;
   const out = {};
-  if (rec.contacts.website && !place.website) out.website = rec.contacts.website;
+  if (rec.contacts.website && !place.website && !contacts.notOwnSite(rec.contacts.website)) out.website = rec.contacts.website;
   if (rec.contacts.phone && !place.phone) out.phone = rec.contacts.phone;
   return Object.keys(out).length ? out : null;
 }
@@ -195,18 +214,39 @@ function nativePrice(p) {
   return out;
 }
 
-/** Price of one night for the whole party, from TREK's price and the recorded details. */
+/**
+ * Price of one night for the whole party, from TREK's price and the recorded details; null
+ * when the unit cannot make a night price (per hour, per entry).
+ */
 function nightTotal(price, info, settings) {
   if (price == null) return null;
-  const people = info && info.per === 'person' ? (settings.travellers || 2) : 1;
+  if (info && NOT_A_NIGHT_PRICE.includes(info.per)) return null;
+  const people = info && PER_PERSON.includes(info.per) ? (settings.travellers || 2) : 1;
   const dog = settings.dog && info && info.amenities.dog === 'fee' && info.dog_fee != null ? info.dog_fee : 0;
   return Math.round((price * people + dog) * 100) / 100;
 }
 
-/** "22,00 €/nuit" (+ " + chien 2,50 €"), or null when TREK has no price for the place. */
-function priceText(price, currency, info, lang) {
-  if (price == null) return null;
-  let s = `${money(price, currency, lang)}${t(lang, `per.${info && info.per === 'person' ? 'person' : 'night'}`)}`;
+/** Does the free price note already state this amount ("5 €/h" for 5)? */
+function noteHasAmount(note, price) {
+  return (String(note).match(/\d+(?:[.,]\d+)?/g) || []).some((x) => Number(x.replace(',', '.')) === Number(price));
+}
+
+/**
+ * "22,00 €/nuit", "5,00 €/h", "8,00 €" (+ " + chien 2,50 €"); the free note when there is
+ * one, after the amount unless the note already says it. With no unit recorded, a night
+ * place (`night`) reads per night and any other place shows the amount alone.
+ * null when there is neither a price nor a note.
+ */
+function priceText(price, currency, info, lang, { night = false } = {}) {
+  const note = info && info.price_note;
+  const amount = price == null ? null : money(price, currency, lang);
+  let s;
+  if (note) s = amount && !noteHasAmount(note, price) ? `${amount} · ${note}` : note;
+  else if (amount == null) return null;
+  else {
+    const per = (info && info.per) || (night ? 'night' : null);
+    s = `${amount}${per && per !== 'flat' ? t(lang, `per.${per}`) : ''}`;
+  }
   if (info && info.amenities.dog === 'fee' && info.dog_fee != null) s += ` + ${t(lang, 'am.dog')} ${money(info.dog_fee, currency, lang)}`;
   return s;
 }
@@ -326,4 +366,4 @@ async function getAll(ctx, tripId, placeIds) {
   return out;
 }
 
-module.exports = { clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

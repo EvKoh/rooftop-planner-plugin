@@ -114,8 +114,24 @@ function addLog(log, entry) {
   return list.map((x, i) => [x, i]).sort((a, b) => b[0].date.localeCompare(a[0].date) || a[1] - b[1]).map(([x]) => x).slice(0, LOG_MAX);
 }
 
-// Pages that are not the host's own site: never taken as its website.
-const NOT_OWN_SITE = /(park4night|openstreetmap|osm\.org|google\.|goo\.gl|maps\.app|booking\.com|airbnb|tripadvisor|campercontact|camping\.info|pitchup|wikipedia|wikimedia)/i;
+// Pages that are not the host's own site (platforms, maps, social networks, encyclopedias):
+// never taken as its website, wherever the address comes from.
+const PLATFORM_DOMAINS = /(^|\.)(park4night\.com|openstreetmap\.org|osm\.org|goo\.gl|booking\.com|campercontact\.com|camping\.info|pitchup\.com|facebook\.com|fb\.com|instagram\.com|wikipedia\.org|wikimedia\.org)$/i;
+// Brands present under several country domains (airbnb.fr, pincamp.de, eurocampings.co.uk...).
+const PLATFORM_BRANDS = /(^|\.)(airbnb|tripadvisor|nomady|campspace|alpacacamping|pincamp|eurocampings)\.[a-z]{2,6}(\.[a-z]{2})?$/i;
+// The same, as one pattern over a raw text (an address that does not parse).
+const NOT_OWN_SITE = /(park4night\.com|openstreetmap\.org|osm\.org|google\.[a-z.]+\/maps|maps\.google\.|goo\.gl|booking\.com|airbnb\.|tripadvisor\.|campercontact\.com|camping\.info|pitchup\.com|nomady|campspace|alpacacamping|pincamp|eurocampings|facebook\.com|fb\.com|instagram\.com|wikipedia\.org|wikimedia\.org)/i;
+
+/** Is this address a platform page (park4night, Google Maps, Booking, Facebook...) rather than the host's own site? */
+function notOwnSite(url) {
+  if (!url) return false;
+  let u;
+  try { u = new URL(/^[a-z][a-z0-9+.-]*:/i.test(String(url)) ? String(url) : `https://${url}`); } catch { return NOT_OWN_SITE.test(String(url)); }
+  const host = u.hostname.toLowerCase();
+  if (PLATFORM_DOMAINS.test(host) || PLATFORM_BRANDS.test(host)) return true;
+  // Google: only its maps (a site hosted on sites.google.com may be the host's own).
+  return /(^|\.)google\.[a-z.]+$/.test(host) && (host.startsWith('maps.') || /^\/maps(\/|$|\?)/.test(u.pathname));
+}
 
 /** E-mails, phone numbers and web addresses quoted in a free text (notes, description). */
 function extract(txt) {
@@ -128,7 +144,7 @@ function extract(txt) {
   const urls = [];
   for (const m of s.matchAll(/\bhttps?:\/\/[^\s<>"')]+|\bwww\.[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s<>"')]*/gi)) {
     const u = m[0].replace(/[.,;:!?]+$/, '');
-    if (NOT_OWN_SITE.test(u)) continue;
+    if (notOwnSite(u)) continue;
     try { const w = website(u); if (!urls.includes(w)) urls.push(w); } catch { /* not a web address */ }
   }
   return { emails, phones, urls };
@@ -141,7 +157,7 @@ function fromOsmTags(tags = {}) {
   return {
     email: safe(email, pick('email', 'contact:email')),
     phone: safe(phone, pick('phone', 'contact:phone', 'contact:mobile', 'mobile')),
-    website: safe(website, pick('website', 'contact:website', 'url')),
+    website: [pick('website'), pick('contact:website'), pick('url')].map((v) => safe(website, v)).find((v) => v && !notOwnSite(v)) || null,
   };
 }
 
@@ -162,6 +178,6 @@ function channels(c) {
 const hasContact = (c) => !!(c && (c.email || c.phone || c.whatsapp));
 
 module.exports = {
-  CHANNELS, LOG_CHANNELS, DIRECTIONS, LOG_MAX, FIELDS, ContactError, NOT_OWN_SITE,
+  CHANNELS, LOG_CHANNELS, DIRECTIONS, LOG_MAX, FIELDS, ContactError, NOT_OWN_SITE, notOwnSite,
   blankContacts, email, phone, website, field, patchContacts, logEntry, addLog, extract, fromOsmTags, channels, hasContact,
 };

@@ -128,7 +128,7 @@ function incomplete(r) {
  */
 function ownContacts(place, L) {
   const out = [];
-  const trek = contacts.fromOsmTags({ website: place.website && !contacts.NOT_OWN_SITE.test(place.website) ? place.website : null, phone: place.phone });
+  const trek = contacts.fromOsmTags({ website: place.website && !contacts.notOwnSite(place.website) ? place.website : null, phone: place.phone });
   if (trek.website || trek.phone) out.push({ values: trek, source: t(L, 'src.trek') });
   const x = contacts.extract(`${place.notes || ''}\n${place.description || ''}`);
   const fromText = { email: x.emails[0] || null, phone: x.phones[0] || null, website: x.urls[0] || null };
@@ -240,7 +240,8 @@ async function fill(ctx, tripId, opts = {}) {
     const csources = {};
     for (const k of CONTACT_KEYS) {
       if (current && current.contacts[k]) continue;
-      const hit = contactFrom.find((c) => c.values && c.values[k]);
+      // A platform page is never the host's website, whichever source gives it.
+      const hit = contactFrom.find((c) => c.values && c.values[k] && !(k === 'website' && contacts.notOwnSite(c.values[k])));
       if (hit) { cpatch[k] = hit.values[k]; csources[k] = hit.source; }
     }
     if (!amenitiesFound && !Object.keys(cpatch).length) { res.nothing++; continue; }

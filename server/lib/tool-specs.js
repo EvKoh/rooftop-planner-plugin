@@ -15,7 +15,7 @@ const DAY = { type: 'integer', minimum: 1, maximum: 400, description: 'Day numbe
 const HHMM = { type: 'string', pattern: '^[0-2]?[0-9]:[0-5][0-9]$', description: 'Local time, HH:MM.' };
 const LAT = { type: 'number', minimum: -90, maximum: 90 };
 const LNG = { type: 'number', minimum: -180, maximum: 180 };
-const { AMENITIES } = require('./place-info');
+const { AMENITIES, PER, PRICE_NOTE_MAX } = require('./place-info');
 // One yes/no/unknown property per amenity (dog also takes "fee"), in place-info's order.
 const AMENITY_PROPS = Object.fromEntries(Object.entries(AMENITIES).map(([k, v]) => [k, { type: 'string', enum: v }]));
 
@@ -116,7 +116,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_place',
     title: 'Everything about a place: amenities, price, contacts, exchanges',
-    description: `Read and keep what TREK has no field for on a place (a night above all): amenities, price details, the host's contacts and the log of exchanges with them; shown in the planner and used by the check, the budget and vanlife_host_message. Without placeId: list places by "filter". With placeId: read one; "set" records fields (price on TREK's own price; amenities yes/no/unknown; contacts: null erases a field); "log" adds one exchange (newest first, 50 kept); "clear" removes the record, "clear_fields" only the named fields; "fill" fills empty amenities and contacts from the place's own notes and TREK fields, OpenStreetMap and park4night, citing each source. A known website or phone is also copied into TREK's own empty fields. Record only what a cited source states (official site, dated review, the host's written answer); never estimate. Never book, pay or send a message to a host without the user's explicit validation.`,
+    description: `Read and keep what TREK has no field for on a place: amenities, price details, the host's contacts and the log of exchanges; used by the planner, the check, the budget and vanlife_host_message. Without placeId: list places by "filter" within "scope" (default: planned nights, i.e. with a lodging; counts of all scopes returned). With placeId: read one; "set" records fields (price on TREK's own price, its unit "per" — never night for a museum, lake or car park — and "price_note" for a free formula; amenities yes/no/unknown; contacts: null erases a field); "log" adds one exchange; "clear" removes the record, "clear_fields" only the named fields; "fill" fills empty amenities and contacts from the place's notes and TREK fields, OpenStreetMap and park4night, citing each source (platform pages are never a website). A known website or phone is copied into TREK's empty fields. Record only what a cited source states; never estimate. Never book, pay or message a host without the user's validation.`,
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -124,14 +124,16 @@ const TOOL_SPECS = [
       properties: {
         tripId: TRIP,
         placeId: { type: 'integer', minimum: 1, description: 'TREK place id. Omit to list places.' },
-        filter: { type: 'string', enum: ['nights', 'missing_contacts', 'missing_amenities', 'all'], default: 'nights', description: 'List (no placeId): nights = planned nights and night-type places; missing_contacts = those with no e-mail or phone; missing_amenities = those with a key amenity unknown; all = every place.' },
+        filter: { type: 'string', enum: ['nights', 'missing_contacts', 'missing_amenities', 'all'], default: 'nights', description: 'List (no placeId): nights = the nights of the scope; missing_contacts = those with no e-mail or phone; missing_amenities = those with a key amenity unknown; all = every place (scope ignored).' },
+        scope: { type: 'string', enum: ['planned', 'candidates', 'all_nights'], default: 'planned', description: 'Which nights the list covers: planned = places with a lodging in the trip (default); candidates = night-category places with no lodging; all_nights = both.' },
         set: {
           type: 'object',
           additionalProperties: false,
           properties: {
             price_amount: { type: 'number', minimum: 0, maximum: 100000, nullable: true },
             currency: { type: 'string', pattern: '^[A-Z]{3}$' },
-            per: { type: 'string', enum: ['night', 'person'] },
+            per: { type: 'string', enum: PER, nullable: true, description: 'Unit of the price: night, person, person_night, day, hour, entry (a visit), vehicle, flat (lump sum, no unit); null = not said (a night place then reads per night).' },
+            price_note: { type: 'string', maxLength: PRICE_NOTE_MAX, nullable: true, description: 'Free price formula, shown instead of the unit, e.g. "free the first 2 hours, then 5 €/h", "donation", "3 €/person + 2 € dog".' },
             dog_fee: { type: 'number', minimum: 0, maximum: 1000, nullable: true },
             max_height_m: { type: 'number', minimum: 1, maximum: 6, nullable: true },
             max_length_m: { type: 'number', minimum: 2, maximum: 25, nullable: true },
@@ -169,7 +171,7 @@ const TOOL_SPECS = [
           },
         },
         clear: { type: 'boolean', default: false, description: 'Remove the whole record of the place.' },
-        clear_fields: { type: 'array', maxItems: 40, uniqueItems: true, items: { type: 'string', maxLength: 40 }, description: 'Clear only these: an amenity key, dog_fee, max_height_m, per, source, checked, a contact field (email, phone...), or amenities / contacts / log.' },
+        clear_fields: { type: 'array', maxItems: 40, uniqueItems: true, items: { type: 'string', maxLength: 40 }, description: 'Clear only these: an amenity key, dog_fee, max_height_m, per, price_note, source, checked, a contact field (email, phone...), or amenities / contacts / log.' },
         fill: { type: 'boolean', default: false, description: 'Fill empty amenities and contacts: the place given by placeId, or the next 20 places of the trip; call again while "remaining" is above 0. Never overwrites a recorded value.' },
       },
     },
