@@ -1,5 +1,5 @@
 'use strict';
-// rooftop_tools_plan_trip: the whole method in one tool, in this order —
+// vanlife_plan_trip: the whole method in one tool, in this order —
 // check → challenge the nights → routes → schedules → budget — then one action list.
 // A tool call must answer within 15 s (host limit) and the night search hits the network
 // for every night, so work is cut into steps; when the time budget runs out the result
@@ -26,7 +26,7 @@ function planRequest(req) {
     steps: [
       { tool: 'create_trip', args: { title: req.destination ? `${req.destination}` : 'Road trip', start_date: req.start_date, end_date: req.end_date }, why: 'days are generated from the dates' },
       { tool: 'search_place / create_and_assign_place', why: 'one sourced place per wish (closing days, hours, season, booking, parking, dog rules, time on site), grouped by area so no valley is crossed twice', wishes },
-      { tool: 'create_place + create_accommodation', why: 'one campsite or farm per night (never a motorhome area); use rooftop_tools_find_nights for candidates, then set booking status back to pending' },
+      { tool: 'create_place + create_accommodation', why: 'one campsite or farm per night (never a motorhome area); use vanlife_find_nights for candidates, then set booking status back to pending' },
       { tool: 'plugin_vanlife_vanlife_plan_trip', args: { tripId: '<new trip id>' }, why: 'check, routes, schedules and budget' },
     ],
     reminder: SAFETY,
@@ -57,7 +57,7 @@ async function planTrip(ctx, model, o, opts) {
           if (r.osmError) {
             // The public OSM server is rate-limited: the other nights would fail the same
             // way. Move on; the assistant can call find_nights per night later.
-            out.results.nightsSkipped = `${r.osmError} — nights ${d.n} and later not challenged; call rooftop_tools_find_nights for each later`;
+            out.results.nightsSkipped = `${r.osmError} — nights ${d.n} and later not challenged; call vanlife_find_nights for each later`;
             index = nightDays.length;
             break;
           }
@@ -102,7 +102,7 @@ async function planTrip(ctx, model, o, opts) {
   }
   if (!out.continuation) out.continuation = null;
   out.actions.sort((a, b) => a.priority - b.priority);
-  out.reminder = `${SAFETY} Re-run rooftop_tools_check_trip after each change; a change is finished when it reports no blocking point.`;
+  out.reminder = `${SAFETY} Re-run vanlife_check_trip after each change; a change is finished when it reports no blocking point.`;
   return out;
 }
 

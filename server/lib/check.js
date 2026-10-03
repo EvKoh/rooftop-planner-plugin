@@ -1,5 +1,5 @@
 'use strict';
-// The full trip check (the `rooftop_tools_check_trip` tool, the warnings banner and the tab
+// The full trip check (the `vanlife_check_trip` tool, the warnings banner and the tab
 // all read it). Two passes: first collect every drive leg the rules need and resolve them
 // in one batch (cache, then a Valhalla matrix), then evaluate the rules day by day.
 // It never writes anything. Levels: blocking > fix > verify > info.

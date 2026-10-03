@@ -87,7 +87,7 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
       night.fixes = [
         `leave ${lateBy} min earlier (departure ${hhmm(t0 - lateBy)})`,
         `shorten the visits by ${lateBy} min in total`,
-        'or choose a night closer to the last visit (rooftop_tools_find_nights)',
+        'or choose a night closer to the last visit (vanlife_find_nights)',
       ];
     }
   }
