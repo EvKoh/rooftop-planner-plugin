@@ -8,6 +8,7 @@ const { nightKind } = require('./classify');
 const { zoneAt } = require('./zones');
 const { unplannedNights } = require('./trip');
 const { t } = require('./i18n');
+const placeInfo = require('./place-info');
 
 const WARNING_LEVEL = { blocking: 'error', fix: 'warning', verify: 'warning' };
 
@@ -46,6 +47,8 @@ async function tripReport(ctx, model, settings) {
       kind: nightKind(n.categoryName, n.name),
       zone: zone ? zone.name : null,
       price: n.price,
+      priceText: placeInfo.priceText(n.info, settings.language),
+      amenities: placeInfo.amenitiesText(n.info, settings.language),
       nights: n.nights,
       status: resa ? (resa.status === 'confirmed' && resa.confirmation_number ? 'booked' : resa.status === 'confirmed' ? 'confirmed-unverified' : 'not-booked') : 'not-booked',
       arrival: hhmm(arr),

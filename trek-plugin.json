@@ -26,6 +26,8 @@
     "db:read:todos",
     "db:write:places",
     "db:write:itinerary",
+    "db:meta",
+    "hook:table-contributor",
     "mcp:tools",
     "hook:trip-warning-provider",
     "hook:route-provider",
@@ -81,6 +83,13 @@
       "scope": "user",
       "input_type": "number",
       "default": 20
+    },
+    {
+      "key": "travellers",
+      "label": "Number of travellers (for prices per person)",
+      "scope": "user",
+      "input_type": "number",
+      "default": 2
     },
     {
       "key": "fuel_l_per_100km",
@@ -258,6 +267,11 @@
                 "fr"
               ],
               "description": "Message language (default: the user setting)."
+            },
+            "sun": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also return sunrise, sunset and latest arrival for each night."
             }
           }
         },
@@ -269,7 +283,7 @@
       {
         "name": "rooftop_tools_find_nights",
         "title": "Find cheap legal nights for a rooftop tent",
-        "description": "Campsite and farm (agriturismo) candidates from OpenStreetMap between the evening's last visit and the next morning's first stop, ranked: forbidden last (motorhome areas are excluded: an opened rooftop tent is camping), then legal risk, then price, then the real detour in drive minutes; with total cost (night + fuel of the detour) and the saving versus the current night. Give tripId + dayNumber (the evening's day), or evening lat/lng (+ morning). OSM has no reviews and rarely prices: each candidate lists what to verify. If the tool plugin_rooftop-park4night-searcher_rooftop_tools_park4night_search is available, call it too for prices and ratings. Compare whole chains of nights, not one night at a time. Never book, pay or send a message to a host on the user's behalf: draft messages (English, then French) and show the exact text to the user, and act only on their explicit validation.",
+        "description": "Campsite and farm (agriturismo) candidates from OpenStreetMap between the evening's last visit and the next morning's first stop, with sunset and latest arrival at the evening point when a date is known; ranked: forbidden last (motorhome areas are excluded: an opened rooftop tent is camping), then legal risk, then price, then the real detour in drive minutes; with total cost (night + fuel of the detour) and the saving versus the current night. Give tripId + dayNumber (the evening's day), or evening lat/lng (+ morning). OSM has no reviews and rarely prices: each candidate lists what to verify. If the tool plugin_rooftop-park4night-searcher_rooftop_tools_park4night_search is available, call it too for prices and ratings. Compare whole chains of nights, not one night at a time. Never book, pay or send a message to a host on the user's behalf: draft messages (English, then French) and show the exact text to the user, and act only on their explicit validation.",
         "inputSchema": {
           "type": "object",
           "additionalProperties": false,
@@ -433,40 +447,144 @@
         }
       },
       {
-        "name": "rooftop_tools_sun_times",
-        "title": "Sunset and latest arrival per night",
-        "description": "Sunrise, sunset and latest arrival (sunset minus the configured margin, to unfold the tent in daylight) for each day of a trip at that night's place, or for given dates at a point. Computed for the exact date and place in the user's time zone, never a \"usual\" hour. Read-only, no network.",
+        "name": "rooftop_tools_place_info",
+        "title": "Read or record the price and amenities of places",
+        "description": "Price and amenities of the places of a trip, shown in the planner (columns on each place) instead of in place titles, and used by the check and the budget. Without placeId: lists the places that have them, and the nights still to fill. With placeId and \"set\": records the price (amount, currency, per night or per person, dog fee) and amenities (dog yes/no/fee, water, electricity, shower, toilets, dump station, wifi, rooftop tent accepted, max height); each one is yes, no or unknown. Record only what a cited source states (official site first, then a dated review or the host's written answer, in \"source\"); leave everything else unknown, never estimate. \"clear\": true removes the record. Writes only the plugin's own data on the place, never the trip itself. Never book or message a host without the user's explicit validation.",
         "inputSchema": {
           "type": "object",
           "additionalProperties": false,
+          "required": [
+            "tripId"
+          ],
           "properties": {
             "tripId": {
               "type": "integer",
               "minimum": 1,
               "description": "TREK trip id (list_trips gives it)."
             },
-            "lat": {
-              "type": "number",
-              "minimum": -90,
-              "maximum": 90
+            "placeId": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "TREK place id."
             },
-            "lng": {
-              "type": "number",
-              "minimum": -180,
-              "maximum": 180
+            "clear": {
+              "type": "boolean",
+              "default": false
             },
-            "dates": {
-              "type": "array",
-              "maxItems": 60,
-              "items": {
-                "type": "string",
-                "format": "date"
+            "set": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "price_amount": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000,
+                  "nullable": true
+                },
+                "currency": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}$"
+                },
+                "per": {
+                  "type": "string",
+                  "enum": [
+                    "night",
+                    "person"
+                  ]
+                },
+                "dog_fee": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1000,
+                  "nullable": true
+                },
+                "max_height_m": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 6,
+                  "nullable": true
+                },
+                "dog": {
+                  "type": "string",
+                  "enum": [
+                    "yes",
+                    "no",
+                    "fee",
+                    "unknown"
+                  ]
+                },
+                "water": {
+                  "type": "string",
+                  "enum": [
+                    "yes",
+                    "no",
+                    "unknown"
+                  ]
+                },
+                "electricity": {
+                  "type": "string",
+                  "enum": [
+                    "yes",
+                    "no",
+                    "unknown"
+                  ]
+                },
+                "shower": {
+                  "type": "string",
+                  "enum": [
+                    "yes",
+                    "no",
+                    "unknown"
+                  ]
+                },
+                "toilets": {
+                  "type": "string",
+                  "enum": [
+                    "yes",
+                    "no",
+                    "unknown"
+                  ]
+                },
+                "dump_station": {
+                  "type": "string",
+                  "enum": [
+                    "yes",
+                    "no",
+                    "unknown"
+                  ]
+                },
+                "wifi": {
+                  "type": "string",
+                  "enum": [
+                    "yes",
+                    "no",
+                    "unknown"
+                  ]
+                },
+                "rooftop_tent": {
+                  "type": "string",
+                  "enum": [
+                    "yes",
+                    "no",
+                    "unknown"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "checked": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Date the source was read."
+                }
               }
             }
           }
         },
         "annotations": {
-          "readOnlyHint": true,
+          "readOnlyHint": false,
+          "destructiveHint": false,
           "openWorldHint": false
         }
       },

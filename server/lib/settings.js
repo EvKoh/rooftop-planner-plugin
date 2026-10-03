@@ -15,12 +15,13 @@ const DEFAULTS = Object.freeze({
   fuel_price_per_l: 1.9,
   highway_days: 'first_last',
   shop_detour_max_min: 20,
+  travellers: 2,
   timezone: 'Europe/Paris',
   language: 'en',
 });
 
 const NUMBERS = ['vehicle_height_m', 'night_price_target', 'night_price_max', 'sunset_margin_min', 'water_reserve_l',
-  'fuel_l_per_100km', 'fuel_price_per_l', 'shop_detour_max_min'];
+  'fuel_l_per_100km', 'fuel_price_per_l', 'shop_detour_max_min', 'travellers'];
 
 async function readSettings(ctx) {
   const out = { ...DEFAULTS };

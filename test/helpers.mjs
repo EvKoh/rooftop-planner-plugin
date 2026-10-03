@@ -90,7 +90,7 @@ export function stubFetch({ failValhalla = false, failOverpass = false } = {}) {
 }
 
 /** Mock host seeded with the fixture trip and the manifest's exact grants. */
-export function makeHost({ fixed = false, grants = manifest.permissions, userSettings = { language: 'en', timezone: 'Europe/Rome' }, trip } = {}) {
+export function makeHost({ fixed = false, grants = manifest.permissions, userSettings = { language: 'en', timezone: 'Europe/Rome' }, trip, queryResults } = {}) {
   cache.clearMemory();
   overpass.resetBusy();
   return createMockHost({
@@ -98,6 +98,7 @@ export function makeHost({ fixed = false, grants = manifest.permissions, userSet
     actingUserId: 42,
     userSettings,
     categories: CATS,
+    queryResults,
     trips: { 1: trip || build({ fixed }) },
   });
 }

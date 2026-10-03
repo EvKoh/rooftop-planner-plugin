@@ -7,6 +7,7 @@
 // to null when the grant or the addon is missing — the rules that need them are skipped.
 const { hm, norm, weekday, toNum } = require('./util');
 const { isNightCategory } = require('./classify');
+const placeInfo = require('./place-info');
 
 const soft = (p) => p.then((v) => v, () => null);
 
@@ -20,7 +21,7 @@ function parseGeometry(g) {
   }
 }
 
-async function loadTrip(ctx, tripId) {
+async function loadTrip(ctx, tripId, settings) {
   const id = Number(tripId);
   const [trip, days, accs, places, resas, categories, costs, todos] = await Promise.all([
     ctx.trips.getById(id),
@@ -49,6 +50,9 @@ async function loadTrip(ctx, tripId) {
     raw: p,
   }));
   const poolById = new Map(pool.map((p) => [p.id, p]));
+  // Price and amenities the traveller entered (place-info.js); absent without db:meta.
+  const info = await placeInfo.getAll(ctx, id, pool.map((p) => p.id)).catch(() => new Map());
+  for (const p of pool) p.info = info.get(p.id) || null;
 
   const orderedDays = (days || []).slice().sort((a, b) => (a.day_number ?? 0) - (b.day_number ?? 0) || (a.date || '').localeCompare(b.date || ''));
   const normDays = orderedDays.map((d, i) => ({
@@ -103,7 +107,9 @@ async function loadTrip(ctx, tripId) {
       checkIn: a.check_in || null,
       notes: a.notes || '',
       categoryName: pl.categoryName || '',
-      price: pl.price ?? null,
+      info: pl.info || null,
+      // The entered price (per person x travellers, + dog fee) wins over TREK's price field.
+      price: (pl.info && settings ? placeInfo.nightTotal(pl.info, settings) : null) ?? pl.price ?? null,
       text: `${pl.description || ''}\n${pl.notes || ''}\n${a.notes || ''}`,
     };
   });

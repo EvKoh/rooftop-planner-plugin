@@ -154,8 +154,13 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang 
 
       const legal = rules.nightLegality({ categoryName: nuit.categoryName, placeName: nuit.name, lat: nuit.lat, lng: nuit.lng, text: nuit.text });
       if (legal) add(legal.level, J, legal.key, { name: nuit.name, ...legal.params, note: L === 'fr' && legal.params.noteFr ? legal.params.noteFr : legal.params.note }, extra);
-      const banned = rules.tentBanned(nuit.text);
+      const am = nuit.info ? nuit.info.amenities : {};
+      const banned = am.rooftop_tent === 'no' ? 'rooftop_tent = no' : rules.tentBanned(nuit.text);
       if (banned) add('blocking', J, 'tent_banned', { name: nuit.name, quote: banned }, extra);
+      if (settings.dog && am.dog === 'no') add('blocking', J, 'dog_refused', { name: nuit.name }, extra);
+      if (nuit.info && nuit.info.max_height_m != null && nuit.info.max_height_m < settings.vehicle_height_m) {
+        add('blocking', J, 'too_low', { name: nuit.name, max: nuit.info.max_height_m, height: settings.vehicle_height_m }, extra);
+      }
       const win = rules.welcomeWindow(nuit.text);
       if (win && arr != null && (arr < win[0] || arr > win[1])) add('blocking', J, 'welcome_window', { arr: hhmm(arr), name: nuit.name, open: hhmm(win[0]), close: hhmm(win[1]) }, extra);
       const mini = rules.minNights(nuit.text);
@@ -164,7 +169,9 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang 
         const pv = rules.priceVerdict(nuit.price, settings);
         if (pv) add(pv.level, J, pv.key, { name: nuit.name, price: nuit.price, max: settings.night_price_max, target: settings.night_price_target }, extra);
       }
-      dryNights = rules.noWater(nuit.text) ? dryNights + 1 : 0;
+      // Entered amenities win over words in the notes.
+      const dry = am.water === 'no' || (am.water !== 'yes' && rules.noWater(nuit.text));
+      dryNights = dry ? dryNights + 1 : 0;
       if (dryNights >= 2) {
         const prev = model.days[d.index - 1];
         const planned = [d, prev].filter(Boolean).some((x) => x.notes.some((n) => /\b\d{1,3} ?l\b|bouteille|bottle|refill|remplir|bidon|jerrican/i.test(n)));
