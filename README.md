@@ -1,3 +1,5 @@
+![Vanlife Planner: a car with an open rooftop tent and a dog at sunset in the Dolomites](./docs/banner.jpg)
+
 # Vanlife Planner
 
 Plans road trips with a **rooftop tent, a campervan or a motorhome** in
@@ -9,6 +11,8 @@ a small panel at the foot of the place view.
 ![screenshot](./docs/screenshot.png)
 
 ## What it does
+
+<img src="./docs/vehicles.jpg" alt="A car with a rooftop tent, a campervan and a motorhome parked at sunset" width="420" align="right">
 
 The vehicle is a setting, and the rules follow it. A rooftop tent has to be unfolded in daylight,
 and opening it anywhere other than a campsite or a farm that hosts campers is camping. Sleeping
