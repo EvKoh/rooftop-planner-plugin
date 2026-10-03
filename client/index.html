@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rooftop</title>
+  <!-- trek:ui -->
+  <style>
+    /* Phone first (360–430 px), columns on wide screens. Colours come from the TREK
+       tokens only; red is kept for what changes the plan (blocking, late arrival). */
+    .wrap { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    .head { display: flex; flex-direction: column; gap: 4px; }
+    .head h1 { margin: 0; font-size: 18px; font-weight: 650; overflow-wrap: anywhere; }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+    .kpi { padding: 10px 12px; border-radius: 12px; background: var(--bg-secondary); border: 1px solid var(--border-primary); }
+    .kpi b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+    .kpi span { font-size: 12px; color: var(--text-muted); }
+    .tabs { display: flex; gap: 6px; }
+    .tabs button { flex: 1; min-height: 44px; border-radius: 12px; border: 1px solid var(--border-primary); background: var(--bg-card); color: var(--text-secondary); font: inherit; font-weight: 600; cursor: pointer; }
+    .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-text, #fff); border-color: var(--accent); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 12px; }
+    .night { display: flex; flex-direction: column; gap: 8px; }
+    .night .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+    .night h2 { margin: 0; font-size: 16px; font-weight: 650; overflow-wrap: anywhere; }
+    .price { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .line { font-size: 14px; color: var(--text-secondary); }
+    .late { color: var(--danger); font-weight: 600; }
+    details { border-top: 1px solid var(--border-primary); padding-top: 6px; }
+    summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--text-secondary); }
+    .alt { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border-primary); font-size: 14px; }
+    .alt:last-child { border-bottom: 0; }
+    .alt span:first-child { overflow-wrap: anywhere; }
+    .map { min-height: 44px; align-self: flex-start; }
+    .group { padding: 4px 14px; }
+    .group summary { gap: 8px; }
+    .finding { padding: 10px 0; border-bottom: 1px solid var(--border-primary); font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
+    .finding:last-child { border-bottom: 0; }
+    .empty { padding: 24px 0; text-align: center; color: var(--text-muted); }
+    .foot { font-size: 12px; color: var(--text-muted); }
+    /* No text under 12 px: the kit's eyebrow (10 px) and count pill (11 px) are raised. */
+    .trek-eyebrow { font-size: 12px; }
+    .trek-countpill { font-size: 12px; }
+    @media (min-width: 900px) { .wrap { padding: 20px 24px; } .checkgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; } }
+  </style>
+</head>
+<body class="trek-ui">
+  <main class="wrap" id="app"><div class="trek-skeleton" style="height:120px;border-radius:12px"></div></main>
+  <script>
+    // Everything shown comes from POST /report (server/lib/report.js). Place names are
+    // user data: they are always set with textContent, never parsed as HTML.
+    var L = {
+      en: { nights: 'Nights', check: 'Check', total: 'nights, known prices', booked: 'booked', late: 'late arrivals', unknown: 'unknown prices',
+        night: 'Night', arrival: 'Arrival', latest: 'latest', sunset: 'sunset', noArrival: 'no arrival time', alts: 'Alternatives nearby',
+        map: 'Open map', none: 'No night planned in this trip yet.', ok: 'Nothing blocking.', pending: 'Some drive times are not cached yet: run the check tool once.',
+        kind: { campsite: 'Campsite', farm: 'Farm', aire: 'Motorhome area', private: 'Private ground', hut: 'Hut', unknown: 'Night' },
+        status: { booked: 'Booked', 'confirmed-unverified': 'Confirmed?', 'not-booked': 'Not booked' },
+        level: { blocking: 'Blocking', fix: 'To fix', verify: 'To verify', info: 'Info' }, perNight: '/night', km: 'km' },
+      fr: { nights: 'Nuits', check: 'Contrôle', total: 'nuits, prix connus', booked: 'réservées', late: 'arrivées tardives', unknown: 'prix inconnus',
+        night: 'Nuit', arrival: 'Arrivée', latest: 'au plus tard', sunset: 'coucher', noArrival: 'heure d’arrivée inconnue', alts: 'Replis à proximité',
+        map: 'Ouvrir la carte', none: 'Aucune nuit planifiée dans ce voyage.', ok: 'Rien de bloquant.', pending: 'Certains temps de route ne sont pas encore en cache : lancer une fois l’outil de contrôle.',
+        kind: { campsite: 'Camping', farm: 'Ferme', aire: 'Aire', private: 'Particulier', hut: 'Refuge', unknown: 'Nuitée' },
+        status: { booked: 'Réservé', 'confirmed-unverified': 'Confirmé ?', 'not-booked': 'Non réservé' },
+        level: { blocking: 'Bloquant', fix: 'À corriger', verify: 'À vérifier', info: 'Info' }, perNight: '/nuit', km: 'km' },
+    };
+    var state = { tripId: null, data: null, tab: 'nights', locale: 'en', loading: false };
+
+    function h(tag, attrs, kids) {
+      var el = document.createElement(tag);
+      Object.keys(attrs || {}).forEach(function (k) {
+        if (k === 'text') el.textContent = attrs[k];
+        else if (k === 'on') Object.keys(attrs.on).forEach(function (ev) { el.addEventListener(ev, attrs.on[ev]); });
+        else el.setAttribute(k, attrs[k]);
+      });
+      (kids || []).forEach(function (c) { if (c) el.appendChild(c); });
+      return el;
+    }
+    function money(v, cur) {
+      if (v == null) return '?';
+      try { return new Intl.NumberFormat(state.locale, { style: 'currency', currency: cur || 'EUR', maximumFractionDigits: 2 }).format(v); } catch (e) { return v + ' ' + (cur || ''); }
+    }
+    function dateLabel(iso) {
+      if (!iso) return '';
+      try { return new Intl.DateTimeFormat(state.locale, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(iso + 'T12:00:00Z')); } catch (e) { return iso; }
+    }
+    function chip(text, tone) { return h('span', { class: 'trek-chip' + (tone ? ' trek-chip--' + tone : ''), text: text }); }
+
+    function nightCard(n, t, cur) {
+      var kindTone = n.kind === 'aire' ? 'danger' : n.kind === 'campsite' || n.kind === 'farm' ? 'success' : 'warning';
+      var statusTone = n.status === 'booked' ? 'success' : n.status === 'confirmed-unverified' ? 'warning' : 'info';
+      var arr = n.arrival
+        ? h('div', { class: 'line' + (n.onTime === false ? ' late' : ''), text: t.arrival + ' ' + n.arrival + ' · ' + t.latest + ' ' + (n.latest || '?') + ' · ' + t.sunset + ' ' + (n.sunset || '?') })
+        : h('div', { class: 'line late', text: t.noArrival });
+      var kids = [
+        h('div', { class: 'trek-eyebrow', text: t.night + ' ' + n.index + ' · ' + dateLabel(n.date) + (n.nights > 1 ? ' · ×' + n.nights : '') }),
+        h('div', { class: 'top' }, [h('h2', { text: n.name }), h('span', { class: 'price', text: money(n.price, cur) + (n.price != null ? t.perNight : '') })]),
+        h('div', { class: 'chips' }, [chip(t.kind[n.kind] || n.kind, kindTone), chip(t.status[n.status] || n.status, statusTone), n.zone ? chip(n.zone, n.kind === 'farm' && /Tyrol/.test(n.zone) ? 'warning' : '') : null]),
+        arr,
+      ];
+      if (n.lat != null) {
+        kids.push(h('button', { class: 'trek-btn trek-btn--ghost map', type: 'button', text: t.map, on: { click: function () { trek.openExternal('https://www.openstreetmap.org/?mlat=' + n.lat + '&mlon=' + n.lng + '#map=14/' + n.lat + '/' + n.lng); } } }));
+      }
+      if (n.alternatives && n.alternatives.length) {
+        kids.push(h('details', {}, [h('summary', { text: t.alts + ' (' + n.alternatives.length + ')' })].concat(n.alternatives.map(function (a) {
+          return h('div', { class: 'alt' }, [h('span', { text: a.name + ' · ' + (t.kind[a.kind] || '') }), h('span', { text: money(a.price, cur) + ' · ' + a.km + ' ' + t.km })]);
+        }))));
+      }
+      return h('article', { class: 'trek-card night' }, kids);
+    }
+
+    function checkView(d, t) {
+      var c = d.check;
+      var wrap = h('div', { class: 'checkgrid' });
+      ['blocking', 'fix', 'verify', 'info'].forEach(function (lv) {
+        var items = c.findings.filter(function (f) { return f.level === lv; });
+        if (!items.length) return;
+        var det = h('details', { class: 'trek-card group' }, [h('summary', {}, [
+          h('span', { class: 'trek-statusdot', 'data-status': lv === 'blocking' ? 'danger' : lv === 'fix' ? 'pending' : 'info' }),
+          h('span', { text: t.level[lv] }), h('span', { class: 'trek-countpill', text: String(items.length) }),
+        ])].concat(items.map(function (f) { return h('div', { class: 'finding', text: f.message }); })));
+        if (lv === 'blocking') det.open = true;
+        wrap.appendChild(det);
+      });
+      if (!c.counts.blocking) wrap.insertBefore(h('div', { class: 'trek-card', text: t.ok }), wrap.firstChild);
+      var box = h('div', {}, [wrap]);
+      if (c.pendingRoutes) box.appendChild(h('p', { class: 'foot', text: t.pending }));
+      return box;
+    }
+
+    function render() {
+      var d = state.data;
+      if (!d) return;
+      var t = L[d.language] || L.en;
+      var k = d.kpis;
+      var cur = d.trip.currency;
+      document.getElementById('app').replaceChildren(
+        h('header', { class: 'head' }, [h('div', { class: 'trek-eyebrow', text: 'Rooftop' }), h('h1', { text: d.trip.title })]),
+        h('section', { class: 'kpis' }, [
+          h('div', { class: 'kpi' }, [h('b', { text: money(k.nightsTotal, cur) }), h('span', { text: k.nights + ' ' + t.total })]),
+          h('div', { class: 'kpi' }, [h('b', { text: k.booked + ' / ' + d.nights.length }), h('span', { text: t.booked })]),
+          h('div', { class: 'kpi' }, [h('b', { class: k.late ? 'late' : '', text: String(k.late) }), h('span', { text: t.late })]),
+          h('div', { class: 'kpi' }, [h('b', { class: d.check.counts.blocking ? 'late' : '', text: String(d.check.counts.blocking) }), h('span', { text: t.level.blocking })]),
+        ]),
+        h('nav', { class: 'tabs', role: 'tablist' }, ['nights', 'check'].map(function (id) {
+          return h('button', { role: 'tab', type: 'button', 'aria-selected': String(state.tab === id), text: t[id], on: { click: function () { state.tab = id; render(); } } });
+        })),
+        state.tab === 'nights'
+          ? (d.nights.length ? h('section', { class: 'grid' }, d.nights.map(function (n) { return nightCard(n, t, cur); })) : h('p', { class: 'empty', text: t.none }))
+          : checkView(d, t)
+      );
+    }
+
+    async function load() {
+      if (!state.tripId || state.loading) return;
+      state.loading = true;
+      try {
+        state.data = await trek.invoke('/report', { method: 'POST', body: { tripId: Number(state.tripId) } });
+        render();
+      } catch (e) {
+        document.getElementById('app').replaceChildren(h('p', { class: 'empty', text: e.message }));
+      } finally {
+        state.loading = false;
+      }
+    }
+
+    var timer = null;
+    trek.onContext(function (ctx) {
+      state.locale = ctx.locale || 'en';
+      if (ctx.tripId && ctx.tripId !== state.tripId) { state.tripId = ctx.tripId; load(); }
+    });
+    // Core events carry names only: refetch, debounced (a bulk edit fires many).
+    trek.onEvent(function () { clearTimeout(timer); timer = setTimeout(load, 800); });
+  </script>
+</body>
+</html>
