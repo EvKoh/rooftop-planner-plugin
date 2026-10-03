@@ -7,23 +7,67 @@ const { hhmm, distKm, deadline: makeDeadline } = require('./util');
 const { nightKind } = require('./classify');
 const { zoneAt } = require('./zones');
 const { unplannedNights } = require('./trip');
-const { t } = require('./i18n');
+const { t, has } = require('./i18n');
 const placeInfo = require('./place-info');
 
 const WARNING_LEVEL = { blocking: 'error', fix: 'warning', verify: 'warning' };
+const BANNER_MAX = 3; // individual chips; everything else goes into one summary chip
 
-/** The planner banner: blocking/fix/verify findings, ≤ 20, each ≤ 300 chars, day in the text. */
+/**
+ * "🏠25 € · 4,8/5 · Camping Example — lake (Town)" → "Camping Example": the words a person
+ * recognises, without the price/rating prefix, emoji or the description after a dash.
+ */
+function shortName(name, max = 18) {
+  const n = String(name || '').split('·').pop().split(/ [—–-] | \(/)[0]
+    .replace(/\p{Extended_Pictographic}/gu, '').replace(/\s+/g, ' ').trim();
+  return n.length > max ? `${n.slice(0, max - 1).trimEnd()}…` : n;
+}
+
+/** One banner line: "J2 Roderhof : ferme au Tyrol du Sud" — the essential first, no level word. */
+function bannerText(f, settings) {
+  const L = settings.language;
+  const key = `s.${f.key}`;
+  const p = f.params || {};
+  const what = has(L, key) ? t(L, key, { ...p, zone: p.zone ? String(p.zone).replace(/ \(.*\)$/, '') : p.zone }) : t(L, f.key, p);
+  const who = p.name || p.title ? shortName(p.name || p.title) : '';
+  const where = f.dayNumber != null ? t(L, 'dayShort', { n: f.dayNumber }) : f.scope;
+  return `${[where, who].filter(Boolean).join(' ')} : ${what}`.slice(0, 120);
+}
+
+/**
+ * The planner banner. The host shows each warning as a chip that shares the navbar on a
+ * desktop (truncated to a few words) and as a full-width block over the map on a phone, with
+ * no detail view — so it gets few, short, distinct lines:
+ *  - blocking first, then to-fix, by day; to-verify only when at most 3 remain;
+ *  - at most BANNER_MAX individual lines, the rest summed up in ONE chip that points to the
+ *    plugin tab (its click opens it); prices above the ceiling are never one chip each.
+ */
+function bannerFrom(findings, settings) {
+  const sev = findings.filter((f) => f.level === 'blocking' || f.level === 'fix');
+  const verify = findings.filter((f) => f.level === 'verify');
+  let shown = sev.slice(0, BANNER_MAX);
+  if (sev.length + verify.length <= BANNER_MAX) shown = sev.concat(verify);
+  const hidden = sev.concat(verify).filter((f) => !shown.includes(f));
+  const out = shown.map((f) => {
+    const w = { level: WARNING_LEVEL[f.level], message: bannerText(f, settings) };
+    if (f.dayId != null) w.dayId = f.dayId;
+    if (f.placeId != null) w.placeId = f.placeId;
+    return w;
+  });
+  if (hidden.length) {
+    const L = settings.language;
+    const onlyPrices = hidden.every((f) => f.key === 'price_high');
+    const anySevere = hidden.some((f) => f.level !== 'verify');
+    const message = onlyPrices ? t(L, 'group.prices', { n: hidden.length, max: settings.night_price_max })
+      : t(L, anySevere ? 'group.mixed' : 'group.verify', { n: hidden.length, tab: 'Rooftop' });
+    out.push({ level: anySevere ? 'warning' : 'info', message });
+  }
+  return out;
+}
+
 async function warnings(ctx, model, settings) {
   const r = await checkTrip(ctx, model, { settings, network: false, deadline: makeDeadline(3500) });
-  return r.findings
-    .filter((f) => WARNING_LEVEL[f.level])
-    .slice(0, 20)
-    .map((f) => {
-      const w = { level: WARNING_LEVEL[f.level], message: `${t(settings.language, `level.${f.level}`)} · ${f.message}`.slice(0, 300) };
-      if (f.dayId != null) w.dayId = f.dayId;
-      if (f.placeId != null) w.placeId = f.placeId;
-      return w;
-    });
+  return bannerFrom(r.findings, settings);
 }
 
 /** One row per planned night (plan A), its alternatives folded underneath, and the check. */
@@ -81,4 +125,4 @@ async function tripReport(ctx, model, settings) {
   };
 }
 
-module.exports = { warnings, tripReport, WARNING_LEVEL };
+module.exports = { warnings, tripReport, WARNING_LEVEL, bannerText, bannerFrom, shortName, BANNER_MAX };

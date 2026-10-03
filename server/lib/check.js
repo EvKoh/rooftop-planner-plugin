@@ -35,7 +35,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang 
   const findings = [];
   const dayLabel = (d) => t(L, 'day', { n: d.n, date: d.date || '?' });
   const add = (level, scope, key, params = {}, extra = {}) => {
-    findings.push({ level, key, scope, message: `${scope} — ${t(L, key, params)}`, ...extra });
+    findings.push({ level, key, scope, message: `${scope} — ${t(L, key, params)}`, params, ...extra });
   };
   const tz = settings.timezone;
 

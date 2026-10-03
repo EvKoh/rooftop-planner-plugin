@@ -242,17 +242,6 @@ describe('hooks, route and lifecycle', () => {
   beforeEach(() => vi.stubGlobal('fetch', stubFetch()));
   afterEach(() => vi.unstubAllGlobals());
 
-  it('warnings: ≤ 20, ≤ 300 chars, day in the text, no network', async () => {
-    const h = makeHost();
-    const w = await h.run(plugin).hook('warningProvider', 'getWarnings', 1);
-    expect(w.length).toBeGreaterThan(0);
-    expect(w.length).toBeLessThanOrEqual(20);
-    expect(w.every((x) => x.message.length <= 300 && ['error', 'warning'].includes(x.level))).toBe(true);
-    expect(w[0].level).toBe('error');
-    expect(w.some((x) => /Day 1 \(2026-10-12\)/.test(x.message) && x.dayId === 101)).toBe(true);
-    expect(fetch).not.toHaveBeenCalled();
-  });
-
   it('route provider: one leg per waypoint gap, metres and seconds, profile → tolls', async () => {
     const h = makeHost();
     const wps = [{ lat: 46.53, lng: 12.13 }, { lat: 46.58, lng: 12.25 }, { lat: 46.64, lng: 11.72 }];

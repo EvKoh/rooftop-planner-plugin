@@ -49,6 +49,41 @@ const MESSAGES = {
     stale_todo: '"{name}" mentions a night that is no longer planned ({list})',
     stale_note: 'note "{text}" mentions {list}, which is no longer planned',
     route_pending: '{n} drive time(s) not computed yet (time budget reached): run the check again',
+    'dayShort': 'D{n}',
+    's.night_late': 'arrives {arr}, latest {limit}',
+    's.night_no_arrival': 'no arrival time',
+    's.outside_hours': 'closed at {from} ({open}–{close})',
+    's.night_aire': 'motorhome area: no tent',
+    's.tent_banned': 'tent not allowed',
+    's.dog_refused': 'no dogs',
+    's.too_low': 'max height {max} m',
+    's.welcome_window': 'arrives {arr}, check-in {open}–{close}',
+    's.min_nights': 'minimum stay not met',
+    's.resa_confirmed': 'marked booked: check it',
+    's.no_trace': 'no route',
+    's.trace_not_first': 'route not first',
+    's.trace_start': 'route misses last night',
+    's.trace_end': 'route misses tonight',
+    's.no_time': 'no time',
+    's.ends_before_start': 'ends before it starts',
+    's.unreachable': '{start} unreachable ({min} min drive)',
+    's.overlap': 'overlaps the previous stop',
+    's.shop_detour': '{min} min detour to shop',
+    's.checkin_mismatch': 'arrival {arr} ≠ {checkin}',
+    's.water_fix': '{n} nights without water',
+    's.resa_mismatch': 'booking on the wrong night',
+    's.stale_budget': 'line names an old night',
+    's.budget_total': '{budget} € ≠ nights {nights} €',
+    's.stale_todo': 'to-do names an old night',
+    's.night_farm_zone': 'farm in {zone}',
+    's.night_private': 'tent legality to check',
+    's.closure_cited': 'closure quoted on {day}',
+    's.after_sunset': 'ends {end}, after sunset',
+    's.price_high': '{price} € > {max} €',
+    's.price_unknown': 'price unknown',
+    'group.prices': '+ {n} nights above {max} €',
+    'group.mixed': '+ {n} more points ({tab} tab)',
+    'group.verify': '+ {n} points to verify ({tab} tab)',
     weekday: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
   },
   fr: {
@@ -97,6 +132,41 @@ const MESSAGES = {
     stale_todo: '« {name} » cite une nuitée hors programme ({list})',
     stale_note: 'note « {text} » cite {list}, hors programme',
     route_pending: '{n} temps de route pas encore calculé(s) (budget de temps atteint) : relancer le contrôle',
+    'dayShort': 'J{n}',
+    's.night_late': 'arrivée {arr}, limite {limit}',
+    's.night_no_arrival': 'heure d\'arrivée inconnue',
+    's.outside_hours': 'fermé à {from} ({open}–{close})',
+    's.night_aire': 'aire : tente interdite',
+    's.tent_banned': 'tente interdite',
+    's.dog_refused': 'chien refusé',
+    's.too_low': 'hauteur max {max} m',
+    's.welcome_window': 'arrivée {arr}, accueil {open}–{close}',
+    's.min_nights': 'minimum de nuits non atteint',
+    's.resa_confirmed': 'marquée réservée : vérifier',
+    's.no_trace': 'pas de tracé',
+    's.trace_not_first': 'tracé pas en tête',
+    's.trace_start': 'tracé sans la nuit d\'avant',
+    's.trace_end': 'tracé sans la nuit du jour',
+    's.no_time': 'sans heure',
+    's.ends_before_start': 'finit avant de commencer',
+    's.unreachable': '{start} impossible ({min} min de route)',
+    's.overlap': 'chevauche l\'étape d\'avant',
+    's.shop_detour': 'détour courses {min} min',
+    's.checkin_mismatch': 'arrivée {arr} ≠ {checkin}',
+    's.water_fix': '{n} nuits sans eau',
+    's.resa_mismatch': 'résa sur la mauvaise nuit',
+    's.stale_budget': 'ligne d\'une nuit écartée',
+    's.budget_total': '{budget} € ≠ nuits {nights} €',
+    's.stale_todo': 'tâche d\'une nuit écartée',
+    's.night_farm_zone': 'ferme au {zone}',
+    's.night_private': 'légalité de la tente à vérifier',
+    's.closure_cited': 'fermeture citée le {day}',
+    's.after_sunset': 'finit à {end}, de nuit',
+    's.price_high': '{price} € > {max} €',
+    's.price_unknown': 'prix inconnu',
+    'group.prices': '+ {n} nuits au-dessus de {max} €',
+    'group.mixed': '+ {n} autres points (onglet {tab})',
+    'group.verify': '+ {n} points à vérifier (onglet {tab})',
     weekday: ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'],
   },
 };
@@ -111,8 +181,13 @@ function t(l, key, params = {}) {
   return String(tpl).replace(/\{(\w+)\}/g, (_, k) => (params[k] == null ? '' : String(params[k])));
 }
 
+/** True when a message key exists (short banner forms are optional per key). */
+function has(l, key) {
+  return key in MESSAGES[lang(l)];
+}
+
 function dayName(l, wd) {
   return MESSAGES[lang(l)].weekday[wd];
 }
 
-module.exports = { MESSAGES, t, dayName, lang };
+module.exports = { MESSAGES, t, dayName, lang, has };
