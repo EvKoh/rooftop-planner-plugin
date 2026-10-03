@@ -100,5 +100,21 @@
   "ui.per.vehicle": "車両",
   "ui.per.flat": "定額（単位なし）",
   "ui.priceNote": "料金の詳細",
-  "ui.priceNoteHint": "例：最初の2時間無料、以降5€/時間"
+  "ui.priceNoteHint": "例：最初の2時間無料、以降5€/時間",
+  "col.visit": "滞在",
+  "ui.visit": "滞在時間",
+  "ui.visitMin": "最短滞在時間（分）",
+  "ui.visitMax": "最長滞在時間（分）",
+  "day_overloaded": "利用可能な {window}（{from}–{to}）に対して {need} 必要（見学 {visits}、運転 {drive}）：{list} を外すか移動してください",
+  "s.day_overloaded": "{window} に {need}",
+  "too_many_activities": "1日には多すぎます：{list} — 大きな活動は1日1つ（{big} 以上）、または小さな活動を最大2つ（{small} まで）",
+  "s.too_many_activities": "活動が多すぎます",
+  "visit_unknown": "滞在時間が不明：{list} — 1日の負荷を確認するため入力してください",
+  "s.visit_unknown": "滞在時間不明",
+  "saving_night": "「{alt}」（{price}、迂回 {detour} 分）は合法・営業中で「{name}」（{current}）より安い：燃料代を引いて {saving} の節約",
+  "s.saving_night": "{saving} 節約",
+  "backtrack": "今夜「{name}」に戻り、明日「{next}」へ {km} km 逆戻り（燃料約 {cost}）：明日のルート上で宿泊地を探してください{tent}",
+  "backtrack_tent": " — ルーフテントはどのみち毎朝たたむので、同じ場所に泊まっても手間は省けません",
+  "s.backtrack": "{km} km 逆戻り",
+  "route.name": "{n}日目のルート — {from} → {to}（{km} km、{drive}）"
 }

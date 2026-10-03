@@ -100,5 +100,21 @@
   "ui.per.vehicle": "sõiduk",
   "ui.per.flat": "kindel hind (ühikuta)",
   "ui.priceNote": "Hinna üksikasjad",
-  "ui.priceNoteHint": "nt esimesed 2 h tasuta, siis 5 €/h"
+  "ui.priceNoteHint": "nt esimesed 2 h tasuta, siis 5 €/h",
+  "col.visit": "Külastus",
+  "ui.visit": "Külastus",
+  "ui.visitMin": "Vähim aeg kohapeal (min)",
+  "ui.visitMax": "Suurim aeg kohapeal (min)",
+  "day_overloaded": "vaja {need} (külastused {visits}, sõit {drive}) {window} kasutatava päeva jaoks ({from}–{to}): eemalda või nihuta {list}",
+  "s.day_overloaded": "{need} {window} jaoks",
+  "too_many_activities": "ühe päeva jaoks liiga palju: {list} — üks suur tegevus päevas (alates {big}) või kuni kaks väikest (kuni {small})",
+  "s.too_many_activities": "liiga palju tegevusi",
+  "visit_unknown": "külastuse kestus teadmata: {list} — sisesta see, et päeva koormust kontrollida",
+  "s.visit_unknown": "kestus teadmata",
+  "saving_night": "„{alt}” ({price}, {detour} min ringi) on lubatud, avatud ja odavam kui „{name}” ({current}): netosääst {saving} pärast kütust",
+  "s.saving_night": "sääst {saving}",
+  "backtrack": "täna õhtul tagasi „{name}”, homme {km} km tagasi „{next}” suunas (umbes {cost} kütust): otsi öö homse marsruudi äärest{tent}",
+  "backtrack_tent": " — katusetelk pannakse niikuinii igal hommikul kokku: paigale jäämine ei säästa midagi",
+  "s.backtrack": "{km} km tagasi",
+  "route.name": "Marsruut päev {n} — {from} → {to} ({km} km, {drive})"
 }

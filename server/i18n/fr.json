@@ -235,5 +235,21 @@
   "ui.per.vehicle": "véhicule",
   "ui.per.flat": "forfait (sans unité)",
   "ui.priceNote": "Précisions sur le prix",
-  "ui.priceNoteHint": "ex. gratuit les 2 premières heures, puis 5 €/h"
+  "ui.priceNoteHint": "ex. gratuit les 2 premières heures, puis 5 €/h",
+  "col.visit": "Visite",
+  "ui.visit": "Visite",
+  "ui.visitMin": "Durée minimale sur place (min)",
+  "ui.visitMax": "Durée maximale sur place (min)",
+  "day_overloaded": "{need} nécessaires (visites {visits}, route {drive}) pour {window} de jour utile ({from}–{to}) : retirer ou déplacer {list}",
+  "s.day_overloaded": "{need} pour {window} utiles",
+  "too_many_activities": "trop pour une journée : {list} — une grosse activité par jour (dès {big}), ou au plus deux toutes petites (jusqu'à {small})",
+  "s.too_many_activities": "trop d'activités",
+  "visit_unknown": "durée de visite inconnue : {list} — la saisir pour contrôler la charge du jour",
+  "s.visit_unknown": "durée de visite inconnue",
+  "saving_night": "« {alt} » ({price}, {detour} min de détour) est légal, ouvert et moins cher que « {name} » ({current}) : {saving} d'économie nette, carburant déduit",
+  "s.saving_night": "économie {saving}",
+  "backtrack": "retour à « {name} » ce soir, puis {km} km en arrière vers « {next} » demain (environ {cost} de carburant) : chercher une nuit sur la route du lendemain{tent}",
+  "backtrack_tent": " — la tente de toit est pliée chaque matin de toute façon : rester au même camp n'évite aucun pliage",
+  "s.backtrack": "{km} km en arrière",
+  "route.name": "Route jour {n} — {from} → {to} ({km} km, {drive})"
 }

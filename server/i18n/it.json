@@ -100,5 +100,21 @@
   "ui.per.vehicle": "veicolo",
   "ui.per.flat": "forfait (senza unità)",
   "ui.priceNote": "Dettagli del prezzo",
-  "ui.priceNoteHint": "es. gratis le prime 2 ore, poi 5 €/h"
+  "ui.priceNoteHint": "es. gratis le prime 2 ore, poi 5 €/h",
+  "col.visit": "Visita",
+  "ui.visit": "Visita",
+  "ui.visitMin": "Tempo minimo sul posto (min)",
+  "ui.visitMax": "Tempo massimo sul posto (min)",
+  "day_overloaded": "servono {need} (visite {visits}, guida {drive}) per {window} di giornata utile ({from}–{to}): togliere o spostare {list}",
+  "s.day_overloaded": "{need} per {window}",
+  "too_many_activities": "troppo per un giorno: {list} — una grande attività al giorno (da {big}) o al massimo due piccole (fino a {small})",
+  "s.too_many_activities": "troppe attività",
+  "visit_unknown": "durata della visita sconosciuta: {list} — inserirla per controllare il carico del giorno",
+  "s.visit_unknown": "durata sconosciuta",
+  "saving_night": "«{alt}» ({price}, {detour} min di deviazione) è legale, aperto e più economico di «{name}» ({current}): risparmio netto di {saving} dopo il carburante",
+  "s.saving_night": "risparmio {saving}",
+  "backtrack": "ritorno a «{name}» stasera, poi domani {km} km indietro verso «{next}» (circa {cost} di carburante): cercare una notte sul percorso di domani{tent}",
+  "backtrack_tent": " — la tenda da tetto si chiude comunque ogni mattina: restare non evita di smontare",
+  "s.backtrack": "{km} km indietro",
+  "route.name": "Percorso giorno {n} — {from} → {to} ({km} km, {drive})"
 }

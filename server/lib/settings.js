@@ -28,12 +28,16 @@ const DEFAULTS = Object.freeze({
   // Day numbers with motorway allowed, e.g. "1,8,9": when set, it wins over highway_days.
   highway_day_numbers: '',
   shop_detour_max_min: 20,
+  // When the day starts (leaving last night's place) unless the first stop is earlier.
+  day_start: '08:30',
+  // A visit this long or longer is a big activity: one a day, or at most two small ones.
+  big_activity_minutes: 150,
   timezone: 'Europe/Paris',
   language: 'auto',
 });
 
 const NUMBERS = ['vehicle_height_m', 'vehicle_length_m', 'vehicle_weight_t', 'night_price_target', 'night_price_max',
-  'sunset_margin_min', 'water_reserve_l', 'fuel_l_per_100km', 'fuel_price_per_l', 'shop_detour_max_min', 'travellers'];
+  'sunset_margin_min', 'water_reserve_l', 'fuel_l_per_100km', 'fuel_price_per_l', 'shop_detour_max_min', 'travellers', 'big_activity_minutes'];
 
 /** The instance defaults an admin set (ctx.config is frozen at activation). */
 function instance(ctx) {
@@ -57,6 +61,7 @@ async function readSettings(ctx, keys) {
   }));
   if (!VEHICLES.includes(out.vehicle)) out.vehicle = DEFAULTS.vehicle;
   if (!['first_last', 'always', 'never'].includes(out.highway_days)) out.highway_days = DEFAULTS.highway_days;
+  if (!/^([01]?\d|2[0-3])[:h][0-5]\d$/.test(out.day_start)) out.day_start = DEFAULTS.day_start;
   // "auto": the host passes no language to hooks and tools, so the admin's instance default
   // decides there; the widget uses the language TREK hands its frame instead.
   out.language = out.language === 'auto' || !out.language ? instance(ctx).defaultLanguage : lang(out.language);

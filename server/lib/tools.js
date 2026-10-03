@@ -82,6 +82,7 @@ function placeView(model, p, info, settings, { full = false } = {}) {
     price: placeInfo.priceText(p.price, (p.raw && p.raw.currency) || model.currency, info, L, { night }),
     nightTotal: night ? placeInfo.nightTotal(p.price, info, settings) : null,
     amenities: placeInfo.amenitiesText(info, L),
+    visit: placeInfo.visitText(info),
     contacts: { ...rec.contacts, ...(full ? {} : { notes: undefined, languages: undefined }) },
     // TREK's own website field, unless it is a platform page (park4night, Google Maps...).
     trekFields: { website: site && !contacts.notOwnSite(site) ? site : null, phone: (p.raw && p.raw.phone) || null },

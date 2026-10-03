@@ -3,13 +3,14 @@
 // all read it). Two passes: first collect every drive leg the rules need and resolve them
 // in one batch (cache, then a Valhalla matrix), then evaluate the rules day by day.
 // It never writes anything. Levels: blocking > fix > verify > info.
-const { hhmm, distKm, norm } = require('./util');
+const { hhmm, hm, distKm, norm } = require('./util');
 const { t, dayName, money, num } = require('./i18n');
 const { sunset } = require('./sun');
 const { isShopping, isHike, isTrace, isNightCategory, parkingFromNotes } = require('./classify');
 const rules = require('./rules');
 const routing = require('./routing');
-const { highwayAllowed } = require('./settings');
+const { highwayAllowed, fuelPerKm } = require('./settings');
+const { stopMinutes } = require('./visit');
 const { nightOf, nightBefore, nameKey, unplannedNights } = require('./trip');
 const contacts = require('./contacts');
 const nightStatus = require('./night-status');
@@ -36,6 +37,118 @@ function dayPlan(model, day) {
 
 function carPos(stop) {
   return parkingFromNotes(stop.place.notes, stop.place.description) || pos(stop.place);
+}
+
+// A stop that is a visit (not shopping, not a night): what the day's load counts.
+const isVisit = (p) => !isShopping(p.categoryName, p.stopType) && !isNightCategory(p.categoryName);
+const MEAL_MIN = 30;
+const LONG_DAY_MIN = 6 * 60;
+const SMALL_MIN = 60;
+
+/**
+ * Is the day overloaded? Usable window: the day's start (setting, or the first stop when
+ * earlier) to the latest arrival at the night (sunset minus the margin). Need: minimum
+ * visit durations + real drive times + a meal break once the day passes 6 h. Also the
+ * traveller's rule: one big activity a day, or at most two small ones; and the visits whose
+ * duration nobody knows yet. Skipped when a drive time is not known (banner: cache only).
+ */
+function dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L, tz }) {
+  const { nuit, stops } = plan;
+  const visits = [];
+  let drive = 0;
+  let complete = true;
+  stops.forEach((s, i) => {
+    const leg = legIdx[i];
+    if (leg && leg.drive != null) { const m = M(leg.drive); if (m == null) complete = false; else drive += m; }
+    if (nuit && s.accommodationId === nuit.id) return;
+    const info = (model.poolById.get(s.place.id) || {}).info || null;
+    visits.push({ s, minutes: stopMinutes(s.place, info), visit: isVisit(s.place) });
+  });
+  if (toNight != null) { const m = M(toNight); if (m == null) complete = false; else drive += m; }
+  const unknown = visits.filter((v) => v.visit && v.minutes == null).map((v) => v.s.place.name);
+  if (unknown.length) add('verify', J, 'visit_unknown', { list: unknown.join(', ') }, ids);
+
+  const acts = visits.filter((v) => v.visit && v.minutes != null);
+  const big = settings.big_activity_minutes;
+  const load = acts.reduce((n, v) => n + (v.minutes <= SMALL_MIN ? 0.5 : 1), 0);
+  if (load > 1) {
+    add('fix', J, 'too_many_activities', { list: acts.map((v) => `${v.s.place.name} (${fmtDur(v.minutes)})`).join(', '), big: fmtDur(big), small: fmtDur(SMALL_MIN), nBig: acts.filter((v) => v.minutes >= big).length }, ids);
+  }
+
+  if (!complete || !nuit || !located(nuit) || !d.date) return;
+  const cs = sunset(nuit.lat, nuit.lng, d.date, tz);
+  const to = rules.latestArrival(cs, settings);
+  if (to == null) return;
+  const times = stops.map((s) => s.place.time).filter((x) => x != null);
+  const from = Math.min(hm(settings.day_start) ?? 510, ...times);
+  const visitMin = visits.reduce((n, v) => n + (v.minutes || 0), 0);
+  let needMin = visitMin + drive;
+  if (needMin > LONG_DAY_MIN) needMin += MEAL_MIN;
+  const windowMin = to - from;
+  if (needMin > windowMin) {
+    const biggest = visits.filter((v) => v.minutes != null).sort((a, b) => b.minutes - a.minutes).slice(0, 2).map((v) => v.s.place.name);
+    add('fix', J, 'day_overloaded', {
+      need: fmtDur(needMin), window: fmtDur(windowMin), from: hhmm(from), to: hhmm(to), visits: fmtDur(visitMin), drive: fmtDur(drive), list: biggest.join(', ') || '—',
+    }, { ...ids, needMinutes: needMin, windowMinutes: windowMin, visitMinutes: visitMin, driveMinutes: drive });
+  }
+}
+
+/** The night whose evening is day `d` (a stay over several nights included), or null. */
+function campOf(model, dayIndex) {
+  const idx = (id) => (model.days.find((x) => x.id === id) || {}).index;
+  return model.nights.find((n) => idx(n.startDayId) <= dayIndex && dayIndex < idx(n.endDayId)) || null;
+}
+
+/**
+ * Money that could be saved, never blocking:
+ *  - a night above the target price when the night search (cache only) knows a legal, open,
+ *    cheaper place within 20 min of detour: net saving = price - its price - detour fuel;
+ *  - coming back to the same camp although tomorrow's first stop is the other way: the
+ *    extra km and fuel (a rooftop tent is folded every morning anyway: staying put saves
+ *    no packing).
+ */
+async function savings({ ctx, model, settings, add, L, deadline, dayLabel }) {
+  const cur = model.currency;
+  const perKm = fuelPerKm(settings);
+  // Lazy: nights.js needs this module.
+  const { findNightsForDay } = require('./nights');
+  for (const d of model.days) {
+    const nuit = nightOf(model, d);
+    if (!nuit || nuit.price == null || nuit.price <= settings.night_price_target) continue;
+    if (deadline && deadline.left() < 1500) break;
+    let r;
+    try {
+      r = await findNightsForDay(ctx, model, { dayId: d.id, sources: ['osm'] }, { settings, deadline, network: false });
+    } catch { continue; }
+    const best = r.candidates
+      .filter((c) => !c.blocked.length && !c.legalRisk && c.openOnDate !== 'closed' && c.price != null && c.price < nuit.price && c.detourMinutes != null && c.detourMinutes <= 20)
+      .map((c) => ({ c, net: Math.round((nuit.price - c.price - Math.max(0, c.detourKm || 0) * perKm) * 100) / 100 }))
+      .filter((x) => x.net > 0)
+      .sort((a, b) => b.net - a.net)[0];
+    if (best) {
+      add('verify', dayLabel(d), 'saving_night', {
+        name: nuit.name, current: money(nuit.price, cur, L), alt: best.c.name, price: money(best.c.price, cur, L), detour: best.c.detourMinutes, saving: money(best.net, cur, L),
+      }, { dayId: d.id, dayNumber: d.n, placeId: nuit.placeId, savingAmount: best.net });
+    }
+  }
+  for (const d of model.days) {
+    const next = model.days[d.index + 1];
+    const camp = campOf(model, d.index);
+    const before = campOf(model, d.index - 1);
+    if (!next || !camp || !before || camp.placeId !== before.placeId || !located(camp)) continue;
+    const lastVisit = [...d.assignments].reverse().find((a) => located(a.place) && a.place.id !== camp.placeId && !isTrace(a.place.categoryName, a.place));
+    const first = next.assignments.find((a) => located(a.place) && a.place.id !== camp.placeId && !isTrace(a.place.categoryName, a.place));
+    if (!lastVisit || !first) continue;
+    // Straight lines x 1.3: an estimate of the road, said as such.
+    const E = pos(lastVisit.place);
+    const F = pos(first.place);
+    const C = pos(camp);
+    const extra = Math.round((distKm(E, C) + distKm(C, F) - distKm(E, F)) * 1.3);
+    if (extra < 20) continue;
+    add('verify', dayLabel(d), 'backtrack', {
+      name: camp.name, next: first.place.name, km: extra, cost: money(extra * perKm, cur, L), tent: settings.vehicle === 'rooftop_tent' ? t(L, 'backtrack_tent') : '',
+    }, { dayId: d.id, dayNumber: d.n, placeId: camp.placeId, extraKm: extra });
+  }
 }
 
 async function checkTrip(ctx, model, { settings, network = true, deadline, lang, now = Date.now() } = {}) {
@@ -72,7 +185,10 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       legIdx.push(leg);
       if (!(onFoot && prec)) prec = car;
     });
-    return { day: d, plan, tolls, legIdx };
+    // The drive to tonight's place when the night is not one of the day's stops.
+    const nightInStops = plan.nuit && plan.stops.some((x) => x.accommodationId === plan.nuit.id);
+    const toNight = plan.nuit && !nightInStops && located(plan.nuit) && prec ? need(prec, pos(plan.nuit), tolls) : null;
+    return { day: d, plan, tolls, legIdx, toNight };
   });
   const byTolls = [true, false].map((tolls) => pairs.map((p, i) => [p, i]).filter(([p]) => p.tolls === tolls));
   const minutes = new Array(pairs.length).fill(null);
@@ -88,10 +204,11 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
   // ---------- pass 2: rules, day by day ----------
   const anyTrace = model.days.some((d) => d.assignments.some((a) => isTrace(a.place.categoryName, a.place)));
   let dryNights = 0;
-  for (const { day: d, plan, legIdx } of plans) {
+  for (const { day: d, plan, legIdx, toNight } of plans) {
     const J = dayLabel(d);
     const ids = { dayId: d.id, dayNumber: d.n };
     const { veille, nuit, trace, stops } = plan;
+    dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L, tz });
 
     if (anyTrace && (veille || nuit)) {
       if (!trace) add('fix', J, 'no_trace', {}, ids);
@@ -200,6 +317,8 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
     }
   }
 
+  await savings({ ctx, model, settings, add, L, deadline, dayLabel });
+
   // ---------- stale data: bookings, budget, to-dos ----------
   const unplanned = unplannedNights(model);
   const cites = (txt) => {
@@ -246,4 +365,4 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
   return { ok: counts.blocking === 0, counts, findings, pendingRoutes: pending };
 }
 
-module.exports = { checkTrip, dayPlan, carPos, LEVELS, nameKey };
+module.exports = { checkTrip, dayPlan, carPos, campOf, isVisit, LEVELS, nameKey };

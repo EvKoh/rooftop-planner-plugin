@@ -12,6 +12,8 @@ const { tripBudget } = require('./budget');
 const { SAFETY } = require('./tool-specs');
 
 const STEPS = ['check', 'nights', 'routes', 'schedule', 'budget'];
+const LOAD_KEYS = ['day_overloaded', 'too_many_activities', 'visit_unknown'];
+const SAVING_KEYS = ['saving_night', 'backtrack'];
 
 function parseToken(tok) {
   const m = String(tok || '').match(/^(check|nights|routes|schedule|budget)\.(\d{1,3})$/);
@@ -46,6 +48,11 @@ async function planTrip(ctx, model, o, opts) {
       const r = await checkTrip(ctx, model, { ...opts, network: true });
       out.results.check = { ok: r.ok, counts: r.counts, findings: r.findings.filter((f) => f.level !== 'info').slice(0, 60) };
       for (const f of r.findings.filter((x) => x.level === 'blocking')) out.actions.push({ priority: 1, action: f.message });
+      // An overloaded day, too many activities, unknown durations, then the possible savings.
+      for (const f of r.findings.filter((x) => LOAD_KEYS.includes(x.key))) out.actions.push({ priority: 2, action: f.message });
+      for (const f of r.findings.filter((x) => SAVING_KEYS.includes(x.key))) out.actions.push({ priority: 3, action: f.message });
+      const days = r.findings.filter((x) => x.key === 'day_overloaded');
+      out.results.load = { overloadedDays: days.map((f) => ({ day: f.dayNumber, needMinutes: f.needMinutes, windowMinutes: f.windowMinutes })), savings: r.findings.filter((x) => SAVING_KEYS.includes(x.key)).map((f) => ({ day: f.dayNumber, key: f.key, amount: f.savingAmount ?? null, extraKm: f.extraKm ?? null })) };
     } else if (name === 'nights') {
       out.results.nights = out.results.nights || [];
       const nightDays = model.days.filter((d) => model.nights.some((n) => n.startDayId === d.id));
@@ -63,8 +70,12 @@ async function planTrip(ctx, model, o, opts) {
           }
           const best = r.candidates.filter((c) => !c.blocked.length).slice(0, 3);
           out.results.nights.push({ day: d.n, current: r.currentNight, best });
-          const cheaper = best.find((c) => c.price != null && r.currentNight && r.currentNight.price != null && c.price < r.currentNight.price && (c.detourMinutes ?? 99) <= 30 && !c.legalRisk);
-          if (cheaper) out.actions.push({ priority: 2, action: `Day ${d.n}: "${cheaper.name}" (${cheaper.price}, ${cheaper.detourMinutes} min detour) could replace "${r.currentNight.name}" (${r.currentNight.price}): verify ${cheaper.toVerify.join(', ')} (vanlife_host_message drafts the question to the host), then ask the user` });
+          // Net of the detour's fuel, within 20 min, legal and not closed that night.
+          const cheaper = best.find((c) => c.price != null && r.currentNight && r.currentNight.price != null && c.price < r.currentNight.price && (c.detourMinutes ?? 99) <= 20 && !c.legalRisk && c.openOnDate !== 'closed');
+          if (cheaper) {
+            const net = Math.round((r.currentNight.price - (cheaper.totalCost ?? cheaper.price)) * 100) / 100;
+            if (net > 0) out.actions.push({ priority: 2, action: `Day ${d.n}: "${cheaper.name}" (${cheaper.price}, ${cheaper.detourMinutes} min detour) could replace "${r.currentNight.name}" (${r.currentNight.price}), saving ${net} net of fuel: verify ${cheaper.toVerify.join(', ')} (vanlife_host_message drafts the question to the host), then ask the user` });
+          }
         } catch (e) {
           out.results.nights.push({ day: d.n, error: String(e.message || e) });
         }
@@ -82,7 +93,7 @@ async function planTrip(ctx, model, o, opts) {
         const d = model.days[index];
         try {
           const r = await scheduleDay(ctx, model, { dayId: d.id }, opts);
-          out.results.schedule.push({ day: d.n, departure: r.departure, night: r.night, conflicts: r.conflicts });
+          out.results.schedule.push({ day: d.n, departure: r.departure, night: r.night, conflicts: r.conflicts, stays: r.stops.map((x) => ({ name: x.name, minutes: x.stayMinutes })) });
           if (r.night && r.night.ok === false) out.actions.push({ priority: 1, action: `Day ${d.n}: arrival ${r.night.arrival} at "${r.night.name}" is ${r.night.lateByMinutes} min too late (latest ${r.night.latestArrival}) — ${r.night.fixes[0]}` });
           for (const c of r.conflicts) out.actions.push({ priority: 1, action: `Day ${d.n}: "${c.name}" ${c.reason}` });
           out.coreCalls.push(...r.coreCalls);
@@ -106,4 +117,4 @@ async function planTrip(ctx, model, o, opts) {
   return out;
 }
 
-module.exports = { planTrip, planRequest, parseToken, STEPS };
+module.exports = { planTrip, planRequest, parseToken, STEPS, LOAD_KEYS, SAVING_KEYS };

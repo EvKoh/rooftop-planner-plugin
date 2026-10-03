@@ -83,6 +83,9 @@ async function placeColumns(ctx, tripId, settings) {
     // A free stop (lunch break, viewpoint) is not a night: no "0,00 €/night" on it.
     if (price && !(+p.price === 0 && !rec)) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-price', label: t(L, 'col.price'), value: price.slice(0, 256), icon: 'Euro' });
     if (!rec) continue;
+    // Time on site of a visit: "3 h 30 min" (the host strips emoji: a lucide icon instead).
+    const visit = placeInfo.visitText(rec);
+    if (visit) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-visit', label: t(L, 'col.visit'), value: visit, icon: 'Timer', tone: 'default' });
     for (const c of amenityChips(rec, L)) {
       out.push({ kind: 'column', entityId: p.id, id: `vanlife-am-${c.key}`, label: c.label, value: c.value.slice(0, 256), icon: ICONS[c.key], tone: 'default' });
     }

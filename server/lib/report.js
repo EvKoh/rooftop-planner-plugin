@@ -41,7 +41,8 @@ function bannerText(f, settings) {
 // Points worth a list, not a chip: every night of a new trip lacks a contact at first, and
 // a chip per night would push the real problems out of the banner. vanlife_check_trip and
 // vanlife_night list them.
-const NOT_IN_BANNER = new Set(['night_no_contact']);
+// Same for the visits with no known duration and the possible savings (never a problem).
+const NOT_IN_BANNER = new Set(['night_no_contact', 'visit_unknown', 'saving_night', 'backtrack']);
 
 function bannerFrom(all, settings) {
   const findings = all.filter((f) => !NOT_IN_BANNER.has(f.key));

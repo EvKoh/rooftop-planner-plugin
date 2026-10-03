@@ -100,5 +100,21 @@
   "ui.per.vehicle": "nəqliyyat vasitəsi",
   "ui.per.flat": "sabit qiymət (vahidsiz)",
   "ui.priceNote": "Qiymət təfərrüatı",
-  "ui.priceNoteHint": "məs. ilk 2 saat pulsuz, sonra 5 €/saat"
+  "ui.priceNoteHint": "məs. ilk 2 saat pulsuz, sonra 5 €/saat",
+  "col.visit": "Ziyarət",
+  "ui.visit": "Ziyarət",
+  "ui.visitMin": "Yerində ən az vaxt (dəq)",
+  "ui.visitMax": "Yerində ən çox vaxt (dəq)",
+  "day_overloaded": "{window} faydalı gün ({from}–{to}) üçün {need} lazımdır (ziyarət {visits}, sürüş {drive}): {list} çıxarın və ya köçürün",
+  "s.day_overloaded": "{window} üçün {need}",
+  "too_many_activities": "bir gün üçün çoxdur: {list} — gündə bir böyük fəaliyyət ({big}-dən) və ya ən çoxu iki kiçik ({small}-dək)",
+  "s.too_many_activities": "çox fəaliyyət",
+  "visit_unknown": "ziyarət müddəti məlum deyil: {list} — günün yükünü yoxlamaq üçün daxil edin",
+  "s.visit_unknown": "müddət məlum deyil",
+  "saving_night": "\"{alt}\" ({price}, {detour} dəq dolama) qanuni, açıq və \"{name}\" ({current}) yerindən ucuzdur: yanacaqdan sonra xalis {saving} qənaət",
+  "s.saving_night": "{saving} qənaət",
+  "backtrack": "bu axşam \"{name}\" yerinə qayıdış, sabah \"{next}\" istiqamətində {km} km geri (təxminən {cost} yanacaq): sabahkı marşrutda gecə axtarın{tent}",
+  "backtrack_tent": " — dam çadırı onsuz da hər səhər yığılır: qalmaq heç nəyə qənaət etmir",
+  "s.backtrack": "{km} km geri",
+  "route.name": "Marşrut gün {n} — {from} → {to} ({km} km, {drive})"
 }

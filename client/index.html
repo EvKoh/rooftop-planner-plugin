@@ -85,6 +85,8 @@
       if (d.summary) kids.push(h('div', { class: 'line' }, d.summary.split('  ').map(function (p) { return h('span', { text: p }); })));
       else kids.push(h('div', { class: 'muted', text: S('ui.none') }));
       if (extra.length) kids.push(h('div', { class: 'muted', text: extra.join(' · ') }));
+      if (d.visitText) kids.push(h('div', { class: 'line' }, [h('span', { text: S('ui.visit') + ' : ' + d.visitText })]));
+      if (d.info.visit_source) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.visit_source) }));
       if (d.info.source) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.source) + (d.info.checked ? ' · ' + new Intl.DateTimeFormat(st.locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(d.info.checked + 'T12:00:00Z')) : '') }));
       return kids.concat(contactLinks(d));
     }
@@ -101,6 +103,12 @@
     }
     function number(name, value, step) {
       var i = h('input', { class: 'trek-input', type: 'number', name: name, step: step || '0.01', min: '0', inputmode: 'decimal' });
+      if (value != null) i.value = String(value);
+      return i;
+    }
+
+    function minutes(name, value) {
+      var i = h('input', { class: 'trek-input', type: 'number', name: name, step: '5', min: '5', max: '1440', inputmode: 'numeric' });
       if (value != null) i.value = String(value);
       return i;
     }
@@ -125,6 +133,10 @@
         h('div', { class: 'grid' }, Object.keys(d.amenities).map(function (k) {
           return field(S('amLong.' + k), select(k, d.amenities[k], d.info.amenities[k] || 'unknown', opt));
         })),
+        h('div', { class: 'grid' }, [
+          field(S('ui.visitMin'), minutes('visit_min_minutes', d.info.visit_min_minutes)),
+          field(S('ui.visitMax'), minutes('visit_max_minutes', d.info.visit_max_minutes)),
+        ]),
         h('div', { class: 'grid' }, [
           field(S('ui.maxHeight'), number('max_height_m', d.info.max_height_m)),
           field(S('ui.maxLength'), number('max_length_m', d.info.max_length_m)),
@@ -194,7 +206,7 @@
       });
       if (contacts.languages) contacts.languages = contacts.languages.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
       set.contacts = contacts;
-      ['price_amount', 'dog_fee', 'max_height_m', 'max_length_m', 'max_weight_t'].forEach(function (k) { set[k] = set[k] === '' ? null : Number(set[k]); });
+      ['price_amount', 'dog_fee', 'max_height_m', 'max_length_m', 'max_weight_t', 'visit_min_minutes', 'visit_max_minutes'].forEach(function (k) { set[k] = set[k] === '' ? null : Number(set[k]); });
       set.currency = String(set.currency || 'EUR').toUpperCase();
       // An empty unit or note means "not said".
       set.per = set.per ? set.per : null;

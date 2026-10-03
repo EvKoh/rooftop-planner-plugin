@@ -100,5 +100,21 @@
   "ui.per.vehicle": "車輛",
   "ui.per.flat": "固定價（無單位）",
   "ui.priceNote": "價格說明",
-  "ui.priceNoteHint": "例：前 2 小時免費，之後 5 €/小時"
+  "ui.priceNoteHint": "例：前 2 小時免費，之後 5 €/小時",
+  "col.visit": "遊覽",
+  "ui.visit": "遊覽時長",
+  "ui.visitMin": "最短停留時間（分鐘）",
+  "ui.visitMax": "最長停留時間（分鐘）",
+  "day_overloaded": "可用時間 {window}（{from}–{to}）需要 {need}（遊覽 {visits}，駕駛 {drive}）：刪除或移動 {list}",
+  "s.day_overloaded": "{window} 需 {need}",
+  "too_many_activities": "一天安排過多：{list} — 每天一項大型活動（{big} 起）或最多兩項小活動（{small} 以內）",
+  "s.too_many_activities": "活動過多",
+  "visit_unknown": "遊覽時長未知：{list} — 請填寫以檢查當天負荷",
+  "s.visit_unknown": "時長未知",
+  "saving_night": "「{alt}」（{price}，繞行 {detour} 分鐘）合法、營業且比「{name}」（{current}）便宜：扣除油費淨省 {saving}",
+  "s.saving_night": "節省 {saving}",
+  "backtrack": "今晚返回「{name}」，明天向「{next}」回頭 {km} 公里（油費約 {cost}）：請在明天的路線上找過夜地點{tent}",
+  "backtrack_tent": " — 車頂帳篷反正每天早上都要收起：住在原地並不省事",
+  "s.backtrack": "回頭 {km} 公里",
+  "route.name": "第 {n} 天路線 — {from} → {to}（{km} 公里，{drive}）"
 }

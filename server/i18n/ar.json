@@ -100,5 +100,21 @@
   "ui.per.vehicle": "مركبة",
   "ui.per.flat": "سعر ثابت (بدون وحدة)",
   "ui.priceNote": "تفاصيل السعر",
-  "ui.priceNoteHint": "مثال: مجاني أول ساعتين ثم 5 €/ساعة"
+  "ui.priceNoteHint": "مثال: مجاني أول ساعتين ثم 5 €/ساعة",
+  "col.visit": "زيارة",
+  "ui.visit": "زيارة",
+  "ui.visitMin": "أقل وقت في المكان (دقيقة)",
+  "ui.visitMax": "أطول وقت في المكان (دقيقة)",
+  "day_overloaded": "يلزم {need} (زيارات {visits}، قيادة {drive}) مقابل {window} من اليوم المتاح ({from}–{to}): احذف أو انقل {list}",
+  "s.day_overloaded": "{need} مقابل {window}",
+  "too_many_activities": "كثير على يوم واحد: {list} — نشاط كبير واحد في اليوم (من {big}) أو نشاطان صغيران على الأكثر (حتى {small})",
+  "s.too_many_activities": "أنشطة كثيرة",
+  "visit_unknown": "مدة الزيارة غير معروفة: {list} — أدخلها للتحقق من حمل اليوم",
+  "s.visit_unknown": "مدة غير معروفة",
+  "saving_night": "\"{alt}\" ({price}، تحويلة {detour} دقيقة) قانوني ومفتوح وأرخص من \"{name}\" ({current}): توفير صافٍ {saving} بعد الوقود",
+  "s.saving_night": "توفير {saving}",
+  "backtrack": "العودة إلى \"{name}\" الليلة ثم {km} كم إلى الخلف نحو \"{next}\" غدًا (نحو {cost} وقود): ابحث عن مبيت على طريق الغد{tent}",
+  "backtrack_tent": " — خيمة السقف تُطوى كل صباح على أي حال: البقاء لا يوفر الطي",
+  "s.backtrack": "{km} كم إلى الخلف",
+  "route.name": "مسار اليوم {n} — {from} → {to} ({km} كم، {drive})"
 }

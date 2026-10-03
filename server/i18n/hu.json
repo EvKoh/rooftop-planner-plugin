@@ -100,5 +100,21 @@
   "ui.per.vehicle": "jármű",
   "ui.per.flat": "átalány (egység nélkül)",
   "ui.priceNote": "Ár részletei",
-  "ui.priceNoteHint": "pl. az első 2 óra ingyenes, utána 5 €/óra"
+  "ui.priceNoteHint": "pl. az első 2 óra ingyenes, utána 5 €/óra",
+  "col.visit": "Látogatás",
+  "ui.visit": "Látogatás",
+  "ui.visitMin": "Legrövidebb idő a helyszínen (perc)",
+  "ui.visitMax": "Leghosszabb idő a helyszínen (perc)",
+  "day_overloaded": "{need} kell (látogatás {visits}, vezetés {drive}) {window} hasznos napra ({from}–{to}): hagyd ki vagy tedd át: {list}",
+  "s.day_overloaded": "{need} kell {window} alatt",
+  "too_many_activities": "túl sok egy napra: {list} — napi egy nagy program ({big}-tól) vagy legfeljebb két kicsi ({small}-ig)",
+  "s.too_many_activities": "túl sok program",
+  "visit_unknown": "ismeretlen látogatási idő: {list} — add meg, hogy a nap terhelése ellenőrizhető legyen",
+  "s.visit_unknown": "ismeretlen időtartam",
+  "saving_night": "„{alt}” ({price}, {detour} perc kitérő) legális, nyitva van és olcsóbb, mint „{name}” ({current}): {saving} nettó megtakarítás üzemanyag után",
+  "s.saving_night": "{saving} megtakarítás",
+  "backtrack": "este vissza ide: „{name}”, holnap {km} km visszafelé „{next}” felé (kb. {cost} üzemanyag): keress éjszakát a holnapi útvonalon{tent}",
+  "backtrack_tent": " — a tetősátrat úgyis minden reggel összecsukjátok: maradni nem spórol semmit",
+  "s.backtrack": "{km} km visszafelé",
+  "route.name": "Útvonal {n}. nap — {from} → {to} ({km} km, {drive})"
 }

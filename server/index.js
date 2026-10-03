@@ -127,6 +127,7 @@ module.exports = definePlugin({
             // The price as the planner chip shows it (unit, free note, dog fee).
             priceText: placeInfo.priceText(place.price == null ? null : +place.price, place.currency || 'EUR', info, L, { night }),
             units: placeInfo.PER,
+            visitText: placeInfo.visitText(info),
             recorded: !!info,
             summary: placeInfo.amenitiesText(info, L),
             refused: placeInfo.refuses(info, settings),

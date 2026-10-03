@@ -100,5 +100,21 @@
   "ui.per.vehicle": "vehículo",
   "ui.per.flat": "tarifa fija (sin unidad)",
   "ui.priceNote": "Detalles del precio",
-  "ui.priceNoteHint": "p. ej. gratis las 2 primeras h, luego 5 €/h"
+  "ui.priceNoteHint": "p. ej. gratis las 2 primeras h, luego 5 €/h",
+  "col.visit": "Visita",
+  "ui.visit": "Visita",
+  "ui.visitMin": "Tiempo mínimo en el lugar (min)",
+  "ui.visitMax": "Tiempo máximo en el lugar (min)",
+  "day_overloaded": "se necesitan {need} (visitas {visits}, conducción {drive}) para {window} de día útil ({from}–{to}): quitar o mover {list}",
+  "s.day_overloaded": "{need} para {window}",
+  "too_many_activities": "demasiado para un día: {list} — una actividad grande al día (desde {big}) o como mucho dos pequeñas (hasta {small})",
+  "s.too_many_activities": "demasiadas actividades",
+  "visit_unknown": "duración de visita desconocida: {list} — indícala para comprobar la carga del día",
+  "s.visit_unknown": "duración desconocida",
+  "saving_night": "«{alt}» ({price}, {detour} min de desvío) es legal, está abierto y es más barato que «{name}» ({current}): ahorro neto de {saving} tras el combustible",
+  "s.saving_night": "ahorro {saving}",
+  "backtrack": "vuelta a «{name}» esta noche y mañana {km} km hacia atrás hacia «{next}» (unos {cost} de combustible): busca una noche en la ruta de mañana{tent}",
+  "backtrack_tent": " — la tienda de techo se pliega cada mañana de todos modos: quedarse no ahorra plegado",
+  "s.backtrack": "{km} km hacia atrás",
+  "route.name": "Ruta día {n} — {from} → {to} ({km} km, {drive})"
 }

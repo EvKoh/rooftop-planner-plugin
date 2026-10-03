@@ -23,7 +23,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_plan_trip',
     title: 'Plan or re-plan a vanlife road trip (all-in-one)',
-    description: `All-in-one planner for a road trip with a rooftop tent, a campervan or a motorhome (the user's setting). With tripId: full check, challenges each night (cheaper legal night nearby), day routes, schedules from real drive times (arrive the configured margin before sunset), budget total (nights, fuel, tolls); returns a report, an ordered action list and the core TREK calls to make (reorder_day_assignments, update_assignment_time, create_budget_item). When "continuation" is returned, call again with it until it is null. apply=false (default) only proposes; apply=true also writes the day route places. Without tripId, pass "request" (destination, dates, wishes) for the steps to create the trip. Research what is marked "toVerify" on official sites first; vanlife_host_message drafts a question to a host. ${SAFETY}`,
+    description: `All-in-one planner for a road trip with a rooftop tent, a campervan or a motorhome (the user's setting). With tripId: full check, challenges each night (cheaper legal night nearby), day routes, schedules from real drive times (arrive the configured margin before sunset), budget total (nights, fuel, tolls), overloaded days from visit durations, possible savings; returns a report, an ordered action list and the core TREK calls to make (reorder_day_assignments, update_assignment_time, create_budget_item). When "continuation" is returned, call again with it until it is null. apply=false (default) only proposes; apply=true also writes the day route places. Without tripId, pass "request" (destination, dates, wishes) for the steps to create the trip. Research what is marked "toVerify" on official sites first; vanlife_host_message drafts a question to a host. ${SAFETY}`,
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -49,7 +49,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_check_trip',
     title: 'Check a vanlife trip for problems',
-    description: `Read-only check of a trip, day by day, for the user's vehicle. Levels: blocking (arrival after sunset minus the margin; stop visited outside its hours; check-in window or minimum stay missed; a night the vehicle may not use — motorhome area or car park for a rooftop tent, tents or dogs refused, height/length/weight limit; booking confirmed with no confirmation number), fix (times impossible with real drive times, overlaps, route place missing/not first/not joined, long shopping detour, nights without water in a row, stale booking/budget/to-do lines), verify (no e-mail or phone for a night, host contacted over 3 days ago with no answer logged, farm where farm camping is forbidden, van night outside a site, closure in the notes, day ending after sunset, price above the ceiling or unknown), info (sunset margin of each night). Fix what is certain; ask the user about choices. ${SAFETY}`,
+    description: `Read-only check of a trip, day by day, for the user's vehicle. Levels: blocking (arrival after sunset minus the margin; stop outside its hours; check-in window or minimum stay missed; a night the vehicle may not use: motorhome area or car park for a rooftop tent, tents or dogs refused, size limit; booking confirmed with no number), fix (impossible times, overlaps, route place missing/not first/not joined, long shopping detour, nights without water in a row, stale lines; overloaded day: visit durations + drive > usable day; more than one big activity or two small ones a day), verify (no host contact, host silent over 3 days, farm zone, van night outside a site, closure in the notes, after sunset, price above the ceiling or unknown, visit duration unknown, cheaper legal night within 20 min with its net saving, back to the same camp against tomorrow's direction), info (sunset margins). Fix what is certain; ask the user about choices. Never book, pay or message a host for the user.`,
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -116,7 +116,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_place',
     title: 'Everything about a place: amenities, price, contacts, exchanges',
-    description: `Read and keep what TREK has no field for on a place: amenities, price details, the host's contacts and the log of exchanges; used by the planner, the check, the budget and vanlife_host_message. Without placeId: list places by "filter" within "scope" (default: planned nights, i.e. with a lodging; counts of all scopes returned). With placeId: read one; "set" records fields (price on TREK's own price, its unit "per" — never night for a museum, lake or car park — and "price_note" for a free formula; amenities yes/no/unknown; contacts: null erases a field); "log" adds one exchange; "clear" removes the record, "clear_fields" only the named fields; "fill" fills empty amenities and contacts from the place's notes and TREK fields, OpenStreetMap and park4night, citing each source (platform pages are never a website). A known website or phone is copied into TREK's empty fields. Record only what a cited source states; never estimate. Never book, pay or message a host without the user's validation.`,
+    description: `Keep what TREK has no field for on a place: amenities, price details, visit duration, the host's contacts and exchanges. Without placeId: list places by "filter" within "scope" (default: planned nights, i.e. with a lodging; counts of all scopes returned). With placeId: read one; "set" records fields (price on TREK's own price, its unit "per" — never night for a museum, lake or car park — and "price_note" for a free formula; visit minutes; amenities yes/no/unknown; contacts: null erases a field); "log" adds one exchange; "clear" removes the record, "clear_fields" only the named fields; "fill" fills empty amenities and contacts from the place's notes and TREK fields, OpenStreetMap and park4night, and a visit duration the notes state, citing each source (platform pages are never a website). A website or phone is copied into TREK's empty fields. Record only what a cited source states; never estimate. Never book, pay or message a host unvalidated.`,
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -135,6 +135,8 @@ const TOOL_SPECS = [
             per: { type: 'string', enum: PER, nullable: true, description: 'Unit of the price: night, person, person_night, day, hour, entry (a visit), vehicle, flat (lump sum, no unit); null = not said (a night place then reads per night).' },
             price_note: { type: 'string', maxLength: PRICE_NOTE_MAX, nullable: true, description: 'Free price formula, shown instead of the unit, e.g. "free the first 2 hours, then 5 €/h", "donation", "3 €/person + 2 € dog".' },
             dog_fee: { type: 'number', minimum: 0, maximum: 1000, nullable: true },
+            visit_min_minutes: { type: 'integer', minimum: 5, maximum: 1440, nullable: true, description: 'Least time on site of a visit (museum, lake, hike), in minutes; the check sums it into the day. null erases.' },
+            visit_max_minutes: { type: 'integer', minimum: 5, maximum: 1440, nullable: true, description: 'Most time on site, optional.' },
             max_height_m: { type: 'number', minimum: 1, maximum: 6, nullable: true },
             max_length_m: { type: 'number', minimum: 2, maximum: 25, nullable: true },
             max_weight_t: { type: 'number', minimum: 0.5, maximum: 60, nullable: true },
@@ -171,7 +173,7 @@ const TOOL_SPECS = [
           },
         },
         clear: { type: 'boolean', default: false, description: 'Remove the whole record of the place.' },
-        clear_fields: { type: 'array', maxItems: 40, uniqueItems: true, items: { type: 'string', maxLength: 40 }, description: 'Clear only these: an amenity key, dog_fee, max_height_m, per, price_note, source, checked, a contact field (email, phone...), or amenities / contacts / log.' },
+        clear_fields: { type: 'array', maxItems: 40, uniqueItems: true, items: { type: 'string', maxLength: 40 }, description: 'Clear only these: an amenity key, dog_fee, max_height_m, visit_min_minutes, per, price_note, source, checked, a contact field (email, phone...), or amenities / contacts / log.' },
         fill: { type: 'boolean', default: false, description: 'Fill empty amenities and contacts: the place given by placeId, or the next 20 places of the trip; call again while "remaining" is above 0. Never overwrites a recorded value.' },
       },
     },

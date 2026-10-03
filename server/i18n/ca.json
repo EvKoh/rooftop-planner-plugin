@@ -100,5 +100,21 @@
   "ui.per.vehicle": "vehicle",
   "ui.per.flat": "tarifa fixa (sense unitat)",
   "ui.priceNote": "Detalls del preu",
-  "ui.priceNoteHint": "p. ex. gratis les 2 primeres h, després 5 €/h"
+  "ui.priceNoteHint": "p. ex. gratis les 2 primeres h, després 5 €/h",
+  "col.visit": "Visita",
+  "ui.visit": "Visita",
+  "ui.visitMin": "Temps mínim al lloc (min)",
+  "ui.visitMax": "Temps màxim al lloc (min)",
+  "day_overloaded": "calen {need} (visites {visits}, conducció {drive}) per a {window} de dia útil ({from}–{to}): treure o moure {list}",
+  "s.day_overloaded": "{need} per a {window}",
+  "too_many_activities": "massa per a un dia: {list} — una activitat gran al dia (des de {big}) o com a molt dues de petites (fins a {small})",
+  "s.too_many_activities": "massa activitats",
+  "visit_unknown": "durada de la visita desconeguda: {list} — indica-la per comprovar la càrrega del dia",
+  "s.visit_unknown": "durada desconeguda",
+  "saving_night": "«{alt}» ({price}, {detour} min de desviació) és legal, obert i més barat que «{name}» ({current}): estalvi net de {saving} després del combustible",
+  "s.saving_night": "estalvi {saving}",
+  "backtrack": "tornada a «{name}» aquesta nit i demà {km} km enrere cap a «{next}» (uns {cost} de combustible): busca una nit a la ruta de demà{tent}",
+  "backtrack_tent": " — la tenda de sostre es plega cada matí igualment: quedar-se no estalvia plegar",
+  "s.backtrack": "{km} km enrere",
+  "route.name": "Ruta dia {n} — {from} → {to} ({km} km, {drive})"
 }

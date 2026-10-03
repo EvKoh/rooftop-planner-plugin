@@ -100,5 +100,21 @@
   "ui.per.vehicle": "kendaraan",
   "ui.per.flat": "tarif tetap (tanpa satuan)",
   "ui.priceNote": "Rincian harga",
-  "ui.priceNoteHint": "mis. gratis 2 jam pertama, lalu €5/jam"
+  "ui.priceNoteHint": "mis. gratis 2 jam pertama, lalu €5/jam",
+  "col.visit": "Kunjungan",
+  "ui.visit": "Kunjungan",
+  "ui.visitMin": "Waktu minimum di lokasi (mnt)",
+  "ui.visitMax": "Waktu maksimum di lokasi (mnt)",
+  "day_overloaded": "perlu {need} (kunjungan {visits}, berkendara {drive}) untuk {window} hari yang bisa dipakai ({from}–{to}): hapus atau pindahkan {list}",
+  "s.day_overloaded": "{need} untuk {window}",
+  "too_many_activities": "terlalu banyak untuk sehari: {list} — satu aktivitas besar per hari (mulai {big}) atau paling banyak dua yang kecil (hingga {small})",
+  "s.too_many_activities": "terlalu banyak aktivitas",
+  "visit_unknown": "durasi kunjungan tidak diketahui: {list} — isi agar beban hari bisa diperiksa",
+  "s.visit_unknown": "durasi tidak diketahui",
+  "saving_night": "\"{alt}\" ({price}, memutar {detour} mnt) legal, buka, dan lebih murah dari \"{name}\" ({current}): hemat bersih {saving} setelah bensin",
+  "s.saving_night": "hemat {saving}",
+  "backtrack": "kembali ke \"{name}\" malam ini, lalu besok {km} km mundur ke arah \"{next}\" (sekitar {cost} bensin): cari tempat menginap di rute besok{tent}",
+  "backtrack_tent": " — tenda atap tetap dilipat setiap pagi: tinggal di tempat tidak menghemat apa pun",
+  "s.backtrack": "{km} km mundur",
+  "route.name": "Rute hari {n} — {from} → {to} ({km} km, {drive})"
 }

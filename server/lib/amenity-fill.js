@@ -11,7 +11,8 @@
 // Contacts (e-mail, phone, website) are filled the same way, field by field, from what the
 // place itself says first — TREK's own website and phone, then the e-mails, numbers and
 // web addresses quoted in its notes or description — then OpenStreetMap, then park4night;
-// each filled field names its source.
+// each filled field names its source. A time on site the notes state ("2h30 round trip")
+// fills an empty visit duration, quoting them.
 // Places looked at are remembered for a while in the plugin's db (ids and a date only), so
 // a place with nothing to find is not asked about on every visit.
 const overpass = require('./overpass');
@@ -19,7 +20,9 @@ const park4night = require('./park4night');
 const placeInfo = require('./place-info');
 const contacts = require('./contacts');
 const { distKm } = require('./util');
-const { t } = require('./i18n');
+const i18n = require('./i18n');
+const { t } = i18n;
+const { parseVisit } = require('./visit');
 
 const OSM_RADIUS_M = 150;
 const P4N_RADIUS_M = 60;
@@ -176,7 +179,7 @@ async function fill(ctx, tripId, opts = {}) {
     batch.push(p);
   }
   lap('read', t);
-  const res = { looked: batch.length, filled: 0, contacts: 0, nothing: 0, remaining: todo.length - read, park4nightLimited: false, osmBusy: false, ms };
+  const res = { looked: batch.length, filled: 0, contacts: 0, visits: 0, nothing: 0, remaining: todo.length - read, park4nightLimited: false, osmBusy: false, ms };
   if (!batch.length) { await remember(ctx, complete); return res; }
 
   let osm = [];
@@ -244,7 +247,13 @@ async function fill(ctx, tripId, opts = {}) {
       const hit = contactFrom.find((c) => c.values && c.values[k] && !(k === 'website' && contacts.notOwnSite(c.values[k])));
       if (hit) { cpatch[k] = hit.values[k]; csources[k] = hit.source; }
     }
-    if (!amenitiesFound && !Object.keys(cpatch).length) { res.nothing++; continue; }
+    // Time on site, from what the place's own notes or description say; never over a typed one.
+    const visit = (!current || current.visit_min_minutes == null) ? parseVisit(`${place.notes || ''}\n${place.description || ''}`) : null;
+    if (visit) {
+      Object.assign(patch, { visit_min_minutes: visit.min, visit_max_minutes: visit.max, visit_source: `${i18n.t(opts.language, 'src.notes')}: "${visit.quote}"` });
+      res.visits++;
+    }
+    if (!amenitiesFound && !visit && !Object.keys(cpatch).length) { res.nothing++; continue; }
     if (Object.keys(cpatch).length) { patch.contacts = cpatch; patch.contact_sources = csources; res.contacts++; }
     if (amenitiesFound && (!current || !current.source)) patch.source = `${sources.join(' · ')} (auto)`.slice(0, 300);
     if (amenitiesFound && (!current || !current.checked)) patch.checked = new Date().toISOString().slice(0, 10);

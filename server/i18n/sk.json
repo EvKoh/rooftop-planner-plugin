@@ -100,5 +100,21 @@
   "ui.per.vehicle": "vozidlo",
   "ui.per.flat": "paušál (bez jednotky)",
   "ui.priceNote": "Podrobnosti o cene",
-  "ui.priceNoteHint": "napr. prvé 2 h zadarmo, potom 5 €/h"
+  "ui.priceNoteHint": "napr. prvé 2 h zadarmo, potom 5 €/h",
+  "col.visit": "Návšteva",
+  "ui.visit": "Návšteva",
+  "ui.visitMin": "Najkratší čas na mieste (min)",
+  "ui.visitMax": "Najdlhší čas na mieste (min)",
+  "day_overloaded": "treba {need} (návštevy {visits}, jazda {drive}) na {window} využiteľného dňa ({from}–{to}): vyraďte alebo presuňte {list}",
+  "s.day_overloaded": "{need} na {window}",
+  "too_many_activities": "na jeden deň priveľa: {list} — jedna veľká aktivita denne (od {big}) alebo najviac dve malé (do {small})",
+  "s.too_many_activities": "priveľa aktivít",
+  "visit_unknown": "neznáma dĺžka návštevy: {list} — zadajte ju, aby sa dala skontrolovať záťaž dňa",
+  "s.visit_unknown": "neznáma dĺžka",
+  "saving_night": "„{alt}“ ({price}, obchádzka {detour} min) je legálne, otvorené a lacnejšie ako „{name}“ ({current}): čistá úspora {saving} po palive",
+  "s.saving_night": "úspora {saving}",
+  "backtrack": "večer späť do „{name}“, zajtra {km} km späť smerom k „{next}“ (asi {cost} za palivo): hľadajte noc na zajtrajšej trase{tent}",
+  "backtrack_tent": " — strešný stan sa aj tak každé ráno skladá: zostať nič neušetrí",
+  "s.backtrack": "{km} km späť",
+  "route.name": "Trasa deň {n} — {from} → {to} ({km} km, {drive})"
 }

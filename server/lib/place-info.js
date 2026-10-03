@@ -56,6 +56,9 @@ const PRICE_NOTE_MAX = 120;
 const PER_PERSON = ['person', 'person_night'];
 const NOT_A_NIGHT_PRICE = ['hour', 'entry'];
 const LIMITS = { max_height_m: [1, 6], max_length_m: [2, 25], max_weight_t: [0.5, 60] };
+// Time on site of a visit (museum, lake, hike...), in minutes: the minimum counts for the
+// day's load, the maximum is optional.
+const VISIT = { visit_min_minutes: [5, 1440], visit_max_minutes: [5, 1440] };
 const MIGRATION = 'CREATE TABLE IF NOT EXISTS place_info_index (trip_id INTEGER NOT NULL, place_id INTEGER NOT NULL, PRIMARY KEY (trip_id, place_id))';
 const COPY_MIGRATION = 'CREATE TABLE IF NOT EXISTS place_info_copy (place_id INTEGER PRIMARY KEY, trip_id INTEGER NOT NULL, rec TEXT NOT NULL)';
 const COPY_SQL = 'SELECT place_id, rec FROM place_info_copy WHERE trip_id = ?';
@@ -73,6 +76,9 @@ const blank = () => ({
   max_height_m: null,
   max_length_m: null,
   max_weight_t: null,
+  visit_min_minutes: null,
+  visit_max_minutes: null,
+  visit_source: null,
   amenities: Object.fromEntries(Object.keys(AMENITIES).map((k) => [k, 'unknown'])),
   source: null,
   checked: null,
@@ -119,6 +125,21 @@ function merge(stored, patch) {
     const v = numberField(p, k, min, max);
     if (v !== undefined) out[k] = v;
   }
+  let visitChanged = false;
+  for (const [k, [min, max]] of Object.entries(VISIT)) {
+    const v = numberField(p, k, min, max);
+    if (v === undefined) continue;
+    const next = v == null ? null : Math.round(v);
+    if (next !== out[k]) visitChanged = true;
+    out[k] = next;
+  }
+  if (out.visit_min_minutes != null && out.visit_max_minutes != null && out.visit_max_minutes < out.visit_min_minutes) {
+    throw new InfoError('visit_max_minutes must be at least visit_min_minutes');
+  }
+  // A duration someone types loses its automatic source.
+  if (visitChanged && !('visit_source' in p)) out.visit_source = null;
+  if ('visit_source' in p) out.visit_source = p.visit_source == null || p.visit_source === '' ? null : String(p.visit_source).slice(0, 200);
+  if (out.visit_min_minutes == null && out.visit_max_minutes == null) out.visit_source = null;
   for (const [k, allowed] of Object.entries(AMENITIES)) {
     if (!(k in p)) continue;
     if (!allowed.includes(p[k])) throw new InfoError(`${k} must be one of ${allowed.join(', ')}`);
@@ -163,7 +184,7 @@ function mergeContacts(out, stored, p) {
   for (const k of Object.keys(out.contact_sources)) if (out.contacts[k] == null || (Array.isArray(out.contacts[k]) && !out.contacts[k].length)) delete out.contact_sources[k];
 }
 
-const NUMBER_FIELDS = ['dog_fee', ...Object.keys(LIMITS)];
+const NUMBER_FIELDS = ['dog_fee', ...Object.keys(LIMITS), ...Object.keys(VISIT)];
 
 /**
  * The patch that clears the named fields: an amenity goes back to unknown, a number to null,
@@ -274,6 +295,22 @@ function amenitiesText(info, lang) {
   return parts.length ? parts.join('  ') : null;
 }
 
+/** 210 → "3 h 30 min", 45 → "45 min", 120 → "2 h"; null for null. */
+function duration(m) {
+  if (m == null) return null;
+  const h = Math.floor(m / 60);
+  const mm = Math.round(m % 60);
+  if (!h) return `${mm} min`;
+  return mm ? `${h} h ${String(mm).padStart(2, '0')} min` : `${h} h`;
+}
+
+/** "3 h 30 min" or "2 h – 3 h 30 min" for a record's visit duration, or null. */
+function visitText(info) {
+  if (!info || (info.visit_min_minutes == null && info.visit_max_minutes == null)) return null;
+  const a = duration(info.visit_min_minutes ?? info.visit_max_minutes);
+  return info.visit_max_minutes != null && info.visit_min_minutes != null && info.visit_max_minutes > info.visit_min_minutes ? `${a} – ${duration(info.visit_max_minutes)}` : a;
+}
+
 /** Does the place refuse this vehicle or party? (rooftop tent refused, dog refused, a limit exceeded) */
 function refuses(info, settings) {
   if (!info) return false;
@@ -366,4 +403,4 @@ async function getAll(ctx, tripId, placeIds) {
   return out;
 }
 
-module.exports = { PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

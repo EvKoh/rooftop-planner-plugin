@@ -100,5 +100,21 @@
   "ui.per.vehicle": "araç",
   "ui.per.flat": "sabit ücret (birimsiz)",
   "ui.priceNote": "Fiyat ayrıntıları",
-  "ui.priceNoteHint": "ör. ilk 2 saat ücretsiz, sonra 5 €/sa"
+  "ui.priceNoteHint": "ör. ilk 2 saat ücretsiz, sonra 5 €/sa",
+  "col.visit": "Ziyaret",
+  "ui.visit": "Ziyaret",
+  "ui.visitMin": "Yerinde en az süre (dk)",
+  "ui.visitMax": "Yerinde en çok süre (dk)",
+  "day_overloaded": "{window} kullanılabilir gün ({from}–{to}) için {need} gerekiyor (ziyaret {visits}, sürüş {drive}): {list} çıkarın veya taşıyın",
+  "s.day_overloaded": "{window} için {need}",
+  "too_many_activities": "bir gün için fazla: {list} — günde bir büyük etkinlik ({big} ve üzeri) ya da en fazla iki küçük ({small} kadar)",
+  "s.too_many_activities": "fazla etkinlik",
+  "visit_unknown": "ziyaret süresi bilinmiyor: {list} — günün yükünü kontrol etmek için girin",
+  "s.visit_unknown": "süre bilinmiyor",
+  "saving_night": "\"{alt}\" ({price}, {detour} dk sapma) yasal, açık ve \"{name}\" ({current}) yerinden ucuz: yakıt sonrası net {saving} tasarruf",
+  "s.saving_night": "{saving} tasarruf",
+  "backtrack": "bu akşam \"{name}\" yerine dönüş, yarın \"{next}\" yönüne {km} km geri (yaklaşık {cost} yakıt): yarının rotasında bir gece arayın{tent}",
+  "backtrack_tent": " — tavan çadırı zaten her sabah katlanıyor: kalmak toplama zahmetinden kurtarmaz",
+  "s.backtrack": "{km} km geri",
+  "route.name": "Rota gün {n} — {from} → {to} ({km} km, {drive})"
 }

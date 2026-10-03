@@ -100,5 +100,21 @@
   "ui.per.vehicle": "Fahrzeug",
   "ui.per.flat": "Pauschale (ohne Einheit)",
   "ui.priceNote": "Preisdetails",
-  "ui.priceNoteHint": "z. B. erste 2 Std. frei, dann 5 €/Std."
+  "ui.priceNoteHint": "z. B. erste 2 Std. frei, dann 5 €/Std.",
+  "col.visit": "Besuch",
+  "ui.visit": "Besuch",
+  "ui.visitMin": "Mindestdauer vor Ort (Min.)",
+  "ui.visitMax": "Höchstdauer vor Ort (Min.)",
+  "day_overloaded": "{need} nötig (Besuche {visits}, Fahrt {drive}) für {window} nutzbaren Tag ({from}–{to}): {list} streichen oder verschieben",
+  "s.day_overloaded": "{need} für {window}",
+  "too_many_activities": "zu viel für einen Tag: {list} — eine große Aktivität pro Tag (ab {big}) oder höchstens zwei kleine (bis {small})",
+  "s.too_many_activities": "zu viele Aktivitäten",
+  "visit_unknown": "Besuchsdauer unbekannt: {list} — eintragen, damit die Tagesbelastung geprüft werden kann",
+  "s.visit_unknown": "Besuchsdauer unbekannt",
+  "saving_night": "„{alt}“ ({price}, {detour} Min. Umweg) ist legal, geöffnet und günstiger als „{name}“ ({current}): {saving} Ersparnis nach Treibstoff",
+  "s.saving_night": "{saving} sparen",
+  "backtrack": "heute Abend zurück zu „{name}“, morgen {km} km zurück Richtung „{next}“ (etwa {cost} Treibstoff): eine Nacht auf der Route von morgen suchen{tent}",
+  "backtrack_tent": " — das Dachzelt wird ohnehin jeden Morgen eingeklappt: Bleiben spart kein Abbauen",
+  "s.backtrack": "{km} km zurück",
+  "route.name": "Route Tag {n} — {from} → {to} ({km} km, {drive})"
 }

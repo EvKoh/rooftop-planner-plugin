@@ -11,6 +11,7 @@ const { highwayAllowed } = require('./settings');
 const { dayPlan, carPos } = require('./check');
 const { findDay } = require('./schedule');
 const { isHike } = require('./classify');
+const { t } = require('./i18n');
 
 const located = (p) => p && p.lat != null && p.lng != null;
 const COLORS = ['#059669', '#c026d3', '#0891b2', '#e11d48', '#d97706', '#65a30d', '#7c3aed', '#2563eb'];
@@ -72,7 +73,8 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
       const { trace } = dayPlan(model, day);
       const old = trace ? model.poolById.get(trace.place.id) : null;
       const place = await ctx.places.create(model.tripId, {
-        name: `Route day ${day.n} — ${r.from} → ${r.to} (${Math.round(r.km)} km, ${r.drive})`.slice(0, 200),
+        // In the user's language, like every text a person reads in TREK.
+        name: t(settings.language, 'route.name', { n: day.n, from: r.from, to: r.to, km: Math.round(r.km), drive: r.drive }).slice(0, 200),
         lat: r.points[0][0], lng: r.points[0][1],
         route_geometry: JSON.stringify(r.points),
         route_color: old?.raw?.route_color || COLORS[day.index % COLORS.length],

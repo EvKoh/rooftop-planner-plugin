@@ -100,5 +100,21 @@
   "ui.per.vehicle": "xe",
   "ui.per.flat": "giá trọn gói (không đơn vị)",
   "ui.priceNote": "Chi tiết giá",
-  "ui.priceNoteHint": "vd. miễn phí 2 giờ đầu, sau đó 5 €/giờ"
+  "ui.priceNoteHint": "vd. miễn phí 2 giờ đầu, sau đó 5 €/giờ",
+  "col.visit": "Tham quan",
+  "ui.visit": "Tham quan",
+  "ui.visitMin": "Thời gian tối thiểu tại chỗ (phút)",
+  "ui.visitMax": "Thời gian tối đa tại chỗ (phút)",
+  "day_overloaded": "cần {need} (tham quan {visits}, lái xe {drive}) cho {window} ngày sử dụng được ({from}–{to}): bỏ hoặc dời {list}",
+  "s.day_overloaded": "cần {need} cho {window}",
+  "too_many_activities": "quá nhiều cho một ngày: {list} — mỗi ngày một hoạt động lớn (từ {big}) hoặc tối đa hai hoạt động nhỏ (đến {small})",
+  "s.too_many_activities": "quá nhiều hoạt động",
+  "visit_unknown": "chưa biết thời lượng tham quan: {list} — nhập để kiểm tra tải của ngày",
+  "s.visit_unknown": "chưa biết thời lượng",
+  "saving_night": "\"{alt}\" ({price}, đi vòng {detour} phút) hợp pháp, mở cửa và rẻ hơn \"{name}\" ({current}): tiết kiệm ròng {saving} sau nhiên liệu",
+  "s.saving_night": "tiết kiệm {saving}",
+  "backtrack": "tối nay quay lại \"{name}\", ngày mai đi lùi {km} km về phía \"{next}\" (khoảng {cost} nhiên liệu): hãy tìm chỗ ngủ trên tuyến ngày mai{tent}",
+  "backtrack_tent": " — lều nóc xe vẫn phải gấp mỗi sáng: ở lại không tiết kiệm được việc gấp",
+  "s.backtrack": "lùi {km} km",
+  "route.name": "Lộ trình ngày {n} — {from} → {to} ({km} km, {drive})"
 }

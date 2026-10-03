@@ -100,5 +100,21 @@
   "ui.per.vehicle": "차량",
   "ui.per.flat": "정액(단위 없음)",
   "ui.priceNote": "가격 세부 정보",
-  "ui.priceNoteHint": "예: 처음 2시간 무료, 이후 시간당 5€"
+  "ui.priceNoteHint": "예: 처음 2시간 무료, 이후 시간당 5€",
+  "col.visit": "방문",
+  "ui.visit": "방문 시간",
+  "ui.visitMin": "최소 체류 시간(분)",
+  "ui.visitMax": "최대 체류 시간(분)",
+  "day_overloaded": "사용 가능한 {window}({from}–{to})에 {need} 필요(방문 {visits}, 운전 {drive}): {list} 빼거나 옮기세요",
+  "s.day_overloaded": "{window}에 {need} 필요",
+  "too_many_activities": "하루에 너무 많음: {list} — 하루에 큰 활동 하나({big} 이상) 또는 작은 활동 최대 둘({small} 이하)",
+  "s.too_many_activities": "활동이 너무 많음",
+  "visit_unknown": "방문 시간 미상: {list} — 하루 부담을 확인하려면 입력하세요",
+  "s.visit_unknown": "방문 시간 미상",
+  "saving_night": "\"{alt}\"({price}, 우회 {detour}분)은 합법이며 영업 중이고 \"{name}\"({current})보다 저렴: 연료비 제외 {saving} 절약",
+  "s.saving_night": "{saving} 절약",
+  "backtrack": "오늘 밤 \"{name}\"(으)로 돌아간 뒤 내일 \"{next}\" 방향으로 {km} km 되돌아감(연료 약 {cost}): 내일 경로에서 숙박지를 찾으세요{tent}",
+  "backtrack_tent": " — 루프톱 텐트는 어차피 매일 아침 접으므로 같은 곳에 머물러도 이점이 없습니다",
+  "s.backtrack": "{km} km 역주행",
+  "route.name": "{n}일차 경로 — {from} → {to} ({km} km, {drive})"
 }

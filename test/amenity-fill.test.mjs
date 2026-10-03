@@ -83,7 +83,8 @@ describe('amenities filled from open sources', () => {
     const ctx = h.ctx;
     await pi.migrate(ctx); await fillLib.migrate(ctx);
     const r = await fillLib.fill(ctx, 1, { park4night: true });
-    expect(r).toMatchObject({ filled: 3, remaining: 0, park4nightLimited: false, osmBusy: false });
+    // + the lake: its notes say "Lake walk, 2 h.", a visit duration
+    expect(r).toMatchObject({ filled: 4, visits: 1, remaining: 0, park4nightLimited: false, osmBusy: false });
     expect(calls.overpass).toBe(1); // one query for the whole batch
     expect(calls.p4n).toBe(2); // only the two linked places cost a park4night request
 
@@ -134,14 +135,14 @@ describe('amenities filled from open sources', () => {
     const ctx = h.ctx;
     const r = await fillLib.fill(ctx, 1, { park4night: true });
     expect(r.osmBusy).toBe(true);
-    expect(r.filled).toBe(2); // the aire and the farm, from park4night alone
+    expect(r.filled).toBe(3); // the aire and the farm, from park4night alone, + the lake's visit duration
 
     vi.unstubAllGlobals();
     sources({ p4nStatus: 429 });
     const h2 = host();
     const tx = vi.spyOn(h2.ctx.db, 'tx');
     const r2 = await fillLib.fill(h2.ctx, 1, { park4night: true });
-    expect(r2).toMatchObject({ park4nightLimited: true, filled: 1 }); // the campsite, from OSM
+    expect(r2).toMatchObject({ park4nightLimited: true, filled: 2 }); // the campsite, from OSM, and the lake's visit duration
     const logged = tx.mock.calls.flatMap((c) => c[0].map((op) => op.args && op.args[0]));
     expect(logged).toContain(13);
     expect(logged).not.toContain(16);
@@ -160,7 +161,7 @@ describe('amenities filled from open sources', () => {
     const h = host({ park4night: false, queryResults: { 'SELECT place_id FROM place_info_index WHERE trip_id = ?': [{ place_id: 13 }] } });
     await pi.migrate(h.ctx); await fillLib.migrate(h.ctx);
     const r = await h.run(plugin).hook('mcpToolProvider', 'callTool', { name: 'vanlife_place', args: { tripId: 1, fill: true } });
-    expect(r.filled).toBe(1);
+    expect(r.filled).toBe(2); // the campsite, and the lake's visit duration
     const drv = h.run(plugin);
     const post = (path, body) => drv.route({ method: 'POST', path }, { body });
     const route = await post('/amenities/fill', { tripId: 1, placeId: 13 });

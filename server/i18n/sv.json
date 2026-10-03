@@ -100,5 +100,21 @@
   "ui.per.vehicle": "fordon",
   "ui.per.flat": "fast pris (ingen enhet)",
   "ui.priceNote": "Prisdetaljer",
-  "ui.priceNoteHint": "t.ex. gratis de första 2 tim, sedan 5 €/tim"
+  "ui.priceNoteHint": "t.ex. gratis de första 2 tim, sedan 5 €/tim",
+  "col.visit": "Besök",
+  "ui.visit": "Besök",
+  "ui.visitMin": "Minsta tid på plats (min)",
+  "ui.visitMax": "Längsta tid på plats (min)",
+  "day_overloaded": "{need} behövs (besök {visits}, körning {drive}) för {window} användbar dag ({from}–{to}): stryk eller flytta {list}",
+  "s.day_overloaded": "{need} för {window}",
+  "too_many_activities": "för mycket för en dag: {list} — en stor aktivitet per dag (från {big}) eller högst två små (upp till {small})",
+  "s.too_many_activities": "för många aktiviteter",
+  "visit_unknown": "okänd besökstid: {list} — fyll i den så att dagens belastning kan kontrolleras",
+  "s.visit_unknown": "okänd besökstid",
+  "saving_night": "\"{alt}\" ({price}, {detour} min omväg) är lagligt, öppet och billigare än \"{name}\" ({current}): sparar {saving} netto efter bränsle",
+  "s.saving_night": "spara {saving}",
+  "backtrack": "tillbaka till \"{name}\" i kväll, i morgon {km} km bakåt mot \"{next}\" (cirka {cost} bränsle): leta efter en natt längs morgondagens rutt{tent}",
+  "backtrack_tent": " — taktältet fälls ihop varje morgon ändå: att stanna sparar ingen packning",
+  "s.backtrack": "{km} km bakåt",
+  "route.name": "Rutt dag {n} — {from} → {to} ({km} km, {drive})"
 }

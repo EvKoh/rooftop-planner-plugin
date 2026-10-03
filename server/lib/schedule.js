@@ -61,7 +61,9 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
     const drive = legMin[i];
     const arrive = drive == null ? null : up5(tcur + drive);
     const current = s.place.end != null && s.place.time != null ? s.place.end - s.place.time : null;
-    const stay = stays[s.id] ?? current ?? s.place.duration ?? 60;
+    // The stop's own times that day, else the duration recorded on the place, else TREK's.
+    const info = (model.poolById && model.poolById.get(s.place.id) || {}).info;
+    const stay = stays[s.id] ?? current ?? (info && info.visit_min_minutes) ?? s.place.duration ?? 60;
     const start = arrive ?? s.place.time ?? tcur;
     const end = start + stay;
     if (day.wd != null) {

@@ -100,5 +100,21 @@
   "ui.per.vehicle": "pojazd",
   "ui.per.flat": "ryczałt (bez jednostki)",
   "ui.priceNote": "Szczegóły ceny",
-  "ui.priceNoteHint": "np. pierwsze 2 godz. gratis, potem 5 €/godz."
+  "ui.priceNoteHint": "np. pierwsze 2 godz. gratis, potem 5 €/godz.",
+  "col.visit": "Wizyta",
+  "ui.visit": "Wizyta",
+  "ui.visitMin": "Najkrótszy czas na miejscu (min)",
+  "ui.visitMax": "Najdłuższy czas na miejscu (min)",
+  "day_overloaded": "potrzeba {need} (wizyty {visits}, jazda {drive}) na {window} użytecznego dnia ({from}–{to}): usuń lub przenieś {list}",
+  "s.day_overloaded": "{need} na {window}",
+  "too_many_activities": "za dużo na jeden dzień: {list} — jedna duża atrakcja dziennie (od {big}) lub najwyżej dwie małe (do {small})",
+  "s.too_many_activities": "za dużo atrakcji",
+  "visit_unknown": "nieznany czas wizyty: {list} — wpisz go, aby sprawdzić obciążenie dnia",
+  "s.visit_unknown": "nieznany czas wizyty",
+  "saving_night": "„{alt}” ({price}, {detour} min objazdu) jest legalny, otwarty i tańszy niż „{name}” ({current}): {saving} oszczędności netto po paliwie",
+  "s.saving_night": "oszczędność {saving}",
+  "backtrack": "wieczorem powrót do „{name}”, jutro {km} km wstecz w stronę „{next}” (ok. {cost} paliwa): poszukaj noclegu na jutrzejszej trasie{tent}",
+  "backtrack_tent": " — namiot dachowy i tak składa się co rano: zostanie nic nie oszczędza",
+  "s.backtrack": "{km} km wstecz",
+  "route.name": "Trasa dzień {n} — {from} → {to} ({km} km, {drive})"
 }

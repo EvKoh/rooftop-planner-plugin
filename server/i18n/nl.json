@@ -100,5 +100,21 @@
   "ui.per.vehicle": "voertuig",
   "ui.per.flat": "vast bedrag (geen eenheid)",
   "ui.priceNote": "Prijsdetails",
-  "ui.priceNoteHint": "bv. eerste 2 u gratis, daarna € 5/u"
+  "ui.priceNoteHint": "bv. eerste 2 u gratis, daarna € 5/u",
+  "col.visit": "Bezoek",
+  "ui.visit": "Bezoek",
+  "ui.visitMin": "Minimale tijd ter plaatse (min)",
+  "ui.visitMax": "Maximale tijd ter plaatse (min)",
+  "day_overloaded": "{need} nodig (bezoeken {visits}, rijden {drive}) voor {window} bruikbare dag ({from}–{to}): {list} schrappen of verplaatsen",
+  "s.day_overloaded": "{need} voor {window}",
+  "too_many_activities": "te veel voor één dag: {list} — één grote activiteit per dag (vanaf {big}) of hooguit twee kleine (tot {small})",
+  "s.too_many_activities": "te veel activiteiten",
+  "visit_unknown": "bezoekduur onbekend: {list} — vul die in om de dagbelasting te controleren",
+  "s.visit_unknown": "bezoekduur onbekend",
+  "saving_night": "\"{alt}\" ({price}, {detour} min omweg) is legaal, open en goedkoper dan \"{name}\" ({current}): {saving} netto besparing na brandstof",
+  "s.saving_night": "bespaar {saving}",
+  "backtrack": "vanavond terug naar \"{name}\", morgen {km} km terug richting \"{next}\" (ongeveer {cost} brandstof): zoek een nacht op de route van morgen{tent}",
+  "backtrack_tent": " — de daktent wordt toch elke ochtend ingeklapt: blijven bespaart geen inpakken",
+  "s.backtrack": "{km} km terug",
+  "route.name": "Route dag {n} — {from} → {to} ({km} km, {drive})"
 }

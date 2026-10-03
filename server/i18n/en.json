@@ -235,5 +235,21 @@
   "ui.per.vehicle": "vehicle",
   "ui.per.flat": "flat rate (no unit)",
   "ui.priceNote": "Price details",
-  "ui.priceNoteHint": "e.g. free the first 2 h, then €5/h"
+  "ui.priceNoteHint": "e.g. free the first 2 h, then €5/h",
+  "col.visit": "Visit",
+  "ui.visit": "Visit",
+  "ui.visitMin": "Least time on site (min)",
+  "ui.visitMax": "Most time on site (min)",
+  "day_overloaded": "{need} needed (visits {visits}, driving {drive}) for {window} of usable day ({from}–{to}): remove or move {list}",
+  "s.day_overloaded": "{need} needed for {window}",
+  "too_many_activities": "too much for one day: {list} — one big activity a day (from {big}), or at most two small ones (up to {small})",
+  "s.too_many_activities": "too many activities",
+  "visit_unknown": "visit duration unknown: {list} — record it so the day's load can be checked",
+  "s.visit_unknown": "visit duration unknown",
+  "saving_night": "\"{alt}\" ({price}, {detour} min detour) is legal, open and cheaper than \"{name}\" ({current}): saves {saving} net of fuel",
+  "s.saving_night": "save {saving}",
+  "backtrack": "back to \"{name}\" tonight, then {km} km back towards \"{next}\" tomorrow (about {cost} of fuel): look for a night on tomorrow's route{tent}",
+  "backtrack_tent": " — the rooftop tent is folded every morning anyway: staying put saves no packing",
+  "s.backtrack": "{km} km backwards",
+  "route.name": "Route day {n} — {from} → {to} ({km} km, {drive})"
 }

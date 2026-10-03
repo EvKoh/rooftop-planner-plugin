@@ -100,5 +100,21 @@
   "ui.per.vehicle": "vozidlo",
   "ui.per.flat": "paušál (bez jednotky)",
   "ui.priceNote": "Podrobnosti o ceně",
-  "ui.priceNoteHint": "např. první 2 h zdarma, pak 5 €/h"
+  "ui.priceNoteHint": "např. první 2 h zdarma, pak 5 €/h",
+  "col.visit": "Návštěva",
+  "ui.visit": "Návštěva",
+  "ui.visitMin": "Nejkratší doba na místě (min)",
+  "ui.visitMax": "Nejdelší doba na místě (min)",
+  "day_overloaded": "potřeba {need} (návštěvy {visits}, jízda {drive}) na {window} využitelného dne ({from}–{to}): vyřaďte nebo přesuňte {list}",
+  "s.day_overloaded": "{need} na {window}",
+  "too_many_activities": "na jeden den příliš: {list} — jedna velká aktivita denně (od {big}) nebo nejvýš dvě malé (do {small})",
+  "s.too_many_activities": "příliš mnoho aktivit",
+  "visit_unknown": "neznámá délka návštěvy: {list} — zadejte ji, aby šlo zkontrolovat vytížení dne",
+  "s.visit_unknown": "neznámá délka",
+  "saving_night": "„{alt}“ ({price}, objížďka {detour} min) je legální, otevřené a levnější než „{name}“ ({current}): čistá úspora {saving} po palivu",
+  "s.saving_night": "úspora {saving}",
+  "backtrack": "večer zpět do „{name}“, zítra {km} km zpět směrem k „{next}“ (asi {cost} za palivo): hledejte noc na zítřejší trase{tent}",
+  "backtrack_tent": " — střešní stan se stejně každé ráno skládá: zůstat nic neušetří",
+  "s.backtrack": "{km} km zpět",
+  "route.name": "Trasa den {n} — {from} → {to} ({km} km, {drive})"
 }
