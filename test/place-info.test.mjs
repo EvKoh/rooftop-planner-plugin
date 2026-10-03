@@ -164,3 +164,25 @@ describe('place info through the plugin', () => {
     await expect(call(h, 'vanlife_place_info', { tripId: 1, placeId: 13, set: { water: 'yes' } })).rejects.toThrow(/db:meta|PERMISSION/);
   });
 });
+
+describe('place records read from the plugin\'s copy', () => {
+  it('reads a whole trip in one query, backfills older records and drops deleted places', async () => {
+    const rec = pi.merge(null, { water: 'yes', dog: 'yes', source: 'Example' });
+    const h = makeHost({ queryResults: {
+      [pi.COPY_SQL]: [{ place_id: 13, rec: JSON.stringify(rec) }, { place_id: 77, rec: JSON.stringify(rec) }, { place_id: 18, rec: '{broken' }],
+      [pi.INDEX_SQL]: [{ place_id: 13 }, { place_id: 16 }, { place_id: 77 }],
+    } });
+    await h.ctx.meta.set('place', 16, pi.META_KEY, pi.merge(null, { shower: 'yes' }));
+    const exec = vi.spyOn(h.ctx.db, 'exec');
+    const tx = vi.spyOn(h.ctx.db, 'tx');
+    const meta = vi.spyOn(h.ctx.meta, 'get');
+    const all = await pi.getAll(h.ctx, 1, [13, 16, 18]);
+    expect(all.get(13).amenities).toMatchObject({ water: 'yes', dog: 'yes' });
+    expect(all.get(16).amenities.shower).toBe('yes'); // older record, read from the place
+    expect(all.has(77)).toBe(false); // place no longer on the trip
+    expect(meta.mock.calls.map((c) => c[1])).toEqual([16]); // 13 came from the copy
+    expect(exec.mock.calls.some((c) => /INSERT OR REPLACE INTO place_info_copy/.test(c[0]) && c[1] === 16)).toBe(true);
+    expect(tx.mock.calls[0][0].map((op) => op.args.at(-1))).toEqual([77, 77]);
+  });
+});
+

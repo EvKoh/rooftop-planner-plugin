@@ -102,11 +102,19 @@ function candidates(places) {
  * → { looked, filled, nothing, remaining, park4nightLimited, osmBusy }
  */
 async function fill(ctx, tripId, opts = {}) {
-  const until = Date.now() + (opts.budgetMs ?? BUDGET_MS);
+  const t0 = Date.now();
+  const until = t0 + (opts.budgetMs ?? BUDGET_MS);
+  const ms = {};
+  const lap = (k, since) => { ms[k] = (ms[k] || 0) + Date.now() - since; };
+  let t = Date.now();
   const all = candidates(await ctx.trips.getPlaces(Number(tripId)));
+  lap('places', t);
   const only = opts.placeIds ? new Set(opts.placeIds.map(Number)) : null;
   const pool = only ? all.filter((p) => only.has(p.id)) : all;
+  t = Date.now();
   const seen = only ? new Set() : await recentlyChecked(ctx, pool.map((p) => p.id));
+  lap('log', t);
+  t = Date.now();
   const todo = pool.filter((p) => !seen.has(p.id));
   // Read records only until the batch is full: a trip can hold hundreds of places.
   const batch = [];
@@ -121,10 +129,12 @@ async function fill(ctx, tripId, opts = {}) {
     records.set(p.id, r);
     batch.push(p);
   }
-  const res = { looked: batch.length, filled: 0, nothing: 0, remaining: todo.length - read, park4nightLimited: false, osmBusy: false };
+  lap('read', t);
+  const res = { looked: batch.length, filled: 0, nothing: 0, remaining: todo.length - read, park4nightLimited: false, osmBusy: false, ms };
   if (!batch.length) { await remember(ctx, complete); return res; }
 
   let osm = [];
+  t = Date.now();
   try {
     const body = `(${batch.map((p) => `nwr(around:${OSM_RADIUS_M},${(+p.lat).toFixed(5)},${(+p.lng).toFixed(5)})[tourism~"^(camp_site|caravan_site)$"];`).join('')});out tags center;`;
     osm = (await overpass.query(ctx, body, { timeoutMs: 8000 })) || [];
@@ -132,6 +142,7 @@ async function fill(ctx, tripId, opts = {}) {
     if (e instanceof overpass.OverpassBusy) res.osmBusy = true; else throw e;
   }
 
+  lap('osm', t);
   const p4nAreas = [];
   const looked = [...complete];
   let done = 0;
@@ -150,7 +161,9 @@ async function fill(ctx, tripId, opts = {}) {
     if (opts.park4night && !res.park4nightLimited && (id || list)) {
       try {
         if (!list) {
+          const tp = Date.now();
           list = { center: { lat: +place.lat, lng: +place.lng }, places: await park4night.around(place.lat, place.lng, 5) };
+          lap('park4night', tp);
           p4nAreas.push(list);
         }
         const hit = (id && list.places.find((x) => x.id === id)) || nearest(place, list.places, P4N_RADIUS_M);
@@ -175,6 +188,7 @@ async function fill(ctx, tripId, opts = {}) {
     res.filled++;
   }
   res.remaining += batch.length - done;
+  ms.total = Date.now() - t0;
   res.looked = done;
   await remember(ctx, looked);
   return res;

@@ -10,7 +10,10 @@
 //
 // An index of (trip, place) pairs that HAVE a record, in the plugin's own db, lets the
 // planner columns read only those places (ctx.* calls are rate-limited, and a trip can
-// hold hundreds of places). It holds ids only; a stale entry is dropped on read.
+// hold hundreds of places); a stale entry is dropped on read. A copy of each record sits
+// beside it, so the columns read a whole trip in one query: reading hundreds of records
+// one by one does not fit the short time TREK gives a planner column. The copy on the
+// place stays the reference; this one is rewritten on every save.
 // Every value may be "unknown": nothing is ever guessed.
 const { toNum, pmap } = require('./util');
 const { t, money, num } = require('./i18n');
@@ -30,6 +33,12 @@ const AMENITIES = {
 const PER = ['night', 'person'];
 const LIMITS = { max_height_m: [1, 6], max_length_m: [2, 25], max_weight_t: [0.5, 60] };
 const MIGRATION = 'CREATE TABLE IF NOT EXISTS place_info_index (trip_id INTEGER NOT NULL, place_id INTEGER NOT NULL, PRIMARY KEY (trip_id, place_id))';
+const COPY_MIGRATION = 'CREATE TABLE IF NOT EXISTS place_info_copy (place_id INTEGER PRIMARY KEY, trip_id INTEGER NOT NULL, rec TEXT NOT NULL)';
+const COPY_SQL = 'SELECT place_id, rec FROM place_info_copy WHERE trip_id = ?';
+const INDEX_SQL = 'SELECT place_id FROM place_info_index WHERE trip_id = ?';
+// Records read one by one per call when the copy lacks them (older records): the rest
+// waits for the next call, which finds them copied.
+const BACKFILL = 24;
 
 class InfoError extends Error {}
 
@@ -153,6 +162,13 @@ function refuses(info, settings) {
 
 async function migrate(ctx) {
   await ctx.db.migrate('002_place_info_index', MIGRATION);
+  await ctx.db.migrate('004_place_info_copy', COPY_MIGRATION);
+}
+
+async function writeCopy(ctx, tripId, placeId, rec) {
+  try {
+    await ctx.db.exec('INSERT OR REPLACE INTO place_info_copy (place_id, trip_id, rec) VALUES (?, ?, ?)', Number(placeId), Number(tripId), JSON.stringify(rec));
+  } catch { /* the copy only speeds up reads */ }
 }
 
 async function get(ctx, placeId) {
@@ -173,12 +189,14 @@ async function set(ctx, tripId, placeId, patch) {
   try {
     await ctx.db.exec('INSERT OR IGNORE INTO place_info_index (trip_id, place_id) VALUES (?, ?)', Number(tripId), Number(placeId));
   } catch { /* index is an optimisation; the value is safe on the place */ }
+  await writeCopy(ctx, tripId, placeId, next);
   return next;
 }
 
 async function clear(ctx, tripId, placeId) {
   await ctx.meta.delete('place', Number(placeId), META_KEY);
   try { await ctx.db.exec('DELETE FROM place_info_index WHERE trip_id = ? AND place_id = ?', Number(tripId), Number(placeId)); } catch { /* ignore */ }
+  try { await ctx.db.exec('DELETE FROM place_info_copy WHERE place_id = ?', Number(placeId)); } catch { /* ignore */ }
 }
 
 /**
@@ -186,25 +204,38 @@ async function clear(ctx, tripId, placeId) {
  * on the trip; index rows pointing to deleted places or cleared values are pruned.
  */
 async function getAll(ctx, tripId, placeIds) {
-  let rows = [];
-  try { rows = await ctx.db.query('SELECT place_id FROM place_info_index WHERE trip_id = ?', Number(tripId)); } catch { rows = []; }
   const alive = new Set(placeIds || []);
-  const ids = rows.map((r) => r.place_id).filter((id) => !placeIds || alive.has(id)).slice(0, 300);
+  const keep = (id) => !placeIds || alive.has(id);
   const out = new Map();
+  let copies = [];
+  try { copies = await ctx.db.query(COPY_SQL, Number(tripId)); } catch { copies = []; }
+  for (const r of copies) {
+    if (!keep(r.place_id)) continue;
+    try {
+      const v = JSON.parse(r.rec);
+      if (v && v.amenities) out.set(r.place_id, merge(v, {}));
+    } catch { /* an unreadable copy is read again from the place below */ }
+  }
+  let rows = [];
+  try { rows = await ctx.db.query(INDEX_SQL, Number(tripId)); } catch { rows = []; }
+  const missing = rows.map((r) => r.place_id).filter((id) => keep(id) && !out.has(id)).slice(0, BACKFILL);
   const stale = rows.map((r) => r.place_id).filter((id) => placeIds && !alive.has(id));
   // At most 8 meta reads in flight: the host allows 16 in-flight RPCs per plugin.
-  await pmap(ids, 8, async (id) => {
+  await pmap(missing, 8, async (id) => {
     try {
       const v = await get(ctx, id);
-      if (v) out.set(id, v); else stale.push(id);
+      if (v) { out.set(id, v); await writeCopy(ctx, tripId, id, v); } else stale.push(id);
     } catch { /* a place the user cannot read contributes nothing */ }
   });
   if (stale.length) {
     try {
-      await ctx.db.tx(stale.slice(0, 100).map((id) => ({ sql: 'DELETE FROM place_info_index WHERE trip_id = ? AND place_id = ?', args: [Number(tripId), id] })));
+      await ctx.db.tx(stale.slice(0, 100).flatMap((id) => [
+        { sql: 'DELETE FROM place_info_index WHERE trip_id = ? AND place_id = ?', args: [Number(tripId), id] },
+        { sql: 'DELETE FROM place_info_copy WHERE place_id = ?', args: [id] },
+      ]));
     } catch { /* ignore */ }
   }
   return out;
 }
 
-module.exports = { merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
