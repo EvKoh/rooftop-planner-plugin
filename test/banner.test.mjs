@@ -53,6 +53,10 @@ describe('warnings banner', () => {
     expect(bannerFrom([fix(1), price(2), price(3)], fr).map((x) => x.message)).toEqual(['J1 : pas de tracé', 'J2 Camping 2 Example : 41 € > 35 €', 'J3 Camping 3 Example : 41 € > 35 €']);
     const w = bannerFrom([fix(1), fix(2), price(3), price(4)], fr);
     expect(w.map((x) => x.message)).toEqual(['J1 : pas de tracé', 'J2 : pas de tracé', '+ 2 nuits au-dessus de 35 €']);
+    // the real case of 2026-10-03: one farm risk and five prices — the farm keeps its own chip
+    const farm = { level: 'verify', key: 'night_farm_zone', dayNumber: 2, dayId: 102, params: { name: 'Farm Example — farm (Town)', zone: 'South Tyrol (Bolzano)' } };
+    expect(bannerFrom([farm, price(3), price(4), price(5), price(6), price(7)], fr).map((x) => x.message))
+      .toEqual(['J2 Farm Example : ferme au South Tyrol', '+ 5 nuits au-dessus de 35 €']); // zone as given in params
   });
 
   it('caps severe points at 3 chips and sums up the rest, severe or not', () => {
@@ -63,6 +67,21 @@ describe('warnings banner', () => {
     expect(bannerFrom([{ level: 'info', key: 'night_margin', params: {} }], fr)).toEqual([]); // info never reaches the banner
     expect(bannerFrom([fix(1), fix(2), fix(3), { level: 'verify', key: 'night_private', dayNumber: 4, params: {} }], { language: 'en', night_price_max: 35 })[3])
       .toEqual({ level: 'info', message: '+ 1 points to verify (Rooftop tab)' });
+  });
+
+  it('end to end in French: the farm risk keeps its own chip, with the zone in French', async () => {
+    const trip = build({ fixed: true });
+    trip.reservations = []; trip.costs = []; trip.todos = [];
+    // no to-fix point left: day 2's route first, a route for day 3, water at the aire
+    trip.days[1].assignments.find((a) => a.place.id === 21).order_index = -1;
+    trip.places.find((p) => p.id === 16).category_id = 1; // the aire becomes a campsite
+    trip.places.find((p) => p.id === 18).notes = 'Farm, one night is ok.';
+    trip.places.push({ id: 23, name: 'Route day 3', lat: 46.58, lng: 12.25, category_id: 6, route_geometry: JSON.stringify([[46.58, 12.25], [46.4097, 11.5753], [46.64, 11.72]]) });
+    trip.days[2].assignments.unshift({ id: 3000, day_id: 103, order_index: -1, notes: null, accommodation_id: null, place: { id: 23, name: 'Route day 3', category: { id: 6, name: 'Route – Day route' } } });
+    trip.places.find((p) => p.id === 16).notes = 'Drinking water.';
+    const w = await banner(makeHost({ trip, userSettings: { language: 'fr', timezone: 'Europe/Rome' } }));
+    expect(w.map((x) => x.message)).toContain('J3 Farm Example : ferme au Tyrol du Sud');
+    expect(w.every((x) => !/South Tyrol|TO VERIFY|À VÉRIFIER/.test(x.message))).toBe(true);
   });
 
   it('shortens place names to the words a person recognises', () => {

@@ -20,6 +20,7 @@ const ZONES = [
   {
     id: 'south-tyrol',
     name: 'South Tyrol (Bolzano)',
+    nameFr: 'Tyrol du Sud (Bolzano)',
     country: 'IT',
     farm: 'risk',
     privateGround: 'risk',
@@ -34,6 +35,7 @@ const ZONES = [
   {
     id: 'veneto',
     name: 'Veneto',
+    nameFr: 'Vénétie',
     country: 'IT',
     farm: 'ok',
     privateGround: 'verify',
@@ -47,6 +49,7 @@ const ZONES = [
   {
     id: 'liguria',
     name: 'Liguria',
+    nameFr: 'Ligurie',
     country: 'IT',
     farm: 'ok',
     privateGround: 'verify',

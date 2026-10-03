@@ -38,16 +38,21 @@ function bannerText(f, settings) {
  * The planner banner. The host shows each warning as a chip that shares the navbar on a
  * desktop (truncated to a few words) and as a full-width block over the map on a phone, with
  * no detail view — so it gets few, short, distinct lines:
- *  - blocking first, then to-fix, by day; to-verify only when at most 3 remain;
+ *  - blocking first, then to-fix, by day; to-verify only while it fits in 3 chips (prices
+ *    above the ceiling last, and only if they all fit);
  *  - at most BANNER_MAX individual lines, the rest summed up in ONE chip that points to the
  *    plugin tab (its click opens it); prices above the ceiling are never one chip each.
  */
 function bannerFrom(findings, settings) {
   const sev = findings.filter((f) => f.level === 'blocking' || f.level === 'fix');
   const verify = findings.filter((f) => f.level === 'verify');
+  const prices = verify.filter((f) => f.key === 'price_high');
+  const other = verify.filter((f) => f.key !== 'price_high');
+  // Worst first; a to-verify point only while room is left; prices last, and only if all fit.
   let shown = sev.slice(0, BANNER_MAX);
-  if (sev.length + verify.length <= BANNER_MAX) shown = sev.concat(verify);
-  const hidden = sev.concat(verify).filter((f) => !shown.includes(f));
+  if (shown.length + other.length <= BANNER_MAX) shown = shown.concat(other);
+  if (shown.length + prices.length <= BANNER_MAX) shown = shown.concat(prices);
+  const hidden = sev.concat(other, prices).filter((f) => !shown.includes(f));
   const out = shown.map((f) => {
     const w = { level: WARNING_LEVEL[f.level], message: bannerText(f, settings) };
     if (f.dayId != null) w.dayId = f.dayId;
@@ -89,7 +94,7 @@ async function tripReport(ctx, model, settings) {
       date: d.date,
       name: n.name,
       kind: nightKind(n.categoryName, n.name),
-      zone: zone ? zone.name : null,
+      zone: zone ? (settings.language === 'fr' && zone.nameFr ? zone.nameFr : zone.name) : null,
       price: n.price,
       priceText: placeInfo.priceText(n.info, settings.language),
       amenities: placeInfo.amenitiesText(n.info, settings.language),

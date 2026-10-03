@@ -100,7 +100,7 @@ function nightLegality({ categoryName, placeName, lat, lng, text = '' }) {
   const zone = zoneAt(lat, lng);
   const authorised = /autoris|authori[sz]ed|agricampeggio|campingplatz|licen[cs]ed/.test(norm(text));
   if (kind === 'farm' && zone && zone.farm === 'risk' && !authorised) {
-    return { key: 'night_farm_zone', level: 'verify', params: { zone: zone.name, note: zone.note, noteFr: zone.noteFr }, kind, zone: zone.id };
+    return { key: 'night_farm_zone', level: 'verify', params: { zone: zone.name, zoneFr: zone.nameFr, note: zone.note, noteFr: zone.noteFr }, kind, zone: zone.id };
   }
   if (kind === 'private' || kind === 'hut') return { key: 'night_private', level: 'verify', params: {}, kind };
   return null;

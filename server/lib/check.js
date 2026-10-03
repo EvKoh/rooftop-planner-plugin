@@ -153,7 +153,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang 
       else if (arr != null && cs != null && arr <= limit) add('info', J, 'night_margin', { name: nuit.name, arr: hhmm(arr), sunset: hhmm(cs), margin: fmtDur(cs - arr) }, extra);
 
       const legal = rules.nightLegality({ categoryName: nuit.categoryName, placeName: nuit.name, lat: nuit.lat, lng: nuit.lng, text: nuit.text });
-      if (legal) add(legal.level, J, legal.key, { name: nuit.name, ...legal.params, note: L === 'fr' && legal.params.noteFr ? legal.params.noteFr : legal.params.note }, extra);
+      if (legal) add(legal.level, J, legal.key, { name: nuit.name, ...legal.params, note: L === 'fr' && legal.params.noteFr ? legal.params.noteFr : legal.params.note, zone: L === 'fr' && legal.params.zoneFr ? legal.params.zoneFr : legal.params.zone }, extra);
       const am = nuit.info ? nuit.info.amenities : {};
       const banned = am.rooftop_tent === 'no' ? 'rooftop_tent = no' : rules.tentBanned(nuit.text);
       if (banned) add('blocking', J, 'tent_banned', { name: nuit.name, quote: banned }, extra);
