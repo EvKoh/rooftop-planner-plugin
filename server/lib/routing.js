@@ -9,7 +9,9 @@ const { roundPt, thin } = require('./util');
 
 const VALHALLA = 'https://valhalla1.openstreetmap.de';
 const UA = 'rooftop-planner-plugin (TREK plugin; +https://github.com/EvKoh/rooftop-planner-plugin)';
-const MATRIX_MAX = 20; // sources (and targets) per matrix request
+// The public server refuses a matrix above 100 cells ("Exceeded max locations: 100",
+// seen 2026-10-03 with 20 x 20): chunks keep sources x targets <= 100.
+const MATRIX_CELLS = 100;
 
 /** Decode a Valhalla polyline (precision 6) into [lat, lng] pairs. */
 function decodePolyline(str, precision = 6) {
@@ -109,22 +111,26 @@ async function legs(ctx, pairs, opts = {}) {
   });
   let pending = 0;
   if (todo.length && opts.network !== false) {
-    // Group by origin: each matrix row is one origin, its targets are that origin's ends.
-    const fresh = [];
-    for (let s = 0; s < todo.length; s += MATRIX_MAX) {
-      const chunk = todo.slice(s, s + MATRIX_MAX);
-      if (opts.deadline && opts.deadline.left() < 4000) { pending += todo.length - s; break; }
-      const src = [];
-      const tgt = [];
-      const si = new Map();
-      const ti = new Map();
-      for (const i of chunk) {
-        const [a, b] = pairs[i];
-        const ka = roundPt(a).join(',');
-        const kb = roundPt(b).join(',');
-        if (!si.has(ka)) { si.set(ka, src.length); src.push(a); }
-        if (!ti.has(kb)) { ti.set(kb, tgt.length); tgt.push(b); }
+    // Greedy chunks of pairs whose distinct sources x distinct targets stay <= MATRIX_CELLS.
+    const ptKey = (p) => roundPt(p).join(',');
+    const chunks = [];
+    let cur = null;
+    for (const i of todo) {
+      const [a, b] = pairs[i];
+      const ns = cur && !cur.si.has(ptKey(a)) ? 1 : 0;
+      const nt = cur && !cur.ti.has(ptKey(b)) ? 1 : 0;
+      if (!cur || (cur.src.length + ns) * (cur.tgt.length + nt) > MATRIX_CELLS) {
+        cur = { idx: [], src: [], tgt: [], si: new Map(), ti: new Map() };
+        chunks.push(cur);
       }
+      if (!cur.si.has(ptKey(a))) { cur.si.set(ptKey(a), cur.src.length); cur.src.push(a); }
+      if (!cur.ti.has(ptKey(b))) { cur.ti.set(ptKey(b), cur.tgt.length); cur.tgt.push(b); }
+      cur.idx.push(i);
+    }
+    const fresh = [];
+    for (let c = 0; c < chunks.length; c++) {
+      const { idx: chunk, src, tgt, si, ti } = chunks[c];
+      if (opts.deadline && opts.deadline.left() < 4000) { pending += chunks.slice(c).reduce((n, x) => n + x.idx.length, 0); break; }
       let m;
       try {
         m = await matrix(src, tgt, { ...opts, timeoutMs: opts.deadline ? Math.min(12000, opts.deadline.left() - 1500) : 12000 });
@@ -135,7 +141,7 @@ async function legs(ctx, pairs, opts = {}) {
       }
       for (const i of chunk) {
         const [a, b] = pairs[i];
-        const v = m[si.get(roundPt(a).join(','))][ti.get(roundPt(b).join(','))];
+        const v = m[si.get(ptKey(a))][ti.get(ptKey(b))];
         values.set(i, v);
         fresh.push([keys[i], v]);
       }

@@ -124,3 +124,22 @@ describe('overpass', () => {
     expect(overpass.osmUrl('node/1')).toBe('https://www.openstreetmap.org/node/1');
   });
 });
+
+describe('matrix size limit of the public server', () => {
+  beforeEach(() => cache.clearMemory());
+  afterEach(() => vi.unstubAllGlobals());
+  it('never asks for more than 100 cells at once (20 x 20 was refused)', async () => {
+    const f = stubFetch();
+    vi.stubGlobal('fetch', f);
+    const pts = Array.from({ length: 31 }, (_, i) => [46 + i * 0.01, 11 + i * 0.01]);
+    const pairs = pts.slice(1).map((p, i) => [pts[i], p]); // 30 consecutive legs, all distinct points
+    const r = await routing.legs({ db: { query: async () => [], tx: async () => ({}) } }, pairs, {});
+    expect(r.pending).toBe(0);
+    expect(r.values.size).toBe(30);
+    for (const c of f.calls) {
+      const b = JSON.parse(c.body);
+      expect(b.sources.length * b.targets.length).toBeLessThanOrEqual(100);
+    }
+    expect(f.calls.length).toBeGreaterThan(1);
+  });
+});

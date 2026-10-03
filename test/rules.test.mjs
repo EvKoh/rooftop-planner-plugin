@@ -180,3 +180,12 @@ describe('i18n and settings', () => {
     expect(fuelPerKm({ fuel_l_per_100km: 6, fuel_price_per_l: 2 })).toBeCloseTo(0.12);
   });
 });
+
+describe('regressions found on a real trip (2026-10-03)', () => {
+  it('does not read a statement of the law as a ban at the place', () => {
+    expect(rules.tentBanned('Tente de toit : camping interdit hors camping au Tyrol du Sud.')).toBeNull();
+    expect(rules.tentBanned('Camping prohibited outside campsites in this region.')).toBeNull();
+    expect(rules.tentBanned('camping interdit hors camping; no camping on the beach')).toContain('no camping');
+    expect(rules.tentBanned('Camping interdit sur ce parking.')).toContain('camping interdit');
+  });
+});

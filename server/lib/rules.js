@@ -75,12 +75,19 @@ function noWater(text) {
 }
 
 const BANNED = /(no camping|camping (interdit|prohibited|forbidden|not allowed)|campeggio vietato|vietato (il )?campeggi|vietato aprire (la )?(veranda|tendalino|tenda)|solo parcheggio|camping verboten|campieren verboten|zelten verboten|no tents?\b|tents?=no|tente de toit (refusee|interdite)|roof ?top tents? (not allowed|forbidden|refused)|comportement de camping interdit)/;
-/** A quote proving tents/camping are banned, or null. */
+// "camping forbidden OUTSIDE campsites" states the local law, not a ban at this place
+// (seen on a real campsite's notes: "camping interdit hors camping au Tyrol du Sud").
+const LAW_NOT_BAN = /^[^.;]{0,12}\b(hors|outside|except|sauf|ausser|al di fuori|fuori)\b/;
+/** A quote proving tents/camping are banned at this place, or null. */
 function tentBanned(text, tags = {}) {
   if (tags.tents === 'no') return 'tents=no';
   const t = norm(text);
-  const i = t.search(BANNED);
-  return i >= 0 ? quote(t, i, 20, 50) : null;
+  const re = new RegExp(BANNED.source, 'g');
+  let m;
+  while ((m = re.exec(t))) {
+    if (!LAW_NOT_BAN.test(t.slice(m.index + m[0].length))) return quote(t, m.index, 20, 50);
+  }
+  return null;
 }
 
 /**
@@ -93,7 +100,7 @@ function nightLegality({ categoryName, placeName, lat, lng, text = '' }) {
   const zone = zoneAt(lat, lng);
   const authorised = /autoris|authori[sz]ed|agricampeggio|campingplatz|licen[cs]ed/.test(norm(text));
   if (kind === 'farm' && zone && zone.farm === 'risk' && !authorised) {
-    return { key: 'night_farm_zone', level: 'verify', params: { zone: zone.name, note: zone.note }, kind, zone: zone.id };
+    return { key: 'night_farm_zone', level: 'verify', params: { zone: zone.name, note: zone.note, noteFr: zone.noteFr }, kind, zone: zone.id };
   }
   if (kind === 'private' || kind === 'hut') return { key: 'night_private', level: 'verify', params: {}, kind };
   return null;

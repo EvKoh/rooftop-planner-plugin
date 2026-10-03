@@ -24,6 +24,7 @@ const ZONES = [
     farm: 'risk',
     privateGround: 'risk',
     note: 'only an authorised campsite is legal; farm camping without authorisation is fined EUR 300-900',
+    noteFr: 'seul un camping autorisé est légal ; camper à la ferme sans autorisation coûte 300 à 900 € d\'amende',
     polygon: [
       [46.85, 10.46], [47.0, 11.51], [47.09, 12.18], [46.75, 12.4], [46.65, 12.43], [46.62, 12.24],
       [46.55, 12.05], [46.53, 11.99], [46.52, 11.87], [46.51, 11.76], [46.4, 11.61], [46.24, 11.21],
@@ -37,6 +38,7 @@ const ZONES = [
     farm: 'ok',
     privateGround: 'verify',
     note: 'agriturismo camping is legal (LR 28/2012)',
+    noteFr: 'le camping en agriturismo est légal (LR 28/2012)',
     polygon: [
       [46.68, 12.73], [46.62, 12.24], [46.55, 12.05], [46.52, 11.87], [46.25, 11.68], [45.85, 10.95],
       [45.6, 10.65], [45.1, 11.2], [44.8, 12.3], [45.3, 12.6], [45.65, 13.1], [46.1, 12.5],
@@ -49,6 +51,7 @@ const ZONES = [
     farm: 'ok',
     privateGround: 'verify',
     note: 'agricampeggio on an agriturismo is legal (LR 37/2007 art. 7)',
+    noteFr: 'l\'agricampeggio d\'un agriturismo est légal (LR 37/2007 art. 7)',
     polygon: [
       [43.78, 7.52], [44.08, 7.7], [44.2, 8.0], [44.42, 8.3], [44.6, 8.75], [44.62, 9.1],
       [44.45, 9.5], [44.35, 9.85], [44.05, 10.07], [44.0, 9.85], [44.25, 9.3], [44.4, 8.8],
