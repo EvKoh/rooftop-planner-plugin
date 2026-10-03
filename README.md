@@ -33,6 +33,13 @@ checks a trip against those rules and helps fix it.
   that day.
 - **Budget** — nights, fuel per day from road kilometres, tolls from budget lines, and options
   compared in money.
+- **Price and amenities** — for any place: price (per night or per person, currency, dog fee) and
+  amenities (dog, water, electricity, shower, toilets, dump station, wifi, rooftop tent accepted,
+  maximum height), each *yes*, *no* or *unknown*. Shown as two columns on every place in the
+  planner (e.g. `22 €/night` and `✓ dog · water · shower  ✗ power  ↕ 2.1 m`), so titles stay plain
+  names; edited in the *Places* tab or with `rooftop_tools_place_info`; used by the check (rooftop
+  tent refused, dog refused, height too low, water) and by the budget (per-person prices times the
+  number of travellers, dog fee).
 - **All-in-one** — `rooftop_tools_plan_trip` chains all of the above and returns an ordered action
   list.
 
@@ -43,11 +50,11 @@ Advertised as `plugin_rooftop-planner-plugin_<name>` to assistants holding the `
 | Tool | Does |
 |---|---|
 | `rooftop_tools_plan_trip` | All-in-one: check → nights → routes → schedules → budget; resumable with `continuation`. `apply` defaults to `false`. |
-| `rooftop_tools_check_trip` | The full check, filtered by level. Read-only. |
-| `rooftop_tools_find_nights` | Night candidates for a trip night or around a point. |
+| `rooftop_tools_check_trip` | The full check, filtered by level; `sun: true` adds sunrise, sunset and latest arrival per night. Read-only. |
+| `rooftop_tools_find_nights` | Night candidates for a trip night or around a point, with the sunset at the evening point. |
 | `rooftop_tools_compute_routes` | Day routes; `apply: true` recreates the day's route places. |
 | `rooftop_tools_schedule_day` | Times of one day from drive times; returns the core `update_assignment_time` calls. |
-| `rooftop_tools_sun_times` | Sunrise, sunset and latest arrival per night. No network. |
+| `rooftop_tools_place_info` | Read or record the price and amenities of places (only what a cited source states). |
 | `rooftop_tools_supplies_on_route` | Groceries, fuel and water along a day's route. |
 | `rooftop_tools_trip_budget` | Budget and option comparison. |
 
@@ -60,8 +67,9 @@ with a `continuation` token) and under the 64 KiB result cap.
 ## Screenshots
 
 `docs/screenshot.png` — the trip tab on a desktop width: one card per night (kind, booking status,
-legal zone, arrival versus the latest arrival before sunset, alternatives folded), and the check
-grouped by level in the second tab. On a phone the cards stack in one column.
+legal zone, arrival versus the latest arrival before sunset, price and amenities, alternatives
+folded); the check grouped by level in the second tab; the price and amenities editor in the third.
+On a phone the cards stack in one column.
 
 ## Permissions
 
@@ -74,6 +82,8 @@ grouped by level in the second tab. On a phone the cards stack in one column.
 | `db:read:todos` | Finds to-dos asking to book a night that is no longer planned. |
 | `db:write:places` | Only with `apply: true` in `rooftop_tools_compute_routes` / `rooftop_tools_plan_trip`: recreates a day's route place (a place geometry cannot be edited, so the old one is deleted). |
 | `db:write:itinerary` | Only with `apply: true`: puts the new route place on its day. |
+| `db:meta` | Stores the price and amenities of a place on the place itself (the plugin's own namespaced data; writes need the user's place edit right). |
+| `hook:table-contributor` | Shows the price and amenities columns, and a "Price & amenities" button, on each place in the planner. |
 | `mcp:tools` | Publishes the eight `rooftop_tools_*` tools on TREK's MCP server. |
 | `hook:trip-warning-provider` | Shows blocking / to-fix / to-verify points in the planner's warnings banner (cache only, no network, at most 20). |
 | `hook:route-provider` | Adds the "Rooftop tent (no tolls)" and "Rooftop tent (motorway)" route profiles. |
@@ -88,13 +98,17 @@ or anything about the travellers.
 1. Install the plugin (Admin → Plugins) and approve its permissions.
 2. Each traveller sets their own values in Settings → Plugins → Rooftop Planner: vehicle height,
    target and ceiling price per night, sunset margin, dog, water reserve, fuel consumption and
-   price, motorway days, shopping detour limit, time zone of the trip, language (English or French).
+   price, number of travellers, motorway days, shopping detour limit, time zone of the trip,
+   language (English or French).
 3. For assistants: give the MCP client the `plugins:use` scope, then ask it to run
    `rooftop_tools_check_trip` on your trip (it also fills the cache the warnings banner reads).
 
 Conventions the check relies on, all optional: opening hours written in a stop's notes as
 `Monday: 8h00–21h00`, a check-in window as `Check-in: 15h–23h`, a minimum stay as
 `2 nights minimum`, and for a stop reached on foot the car park as `Start: parking X, 46.5000, 11.7000`.
+
+The "Price & amenities" button on a place opens the plugin's tab; until TREK passes the place to a
+plugin frame, pick the place in the *Places* tab (it opens on that place by itself once TREK does).
 
 Limits worth knowing: zone outlines are coarse (check a night near a border by hand); the public
 Overpass server allows few queries per server, so night and supply searches may answer "busy, try

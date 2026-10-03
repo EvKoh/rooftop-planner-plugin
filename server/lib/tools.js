@@ -15,6 +15,8 @@ const { planTrip, planRequest } = require('./plan');
 const { sunset, sunrise } = require('./sun');
 const { hhmm, deadline: makeDeadline } = require('./util');
 const { nightOf } = require('./trip');
+const placeInfo = require('./place-info');
+const { isNightCategory } = require('./classify');
 
 const TOOL_BUDGET_MS = 12500;
 const MAX_BYTES = 60000; // under the host's 64 KiB, with room for its envelope
@@ -44,20 +46,40 @@ function fit(result, max = MAX_BYTES) {
   return out;
 }
 
-function sunTable(model, args, settings) {
+/** Sunrise, sunset and latest arrival of each day, at that night's place (else the last located stop). */
+function sunTable(model, settings) {
   const row = (date, lat, lng, name) => {
     const ss = sunset(lat, lng, date, settings.timezone);
     return { date, place: name || `${lat},${lng}`, sunrise: hhmm(sunrise(lat, lng, date, settings.timezone)), sunset: hhmm(ss), latestArrival: hhmm(ss == null ? null : ss - settings.sunset_margin_min) };
   };
-  if (model) {
-    return model.days.filter((d) => d.date).map((d) => {
-      const n = nightOf(model, d);
-      const last = n && n.lat != null ? n : [...d.assignments].reverse().map((a) => a.place).find((p) => p.lat != null);
-      return last ? { day: d.n, ...row(d.date, last.lat, last.lng, last.name) } : { day: d.n, date: d.date, place: null };
-    });
+  return model.days.filter((d) => d.date).map((d) => {
+    const n = nightOf(model, d);
+    const last = n && n.lat != null ? n : [...d.assignments].reverse().map((a) => a.place).find((p) => p.lat != null);
+    return last ? { day: d.n, ...row(d.date, last.lat, last.lng, last.name) } : { day: d.n, date: d.date, place: null };
+  });
+}
+
+/** Read all / read one / write one / clear one place's price and amenities. */
+async function placeInfoTool(ctx, model, a, settings) {
+  const L = settings.language;
+  const view = (p, info) => ({ placeId: p.id, name: p.name, price: placeInfo.priceText(info, L), amenities: placeInfo.amenitiesText(info, L), nightTotal: placeInfo.nightTotal(info, settings), record: info });
+  if (!a.placeId) {
+    const withInfo = model.pool.filter((p) => p.info).map((p) => view(p, p.info));
+    const planned = new Set(model.nights.map((n) => n.placeId));
+    const toFill = model.pool.filter((p) => !p.info && (planned.has(p.id) || isNightCategory(p.categoryName)) && !p.geometry)
+      .map((p) => ({ placeId: p.id, name: p.name, plannedNight: planned.has(p.id) }))
+      .sort((x, y) => y.plannedNight - x.plannedNight).slice(0, 60);
+    return { places: withInfo, toFill, note: 'Fill from cited sources only; unknown stays unknown.' };
   }
-  if (args.lat == null || args.lng == null || !(args.dates || []).length) throw new Error('give tripId, or lat, lng and dates');
-  return args.dates.map((d) => row(d, args.lat, args.lng));
+  const place = model.poolById.get(a.placeId);
+  if (!place) throw new Error(`place ${a.placeId} is not in trip ${model.tripId}`);
+  if (a.clear) { await placeInfo.clear(ctx, model.tripId, place.id); return { placeId: place.id, cleared: true }; }
+  if (a.set) {
+    const rec = await placeInfo.set(ctx, model.tripId, place.id, a.set);
+    return { saved: true, ...view(place, rec) };
+  }
+  // One place: read its value directly, not through the index.
+  return view(place, (await placeInfo.get(ctx, place.id)) || placeInfo.blank());
 }
 
 async function callTool({ name, args }, ctx, { now } = {}) {
@@ -67,7 +89,7 @@ async function callTool({ name, args }, ctx, { now } = {}) {
   if (a.language) settings.language = a.language;
   const deadline = makeDeadline(TOOL_BUDGET_MS, now);
   const opts = { settings, deadline, network: true };
-  const model = a.tripId ? await loadTrip(ctx, a.tripId) : null;
+  const model = a.tripId ? await loadTrip(ctx, a.tripId, settings) : null;
   const needTrip = () => { if (!model) throw new Error('tripId is required'); };
   const timezone = { timezone: settings.timezone, language: settings.language };
 
@@ -81,6 +103,7 @@ async function callTool({ name, args }, ctx, { now } = {}) {
       const r = await checkTrip(ctx, model, opts);
       const levels = a.levels && a.levels.length ? a.levels : null;
       res = { trip: model.trip.title, ...r, findings: levels ? r.findings.filter((f) => levels.includes(f.level)) : r.findings };
+      if (a.sun) res.sun = { ...timezone, marginMinutes: settings.sunset_margin_min, days: sunTable(model, settings) };
       break;
     }
     case 'rooftop_tools_find_nights':
@@ -90,6 +113,10 @@ async function callTool({ name, args }, ctx, { now } = {}) {
           evening: { lat: a.lat, lng: a.lng }, morning: a.morning_lat != null && a.morning_lng != null ? { lat: a.morning_lat, lng: a.morning_lng } : null, date: a.date, radiusKm: a.radius_km,
         }, opts);
       } else throw new Error('give tripId and dayNumber, or lat and lng');
+      if (res.date && res.evening) {
+        const ss = sunset(res.evening.lat, res.evening.lng, res.date, settings.timezone);
+        res.sun = { sunset: hhmm(ss), latestArrival: hhmm(ss == null ? null : ss - settings.sunset_margin_min) };
+      }
       break;
     case 'rooftop_tools_compute_routes':
       needTrip();
@@ -101,8 +128,9 @@ async function callTool({ name, args }, ctx, { now } = {}) {
       res = await scheduleDay(ctx, model, { dayNumber: a.dayNumber }, { ...opts, departure: a.departure, stays });
       break;
     }
-    case 'rooftop_tools_sun_times':
-      res = { ...timezone, marginMinutes: settings.sunset_margin_min, days: sunTable(model, a, settings) };
+    case 'rooftop_tools_place_info':
+      needTrip();
+      res = await placeInfoTool(ctx, model, a, settings);
       break;
     case 'rooftop_tools_supplies_on_route':
       needTrip();

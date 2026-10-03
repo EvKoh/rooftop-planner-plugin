@@ -38,6 +38,14 @@
     .finding:last-child { border-bottom: 0; }
     .empty { padding: 24px 0; text-align: center; color: var(--text-muted); }
     .foot { font-size: 12px; color: var(--text-muted); }
+    .form { display: flex; flex-direction: column; gap: 12px; }
+    .form .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+    .form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-muted); }
+    .form input, .form select { font-size: 16px; min-height: 44px; }
+    .form .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .form .actions button { min-height: 44px; }
+    .amen { font-size: 14px; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 2px 12px; }
+    .amen-part { white-space: nowrap; }
     /* No text under 12 px: the kit's eyebrow (10 px) and count pill (11 px) are raised. */
     .trek-eyebrow { font-size: 12px; }
     .trek-countpill { font-size: 12px; }
@@ -55,15 +63,25 @@
         map: 'Open map', none: 'No night planned in this trip yet.', ok: 'Nothing blocking.', pending: 'Some drive times are not cached yet: run the check tool once.',
         kind: { campsite: 'Campsite', farm: 'Farm', aire: 'Motorhome area', private: 'Private ground', hut: 'Hut', unknown: 'Night' },
         status: { booked: 'Booked', 'confirmed-unverified': 'Confirmed?', 'not-booked': 'Not booked' },
-        level: { blocking: 'Blocking', fix: 'To fix', verify: 'To verify', info: 'Info' }, perNight: '/night', km: 'km' },
+        level: { blocking: 'Blocking', fix: 'To fix', verify: 'To verify', info: 'Info' }, perNight: '/night', km: 'km',
+        places: 'Places', place: 'Place', plannedNight: 'night', price: 'Price', currency: 'Currency', per: 'Per', perOpt: { night: 'night', person: 'person' },
+        dogFee: 'Dog fee', maxHeight: 'Max height (m)', source: 'Source (official site, dated review, host\u2019s answer)', checked: 'Checked on', save: 'Save', clear: 'Clear', saved: 'Saved', cleared: 'Cleared', confirmClear: 'Remove the price and amenities of this place?',
+        opt: { yes: 'Yes', no: 'No', fee: 'With a fee', unknown: 'Unknown' },
+        am: { dog: 'Dog', water: 'Water', electricity: 'Electricity', shower: 'Shower', toilets: 'Toilets', dump_station: 'Dump station', wifi: 'Wi-Fi', rooftop_tent: 'Rooftop tent accepted' }, onlySourced: 'Enter only what a source states; leave the rest unknown.' },
       fr: { nights: 'Nuits', check: 'Contrôle', total: 'nuits, prix connus', booked: 'réservées', late: 'arrivées tardives', unknown: 'prix inconnus',
         night: 'Nuit', arrival: 'Arrivée', latest: 'au plus tard', sunset: 'coucher', noArrival: 'heure d’arrivée inconnue', alts: 'Replis à proximité',
         map: 'Ouvrir la carte', none: 'Aucune nuit planifiée dans ce voyage.', ok: 'Rien de bloquant.', pending: 'Certains temps de route ne sont pas encore en cache : lancer une fois l’outil de contrôle.',
         kind: { campsite: 'Camping', farm: 'Ferme', aire: 'Aire', private: 'Particulier', hut: 'Refuge', unknown: 'Nuitée' },
         status: { booked: 'Réservé', 'confirmed-unverified': 'Confirmé ?', 'not-booked': 'Non réservé' },
-        level: { blocking: 'Bloquant', fix: 'À corriger', verify: 'À vérifier', info: 'Info' }, perNight: '/nuit', km: 'km' },
+        level: { blocking: 'Bloquant', fix: 'À corriger', verify: 'À vérifier', info: 'Info' }, perNight: '/nuit', km: 'km',
+        places: 'Lieux', place: 'Lieu', plannedNight: 'nuit', price: 'Prix', currency: 'Devise', per: 'Par', perOpt: { night: 'nuit', person: 'personne' },
+        dogFee: 'Supplément chien', maxHeight: 'Hauteur max (m)', source: 'Source (site officiel, avis daté, réponse de l\u2019hôte)', checked: 'Vérifié le', save: 'Enregistrer', clear: 'Effacer', saved: 'Enregistré', cleared: 'Effacé', confirmClear: 'Effacer le prix et les commodités de ce lieu ?',
+        opt: { yes: 'Oui', no: 'Non', fee: 'Avec supplément', unknown: 'Inconnu' },
+        am: { dog: 'Chien', water: 'Eau', electricity: 'Électricité', shower: 'Douche', toilets: 'WC', dump_station: 'Vidange', wifi: 'Wi-Fi', rooftop_tent: 'Tente de toit acceptée' }, onlySourced: 'Ne saisir que ce qu\u2019une source dit ; laisser le reste inconnu.' },
     };
-    var state = { tripId: null, data: null, tab: 'nights', locale: 'en', loading: false };
+    var state = { tripId: null, data: null, tab: 'nights', locale: 'en', loading: false, places: null, placeId: null };
+    // A place to open directly: from the host context (placeId) or from ?place= in the frame URL.
+    var wanted = (function () { try { return Number(new URLSearchParams(location.search).get('place')) || null; } catch (e) { return null; } })();
 
     function h(tag, attrs, kids) {
       var el = document.createElement(tag);
@@ -96,6 +114,9 @@
         h('div', { class: 'top' }, [h('h2', { text: n.name }), h('span', { class: 'price', text: money(n.price, cur) + (n.price != null ? t.perNight : '') })]),
         h('div', { class: 'chips' }, [chip(t.kind[n.kind] || n.kind, kindTone), chip(t.status[n.status] || n.status, statusTone), n.zone ? chip(n.zone, n.kind === 'farm' && /Tyrol/.test(n.zone) ? 'warning' : '') : null]),
         arr,
+        // The entered price detail (per person, dog fee) under the night total above.
+        n.priceText && /[+]|\/(person|pers)/.test(n.priceText) ? h('div', { class: 'amen', text: n.priceText }) : null,
+        n.amenities ? h('div', { class: 'amen' }, n.amenities.split('  ').map(function (part) { return h('span', { class: 'amen-part', text: part }); })) : null,
       ];
       if (n.lat != null) {
         kids.push(h('button', { class: 'trek-btn trek-btn--ghost map', type: 'button', text: t.map, on: { click: function () { trek.openExternal('https://www.openstreetmap.org/?mlat=' + n.lat + '&mlon=' + n.lng + '#map=14/' + n.lat + '/' + n.lng); } } }));
@@ -127,6 +148,79 @@
       return box;
     }
 
+
+    function field(label, input) { return h('label', {}, [h('span', { text: label }), input]); }
+    function sel(name, options, value, labels) {
+      var s = h('select', { class: 'trek-select', name: name }, options.map(function (o) { var e = h('option', { value: o, text: labels[o] || o }); if (o === value) e.selected = true; return e; }));
+      return s;
+    }
+    function num(name, value, step) { var i = h('input', { class: 'trek-input', type: 'number', name: name, step: step || '0.01', min: '0', inputmode: 'decimal' }); if (value != null) i.value = String(value); return i; }
+
+    function placesView(t) {
+      var box = h('div', { class: 'trek-card form' });
+      if (!state.places) { box.appendChild(h('div', { class: 'trek-skeleton', style: 'height:80px;border-radius:12px' })); loadPlaces(); return box; }
+      var list = state.places.places;
+      if (!list.length) { box.appendChild(h('p', { class: 'empty', text: t.none })); return box; }
+      if (!state.placeId || !list.some(function (p) { return p.id === state.placeId; })) state.placeId = list[0].id;
+      var pick = h('select', { class: 'trek-select', on: { change: function (e) { state.placeId = Number(e.target.value); render(); } } }, list.map(function (p) {
+        var o = h('option', { value: String(p.id), text: (p.plannedNight ? '\u2605 ' : '') + p.name + (p.plannedNight ? ' (' + t.plannedNight + ')' : '') });
+        if (p.id === state.placeId) o.selected = true;
+        return o;
+      }));
+      var place = list.filter(function (p) { return p.id === state.placeId; })[0];
+      var info = place.info || { price: { amount: null, currency: 'EUR', per: 'night' }, dog_fee: null, max_height_m: null, amenities: {}, source: null, checked: null };
+      var am = state.places.amenities;
+      var form = h('form', { class: 'form' });
+      form.appendChild(field(t.place, pick));
+      form.appendChild(h('div', { class: 'grid2' }, [
+        field(t.price, num('price_amount', info.price.amount)),
+        field(t.currency, (function () { var i = h('input', { class: 'trek-input', name: 'currency', maxlength: '3', autocapitalize: 'characters' }); i.value = info.price.currency || 'EUR'; return i; })()),
+        field(t.per, sel('per', ['night', 'person'], info.price.per, t.perOpt)),
+        field(t.dogFee, num('dog_fee', info.dog_fee)),
+        field(t.maxHeight, num('max_height_m', info.max_height_m, '0.01')),
+      ]));
+      form.appendChild(h('div', { class: 'grid2' }, Object.keys(am).map(function (k) {
+        return field(t.am[k] || k, sel(k, am[k], info.amenities[k] || 'unknown', t.opt));
+      })));
+      var src = h('input', { class: 'trek-input', name: 'source', maxlength: '300' }); if (info.source) src.value = info.source;
+      var chk = h('input', { class: 'trek-input', name: 'checked', type: 'date' }); if (info.checked) chk.value = info.checked;
+      form.appendChild(h('div', { class: 'grid2' }, [field(t.source, src), field(t.checked, chk)]));
+      form.appendChild(h('p', { class: 'foot', text: t.onlySourced }));
+      form.appendChild(h('div', { class: 'actions' }, [
+        h('button', { class: 'trek-btn trek-btn--primary', type: 'submit', text: t.save }),
+        place.info ? h('button', { class: 'trek-btn trek-btn--ghost', type: 'button', text: t.clear, on: { click: function () { clearPlace(t); } } }) : null,
+      ]));
+      form.addEventListener('submit', function (e) { e.preventDefault(); savePlace(form, t); });
+      return form;
+    }
+
+    async function loadPlaces() {
+      try {
+        state.places = await trek.invoke('/places', { method: 'POST', body: { tripId: Number(state.tripId) } });
+        render();
+      } catch (e) { trek.notify('error', e.message); }
+    }
+    async function savePlace(form, t) {
+      var fd = new FormData(form);
+      var set = {};
+      fd.forEach(function (v, k) { set[k] = v; });
+      ['price_amount', 'dog_fee', 'max_height_m'].forEach(function (k) { set[k] = set[k] === '' ? null : Number(set[k]); });
+      set.currency = String(set.currency || 'EUR').toUpperCase();
+      try {
+        await trek.invoke('/place-info', { method: 'POST', body: { tripId: Number(state.tripId), placeId: state.placeId, set: set } });
+        trek.notify('success', t.saved);
+        state.places = null; state.data = null; load();
+      } catch (e) { trek.notify('error', e.message); }
+    }
+    async function clearPlace(t) {
+      if (!(await trek.confirm({ message: t.confirmClear, danger: true }))) return;
+      try {
+        await trek.invoke('/place-info', { method: 'POST', body: { tripId: Number(state.tripId), placeId: state.placeId, clear: true } });
+        trek.notify('success', t.cleared);
+        state.places = null; state.data = null; load();
+      } catch (e) { trek.notify('error', e.message); }
+    }
+
     function render() {
       var d = state.data;
       if (!d) return;
@@ -141,12 +235,12 @@
           h('div', { class: 'kpi' }, [h('b', { class: k.late ? 'late' : '', text: String(k.late) }), h('span', { text: t.late })]),
           h('div', { class: 'kpi' }, [h('b', { class: d.check.counts.blocking ? 'late' : '', text: String(d.check.counts.blocking) }), h('span', { text: t.level.blocking })]),
         ]),
-        h('nav', { class: 'tabs', role: 'tablist' }, ['nights', 'check'].map(function (id) {
+        h('nav', { class: 'tabs', role: 'tablist' }, ['nights', 'check', 'places'].map(function (id) {
           return h('button', { role: 'tab', type: 'button', 'aria-selected': String(state.tab === id), text: t[id], on: { click: function () { state.tab = id; render(); } } });
         })),
         state.tab === 'nights'
           ? (d.nights.length ? h('section', { class: 'grid' }, d.nights.map(function (n) { return nightCard(n, t, cur); })) : h('p', { class: 'empty', text: t.none }))
-          : checkView(d, t)
+          : state.tab === 'check' ? checkView(d, t) : placesView(t)
       );
     }
 
@@ -166,6 +260,8 @@
     var timer = null;
     trek.onContext(function (ctx) {
       state.locale = ctx.locale || 'en';
+      var asked = Number(ctx.placeId) || wanted;
+      if (asked && asked !== state.placeId) { state.placeId = asked; state.tab = 'places'; wanted = null; }
       if (ctx.tripId && ctx.tripId !== state.tripId) { state.tripId = ctx.tripId; load(); }
     });
     // Core events carry names only: refetch, debounced (a bulk edit fires many).

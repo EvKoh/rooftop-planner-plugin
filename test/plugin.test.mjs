@@ -3,7 +3,7 @@ import { require, makeHost, stubFetch, manifest } from './helpers.mjs';
 
 const plugin = require('../server/index.js');
 const { TOOL_SPECS, TOOL_NAMES, withDefaults } = require('../server/lib/tool-specs.js');
-const { fit, sunTable } = require('../server/lib/tools.js');
+const { fit } = require('../server/lib/tools.js');
 const { parseToken, planRequest } = require('../server/lib/plan.js');
 const { PermissionDenied } = require('trek-plugin-sdk/testing');
 const { build } = require('./fixtures/trip.js');
@@ -148,15 +148,14 @@ describe('MCP tools through the mock host', () => {
     await expect(call(h, 'rooftop_tools_schedule_day', { tripId: 1, dayNumber: 99 })).rejects.toThrow(/day not found/);
   });
 
-  it('sun_times answers for a trip and for a point, without network', async () => {
+  it('check_trip can add the sun table; find_nights gives the sunset at the evening point', async () => {
     const h = makeHost();
-    const r = await call(h, 'rooftop_tools_sun_times', { tripId: 1 });
-    expect(r.days).toHaveLength(4);
-    expect(r.days[0]).toMatchObject({ day: 1, sunset: '18:31', latestArrival: '17:31', place: 'Camping Example' });
-    const p = await call(h, 'rooftop_tools_sun_times', { lat: 46.4983, lng: 11.3548, dates: ['2026-10-11'] });
-    expect(p.days[0].sunset).toBe('18:36');
-    await expect(call(h, 'rooftop_tools_sun_times', { lat: 1 })).rejects.toThrow(/give tripId/);
-    expect(f).not.toHaveBeenCalled();
+    const r = await call(h, 'rooftop_tools_check_trip', { tripId: 1, sun: true, levels: ['info'] });
+    expect(r.sun.days).toHaveLength(4);
+    expect(r.sun.days[0]).toMatchObject({ day: 1, sunset: '18:31', latestArrival: '17:31', place: 'Camping Example' });
+    expect(r.sun.days[3].place).toBe('Route day 4'); // no night on the last day: last located stop
+    const n = await call(h, 'rooftop_tools_find_nights', { lat: 46.4983, lng: 11.3548, date: '2026-10-11' });
+    expect(n.sun).toEqual({ sunset: '18:36', latestArrival: '17:36' });
   });
 
   it('supplies_on_route lists shops along the route with their hours', async () => {
@@ -235,7 +234,7 @@ describe('MCP tools through the mock host', () => {
 
   it('is never fired without the mcp:tools grant', async () => {
     const h = makeHost({ grants: manifest.permissions.filter((g) => g !== 'mcp:tools') });
-    await expect(call(h, 'rooftop_tools_sun_times', { tripId: 1 })).rejects.toThrow(PermissionDenied);
+    await expect(call(h, 'rooftop_tools_check_trip', { tripId: 1 })).rejects.toThrow(PermissionDenied);
   });
 });
 
@@ -300,8 +299,5 @@ describe('helpers of the dispatcher', () => {
     expect(parseToken('nights.3')).toEqual({ step: 1, index: 3 });
     expect(parseToken('garbage')).toEqual({ step: 0, index: 0 });
     expect(planRequest({}).steps).toHaveLength(4);
-  });
-  it('sun table needs a point and dates without a trip', () => {
-    expect(() => sunTable(null, {}, { timezone: 'UTC', sunset_margin_min: 60 })).toThrow(/give tripId/);
   });
 });
