@@ -108,10 +108,15 @@ npm test               # vitest, mock TREK host, no network
 npm run coverage
 npm run sync-manifest  # copy server/lib/tool-specs.js into trek-plugin.json
 node scripts/dev-fixtures.js && npm run dev   # fictional trip on http://localhost:4317
+npx trek-plugin-sdk shot                      # docs/screenshot.png (see CONTRIBUTING)
 npm run validate && npm run pack
 ```
 
 Data: © OpenStreetMap contributors (ODbL), routing by Valhalla on the FOSSGIS servers.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
