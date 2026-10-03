@@ -36,7 +36,10 @@ describe('warnings banner', () => {
     // every warning counted once: shown + summed up = blocking + fix + verify
     const total = +sum.message.match(/\d+/)[0] + lines.length;
     const check = await h2check();
-    expect(total).toBe(check.counts.blocking + check.counts.fix + check.counts.verify);
+    // ...except "no contact for this night", which only the tools list (one per night at first)
+    const noContact = check.findings.filter((f) => f.key === 'night_no_contact').length;
+    expect(noContact).toBe(3);
+    expect(total).toBe(check.counts.blocking + check.counts.fix + check.counts.verify - noContact);
   });
 
   const price = (day) => ({ level: 'verify', key: 'price_high', dayNumber: day, dayId: 100 + day, params: { name: `Camping ${day} Example`, price: '41,00 €', max: '35,00 €' } });

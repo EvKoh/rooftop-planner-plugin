@@ -6,6 +6,8 @@
 // link to the place page, and forgets. Calls are rate-limited in-process so a chatty
 // assistant cannot hammer the service.
 
+const { fromOsmTags } = require('./contacts');
+
 const BASE = 'https://park4night.com';
 const UA = 'vanlife (TREK plugin; +https://github.com/EvkohLand/TrekPluginVanlife)';
 const MIN_GAP_MS = 3000; // between two requests
@@ -53,6 +55,12 @@ function priceHint(text) {
   return m ? parseFloat((m[1] || m[2]).replace(',', '.')) : null;
 }
 
+/** The contact a park4night entry carries, when it carries one (the list rarely does). */
+function contactOf(p) {
+  const c = fromOsmTags({ email: p.email || p.mail, phone: p.phone || p.tel || p.telephone, website: p.website || p.site_internet || p.site });
+  return c.email || c.phone || c.website ? c : null;
+}
+
 function decode(text) {
   const t = String(text).trim();
   try { return JSON.parse(t); } catch { /* base64 is the usual answer */ }
@@ -78,7 +86,7 @@ async function fetchAround(lat, lng, radiusKm, lng2, now) {
  */
 async function around(lat, lng, radiusKm, { now } = {}) {
   const list = await fetchAround(lat, lng, radiusKm, 'en', now);
-  return list.map((p) => ({ id: p.id, lat: p.lat, lng: p.lng, code: p.type && p.type.code, services: p.services || [], activities: p.activities || [] }));
+  return list.map((p) => ({ id: p.id, lat: p.lat, lng: p.lng, code: p.type && p.type.code, services: p.services || [], activities: p.activities || [], contact: contactOf(p) }));
 }
 
 /**
@@ -113,6 +121,7 @@ async function search(a, { now } = {}) {
       services,
       priceHint: price,
       page: p.url ? `${BASE}${p.url}` : null,
+      contact: contactOf(p),
     });
   }
   places.sort((x, y) => (y.rating ?? 0) - (x.rating ?? 0) || (x.distanceKm ?? 99) - (y.distanceKm ?? 99));
@@ -127,4 +136,4 @@ async function search(a, { now } = {}) {
 
 const resetRate = () => { state.last = 0; state.recent = []; };
 
-module.exports = { search, around, priceHint, decode, RateLimited, KINDS, KINDS_FOR, SERVICES, resetRate, MAX_PER_HOUR };
+module.exports = { contactOf, search, around, priceHint, decode, RateLimited, KINDS, KINDS_FOR, SERVICES, resetRate, MAX_PER_HOUR };

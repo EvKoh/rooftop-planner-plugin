@@ -108,6 +108,8 @@ async function loadTrip(ctx, tripId, settings) {
       notes: a.notes || '',
       categoryName: pl.categoryName || '',
       info: pl.info || null,
+      // TREK's own phone field counts as a way to reach the host.
+      nativePhone: (pl.raw && pl.raw.phone) || null,
       // TREK's price, made the party's total for the night with the recorded details
       // (per person x travellers, + dog fee).
       price: settings ? placeInfo.nightTotal(pl.price ?? null, pl.info, settings) : pl.price ?? null,

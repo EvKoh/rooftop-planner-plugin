@@ -1,10 +1,10 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "apiVersion": 1,
   "author": "EvKoh",
-  "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules and amenities, as MCP tools.",
+  "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
   "homepage": "https://github.com/EvkohLand/TrekPluginVanlife",
   "license": "MIT",
   "tags": [
@@ -27,6 +27,7 @@
     "db:read:todos",
     "db:write:places",
     "db:write:itinerary",
+    "db:write:reservations",
     "db:meta",
     "mcp:tools",
     "hook:trip-warning-provider",
@@ -444,7 +445,7 @@
       {
         "name": "vanlife_plan_trip",
         "title": "Plan or re-plan a vanlife road trip (all-in-one)",
-        "description": "All-in-one planner for a road trip with a rooftop tent, a campervan or a motorhome (the vehicle is the user's setting). With tripId: full check, challenges each night (cheaper legal night nearby), day routes, schedules from real drive times (arrive the configured margin before sunset), budget total (nights, fuel, tolls); returns a report, an ordered action list and the core TREK calls to make (reorder_day_assignments, update_assignment_time, create_budget_item). When \"continuation\" is returned, call again with it until it is null. apply=false (default) only proposes; apply=true also writes the day route places. Without tripId, pass \"request\" (destination, dates, wishes) for the steps to create the trip. Research what is marked \"toVerify\" (price, rooftop tent accepted, open in season) on official sites first. Never book, pay or send a message to a host on the user's behalf: draft messages (English, then French) and show the exact text to the user, and act only on their explicit validation.",
+        "description": "All-in-one planner for a road trip with a rooftop tent, a campervan or a motorhome (the user's setting). With tripId: full check, challenges each night (cheaper legal night nearby), day routes, schedules from real drive times (arrive the configured margin before sunset), budget total (nights, fuel, tolls); returns a report, an ordered action list and the core TREK calls to make (reorder_day_assignments, update_assignment_time, create_budget_item). When \"continuation\" is returned, call again with it until it is null. apply=false (default) only proposes; apply=true also writes the day route places. Without tripId, pass \"request\" (destination, dates, wishes) for the steps to create the trip. Research what is marked \"toVerify\" on official sites first; vanlife_host_message drafts a question to a host. Never book, pay or send a message to a host for the user: show them the exact text first and act only on their explicit validation.",
         "inputSchema": {
           "type": "object",
           "additionalProperties": false,
@@ -502,7 +503,7 @@
       {
         "name": "vanlife_check_trip",
         "title": "Check a vanlife trip for problems",
-        "description": "Read-only check of a TREK trip, day by day, for the user's vehicle. Levels: blocking (arrival after sunset minus the margin; stop visited outside its hours; check-in window or minimum stay missed; a night the vehicle may not use — motorhome area or car park for a rooftop tent, tents or dogs refused, height/length/weight limit; booking confirmed with no confirmation number), fix (times impossible with real drive times, overlaps, route place missing/not first/not joined, long shopping detour, nights without water in a row, stale booking/budget/to-do lines), verify (farm where farm camping is forbidden with a rooftop tent, van or motorhome night outside a site, closure in the notes, day ending after sunset, price above the ceiling or unknown), info (sunset margin of each night). Fix what is certain; ask the user about choices. Never book, pay or send a message to a host on the user's behalf: draft messages (English, then French) and show the exact text to the user, and act only on their explicit validation.",
+        "description": "Read-only check of a trip, day by day, for the user's vehicle. Levels: blocking (arrival after sunset minus the margin; stop visited outside its hours; check-in window or minimum stay missed; a night the vehicle may not use — motorhome area or car park for a rooftop tent, tents or dogs refused, height/length/weight limit; booking confirmed with no confirmation number), fix (times impossible with real drive times, overlaps, route place missing/not first/not joined, long shopping detour, nights without water in a row, stale booking/budget/to-do lines), verify (no e-mail or phone for a night, host contacted over 3 days ago with no answer logged, farm where farm camping is forbidden, van night outside a site, closure in the notes, day ending after sunset, price above the ceiling or unknown), info (sunset margin of each night). Fix what is certain; ask the user about choices. Never book, pay or send a message to a host for the user: show them the exact text first and act only on their explicit validation.",
         "inputSchema": {
           "type": "object",
           "additionalProperties": false,
@@ -552,7 +553,7 @@
       {
         "name": "vanlife_find_nights",
         "title": "Find cheap legal nights for the vehicle",
-        "description": "Night candidates between the evening's last visit and the next morning's first stop, from OpenStreetMap and, if the instance enables it, park4night (unofficial API that may change without notice; nothing stored; each result links to its page). Kinds follow the vehicle: campsites and farms for a rooftop tent; also motorhome areas, and car parks to verify, for a van or a motorhome. With sunset and latest arrival at the evening point when a date is known; ranked: forbidden last, then legal risk, then price, then the real detour in drive minutes; with total cost (night + fuel of the detour) and the saving versus the current night. Give tripId + dayNumber (the evening's day), or evening lat/lng (+ morning). OSM has no reviews and rarely prices: each candidate lists what to verify. Compare chains of nights, not one at a time. Never book, pay or send a message to a host on the user's behalf: draft messages (English, then French) and show the exact text to the user, and act only on their explicit validation.",
+        "description": "Night candidates between the evening's last visit and the next morning's first stop, from OpenStreetMap and, if the instance enables it, park4night (unofficial API; nothing stored; each result links to its page). Kinds follow the vehicle: campsites and farms for a rooftop tent; also motorhome areas, and car parks to verify, for a van or a motorhome. With sunset and latest arrival when a date is known; ranked: forbidden last, then legal risk, then price, then the real detour in drive minutes; with total cost (night + fuel of the detour) and the saving versus the current night. Give tripId + dayNumber (the evening's day), or evening lat/lng (+ morning). Each candidate gives the contacts OSM knows (email, phone, website). OSM has no reviews and rarely prices: each candidate lists what to verify. Compare chains of nights, not one at a time. Never book, pay or send a message to a host for the user: show them the exact text first and act only on their explicit validation.",
         "inputSchema": {
           "type": "object",
           "additionalProperties": false,
@@ -622,20 +623,36 @@
         }
       },
       {
-        "name": "vanlife_compute_routes",
-        "title": "Compute the day routes (road geometry)",
-        "description": "Road route of each day with Valhalla, for the vehicle (height; length and weight for a motorhome, routed as a truck; no tolls except on the motorway days set by the user): last night, the stops where the car goes, tonight. Returns km, drive time and legs per day. apply=false (default) proposes; apply=true recreates each day's route place in TREK (a place geometry cannot be edited, so the old one is deleted) and returns the core reorder_day_assignments calls that put each route first. Resume with startAt when \"continuation\" is returned. Re-run the check afterwards.",
+        "name": "vanlife_day",
+        "title": "One day of the trip: routes, schedule or supplies",
+        "description": "Work on the days of a trip; pick \"action\". \"routes\": road route of each day with Valhalla for the vehicle (height; length and weight for a motorhome; no tolls except on the motorway days set by the user): km, drive time and legs per day; apply=false (default) proposes, apply=true recreates each day's route place in TREK (the old one is deleted) and returns the core reorder_day_assignments calls; resume with startAt when \"continuation\" is returned. \"schedule\": start and end of every stop of one day (dayNumber) from real drive times, opening hours in the notes, arrival at the night against sunset minus the margin; returns the core update_assignment_time calls; read-only. \"supplies\": supermarkets, fuel and drinking water along one day's route (dayNumber), distance off the route, hours on that date and whether open at the pass time; read-only. Re-run vanlife_check_trip after a change.",
         "inputSchema": {
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "tripId"
+            "tripId",
+            "action"
           ],
           "properties": {
             "tripId": {
               "type": "integer",
               "minimum": 1,
               "description": "TREK trip id (list_trips gives it)."
+            },
+            "action": {
+              "type": "string",
+              "enum": [
+                "routes",
+                "schedule",
+                "supplies"
+              ],
+              "description": "routes = road geometry of the days; schedule = times of one day; supplies = shops, fuel and water along one day."
+            },
+            "dayNumber": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 400,
+              "description": "The day (schedule and supplies: required)."
             },
             "dayNumbers": {
               "type": "array",
@@ -647,59 +664,29 @@
                 "maximum": 400,
                 "description": "Day number in the trip (1 = first day)."
               },
-              "description": "Days to route (default all)."
+              "description": "routes: days to route (default all)."
             },
             "apply": {
               "type": "boolean",
-              "default": false
+              "default": false,
+              "description": "routes: false = propose only (default); true = write the route places."
             },
             "startAt": {
               "type": "integer",
               "minimum": 0,
               "maximum": 400,
               "default": 0,
-              "description": "Resume index from a previous continuation."
-            }
-          }
-        },
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": true,
-          "openWorldHint": true
-        }
-      },
-      {
-        "name": "vanlife_schedule_day",
-        "title": "Schedule a day from real drive times",
-        "description": "Computes start and end times of every stop of one day from real drive times (departure, drive, time on site, drive...), checks opening hours quoted in the notes, and the arrival at the night against sunset minus the margin; when late, says by how much and what fixes it. Returns the core update_assignment_time calls to write the times (the plugin API cannot set them). Read-only.",
-        "inputSchema": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "tripId",
-            "dayNumber"
-          ],
-          "properties": {
-            "tripId": {
-              "type": "integer",
-              "minimum": 1,
-              "description": "TREK trip id (list_trips gives it)."
-            },
-            "dayNumber": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 400,
-              "description": "Day number in the trip (1 = first day)."
+              "description": "routes: resume index from a previous continuation."
             },
             "departure": {
               "type": "string",
               "pattern": "^[0-2]?[0-9]:[0-5][0-9]$",
-              "description": "Departure from last night's place (default: keep the current plan, else 09:00)."
+              "description": "schedule: departure from last night's place (default: keep the current plan, else 09:00)."
             },
             "stays": {
               "type": "array",
               "maxItems": 40,
-              "description": "Time on site overrides.",
+              "description": "schedule: time on site overrides.",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
@@ -719,18 +706,44 @@
                   }
                 }
               }
+            },
+            "kinds": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "groceries",
+                  "fuel",
+                  "water"
+                ]
+              },
+              "description": "supplies: default groceries and fuel."
+            },
+            "at": {
+              "type": "string",
+              "pattern": "^[0-2]?[0-9]:[0-5][0-9]$",
+              "description": "supplies: expected pass time, to tell which places are open then."
+            },
+            "corridor_km": {
+              "type": "number",
+              "minimum": 0.3,
+              "maximum": 5,
+              "default": 2,
+              "description": "supplies: max distance off the route (km)."
             }
           }
         },
         "annotations": {
-          "readOnlyHint": true,
+          "readOnlyHint": false,
+          "destructiveHint": true,
           "openWorldHint": true
         }
       },
       {
-        "name": "vanlife_place_info",
-        "title": "Read or record the amenities and price details of places",
-        "description": "Amenities and price details of the places of a trip, shown in the planner (columns on each place, the place widget) and used by the check and the budget. Without placeId: lists the places that have them, and the nights still to fill. With placeId and \"set\": the price goes to TREK's own place price (price_amount, currency); TREK has no field for the rest, kept by the plugin: per night or per person, dog fee, max height/length/weight, amenities (one key each in \"set\": water, shower, wifi, pool, bar...; dog also takes fee), each yes, no or unknown. Record only what a cited source states (official site first, then a dated review or the host's written answer, in \"source\"); leave everything else unknown, never estimate. \"clear\": true removes the record. \"fill\": true fills unknown amenities from OpenStreetMap and park4night, citing them in \"source\". Writes only the plugin's own data on the place, never the trip itself. Never book or message a host without the user's explicit validation.",
+        "name": "vanlife_place",
+        "title": "Everything about a place: amenities, price, contacts, exchanges",
+        "description": "Read and keep what TREK has no field for on a place (a night above all): amenities, price details, the host's contacts and the log of exchanges with them; shown in the planner and used by the check, the budget and vanlife_host_message. Without placeId: list places by \"filter\". With placeId: read one; \"set\" records fields (price on TREK's own price; amenities yes/no/unknown; contacts: null erases a field); \"log\" adds one exchange (newest first, 50 kept); \"clear\" removes the record, \"clear_fields\" only the named fields; \"fill\" fills empty amenities and contacts from the place's own notes and TREK fields, OpenStreetMap and park4night, citing each source. A known website or phone is also copied into TREK's own empty fields. Record only what a cited source states (official site, dated review, the host's written answer); never estimate. Never book, pay or send a message to a host without the user's explicit validation.",
         "inputSchema": {
           "type": "object",
           "additionalProperties": false,
@@ -746,16 +759,18 @@
             "placeId": {
               "type": "integer",
               "minimum": 1,
-              "description": "TREK place id."
+              "description": "TREK place id. Omit to list places."
             },
-            "clear": {
-              "type": "boolean",
-              "default": false
-            },
-            "fill": {
-              "type": "boolean",
-              "default": false,
-              "description": "Fill unknown amenities from OpenStreetMap (and park4night if the instance enables it): the place given by placeId, or the next 20 places of the trip; call again while \"remaining\" is above 0. Never overwrites a recorded value."
+            "filter": {
+              "type": "string",
+              "enum": [
+                "nights",
+                "missing_contacts",
+                "missing_amenities",
+                "all"
+              ],
+              "default": "nights",
+              "description": "List (no placeId): nights = planned nights and night-type places; missing_contacts = those with no e-mail or phone; missing_amenities = those with a key amenity unknown; all = every place."
             },
             "set": {
               "type": "object",
@@ -981,14 +996,215 @@
                 },
                 "source": {
                   "type": "string",
-                  "maxLength": 300
+                  "maxLength": 300,
+                  "description": "Where the amenities and prices come from."
                 },
                 "checked": {
                   "type": "string",
                   "format": "date",
                   "description": "Date the source was read."
+                },
+                "contacts": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "The host's contacts; null erases a field.",
+                  "properties": {
+                    "email": {
+                      "type": "string",
+                      "maxLength": 254,
+                      "nullable": true
+                    },
+                    "phone": {
+                      "type": "string",
+                      "maxLength": 40,
+                      "nullable": true,
+                      "description": "International form preferred: +39 0471 000000."
+                    },
+                    "whatsapp": {
+                      "type": "string",
+                      "maxLength": 40,
+                      "nullable": true
+                    },
+                    "website": {
+                      "type": "string",
+                      "maxLength": 500,
+                      "nullable": true,
+                      "description": "http(s) address."
+                    },
+                    "contact_name": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "nullable": true
+                    },
+                    "languages": {
+                      "type": "array",
+                      "maxItems": 8,
+                      "nullable": true,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 20
+                      },
+                      "description": "Languages the host speaks, e.g. [\"it\", \"de\", \"en\"]."
+                    },
+                    "preferred_channel": {
+                      "type": "string",
+                      "enum": [
+                        "email",
+                        "phone",
+                        "whatsapp",
+                        "website_form"
+                      ],
+                      "nullable": true
+                    },
+                    "notes": {
+                      "type": "string",
+                      "maxLength": 300,
+                      "nullable": true,
+                      "description": "Short, e.g. \"answers in the evening\"."
+                    }
+                  }
                 }
               }
+            },
+            "log": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "date",
+                "channel",
+                "direction",
+                "summary"
+              ],
+              "description": "One exchange with the host, added to the place's log. Record a message as \"sent\" only once the user has sent it.",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "channel": {
+                  "type": "string",
+                  "enum": [
+                    "email",
+                    "phone",
+                    "whatsapp",
+                    "website_form",
+                    "sms",
+                    "in_person",
+                    "other"
+                  ]
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "sent",
+                    "received"
+                  ]
+                },
+                "summary": {
+                  "type": "string",
+                  "maxLength": 300,
+                  "description": "One short sentence: what was asked or answered."
+                }
+              }
+            },
+            "clear": {
+              "type": "boolean",
+              "default": false,
+              "description": "Remove the whole record of the place."
+            },
+            "clear_fields": {
+              "type": "array",
+              "maxItems": 40,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "description": "Clear only these: an amenity key, dog_fee, max_height_m, per, source, checked, a contact field (email, phone...), or amenities / contacts / log."
+            },
+            "fill": {
+              "type": "boolean",
+              "default": false,
+              "description": "Fill empty amenities and contacts: the place given by placeId, or the next 20 places of the trip; call again while \"remaining\" is above 0. Never overwrites a recorded value."
+            }
+          }
+        },
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": true
+        }
+      },
+      {
+        "name": "vanlife_night",
+        "title": "Status of each night: spotted, contacted, booked, dropped",
+        "description": "Where each night of the trip stands, kept in TREK's own bookings. Statuses: spotted (a place with no booking), contacted (booking \"pending\": the host was asked), booked (booking \"confirmed\", with its confirmation number when there is one), dropped (booking \"cancelled\", with a short reason). action \"list\": one line per night (day, place, status, contact, last exchange, price, days waiting for an answer). action \"set\": placeId + dayNumber (the evening) + status: creates or updates the hotel booking tied to that place and day (and plans the night if the day has none). Use it after the user says they asked, booked or gave up a place. This only records what the user declares: it never books, pays or contacts anyone; never set \"booked\" unless the user says the host confirmed.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tripId",
+            "action"
+          ],
+          "properties": {
+            "tripId": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "TREK trip id (list_trips gives it)."
+            },
+            "action": {
+              "type": "string",
+              "enum": [
+                "list",
+                "set"
+              ]
+            },
+            "placeId": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "set: the place of the night."
+            },
+            "dayNumber": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 400,
+              "description": "set: the day whose evening the night starts."
+            },
+            "dayId": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "set: TREK day id, instead of dayNumber."
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "spotted",
+                "contacted",
+                "booked",
+                "dropped"
+              ],
+              "description": "set: the new status."
+            },
+            "confirmation": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "set booked: the host's confirmation number or reference."
+            },
+            "reason": {
+              "type": "string",
+              "maxLength": 200,
+              "description": "set dropped: why, in a few words (full, no tents, too expensive...)."
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 500,
+              "description": "set: notes written on the booking."
+            },
+            "nights": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 30,
+              "description": "set, when the day has no night yet: how many nights (default 1)."
             }
           }
         },
@@ -999,15 +1215,15 @@
         }
       },
       {
-        "name": "vanlife_supplies_on_route",
-        "title": "Groceries, fuel and water along a day's route",
-        "description": "Supermarkets, fuel stations and drinking water along a day's route (OpenStreetMap), so shopping costs no detour: distance along the route, distance off it, approximate detour (the check measures the real one once planned), opening hours on that date and whether open at the pass time. Verify hours and the dog rule on the official page. Read-only.",
+        "name": "vanlife_host_message",
+        "title": "Draft the information request to a night's host",
+        "description": "Drafts the message asking the host of a night what is still unknown: rooftop tent (or van) accepted, dog and its supplement, open on the date, estimated arrival time, price, water and electricity when useful. Uses the dates of the night and the crew from the settings (travellers, dog, vehicle). Text in English, then a line of dashes, then French (option language_extra adds Italian or German). Returns the recipient (known contact and preferred channel), a subject, the text and the list of questions. It is a request for information, not a booking. It SENDS NOTHING: show the user the exact text and wait for their explicit validation before it is sent; never send, book or pay on their behalf. After the user sends it, record it with vanlife_place log and vanlife_night status \"contacted\".",
         "inputSchema": {
           "type": "object",
           "additionalProperties": false,
           "required": [
             "tripId",
-            "dayNumber"
+            "placeId"
           ],
           "properties": {
             "tripId": {
@@ -1015,42 +1231,55 @@
               "minimum": 1,
               "description": "TREK trip id (list_trips gives it)."
             },
+            "placeId": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The place of the night."
+            },
             "dayNumber": {
               "type": "integer",
               "minimum": 1,
               "maximum": 400,
-              "description": "Day number in the trip (1 = first day)."
+              "description": "The evening of the night (default: the day the place is planned as a night)."
             },
-            "kinds": {
-              "type": "array",
-              "uniqueItems": true,
-              "items": {
-                "type": "string",
-                "enum": [
-                  "groceries",
-                  "fuel",
-                  "water"
-                ]
-              },
-              "description": "Default groceries and fuel."
+            "nights": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 30,
+              "description": "Number of nights (default: the planned ones, else 1)."
             },
-            "at": {
+            "arrival": {
               "type": "string",
               "pattern": "^[0-2]?[0-9]:[0-5][0-9]$",
-              "description": "Expected pass time, to tell which places are open then."
+              "description": "Estimated arrival (default: the planned time of the night in the day)."
             },
-            "corridor_km": {
-              "type": "number",
-              "minimum": 0.3,
-              "maximum": 5,
-              "default": 2,
-              "description": "Max distance off the route (km)."
+            "extra_questions": {
+              "type": "array",
+              "maxItems": 5,
+              "items": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "description": "Further questions, in English."
+            },
+            "language_extra": {
+              "type": "string",
+              "enum": [
+                "it",
+                "de"
+              ],
+              "description": "Add the local language after the French."
+            },
+            "signature": {
+              "type": "string",
+              "maxLength": 80,
+              "description": "Name to sign with, if the user gives one."
             }
           }
         },
         "annotations": {
           "readOnlyHint": true,
-          "openWorldHint": true
+          "openWorldHint": false
         }
       }
     ]

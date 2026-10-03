@@ -12,6 +12,7 @@ const rules = require('./rules');
 const { statusAt } = require('./opening-hours');
 const park4night = require('./park4night');
 const { t } = require('./i18n');
+const { fromOsmTags } = require('./contacts');
 const { highwayAllowed, fuelPerKm } = require('./settings');
 const { dayPlan } = require('./check');
 const { findDay } = require('./schedule');
@@ -126,6 +127,8 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
       name: name || '(unnamed)', kind, source: 'osm', lat: e.lat, lng: e.lng, osm: overpass.osmUrl(e.id),
       price, priceText: tg.charge || null,
       website: tg.website || tg['contact:website'] || null,
+      // What OSM states to reach the host (email, phone, website and their contact:* forms).
+      contacts: fromOsmTags(tg),
       dog: tg.dog || null, tents: tg.tents || null,
       water: tg.drinking_water || null, toilets: tg.toilets || null, shower: tg.shower || null, power: tg.power_supply || null,
       openOnDate: open, openingHours: tg.opening_hours || null,
@@ -142,6 +145,7 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     cands.push({
       name: p.name, kind: p.kind, source: 'park4night', lat: p.lat, lng: p.lng, page: p.page,
       price: p.priceHint, priceText: null, rating: p.rating, reviews: p.reviews,
+      contacts: p.contact || { email: null, phone: null, website: null },
       dog: p.services.includes('dogs') ? 'yes' : null, tents: null,
       water: p.services.includes('water') ? 'yes' : null, toilets: p.services.includes('toilets') ? 'yes' : null,
       shower: p.services.includes('shower') ? 'yes' : null, power: p.services.includes('electricity') ? 'yes' : null,
@@ -196,7 +200,7 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     sources,
     candidates: top,
     source: `${sources.includes('osm') ? 'OpenStreetMap contributors (ODbL) via Overpass' : ''}${sources.includes('park4night') ? '; park4night (unofficial API, may change without notice; nothing stored, open each page)' : ''}; drive times via Valhalla`.replace(/^; /, ''),
-    note: `Price target ${settings.night_price_target}, ceiling ${settings.night_price_max}. OSM has no reviews and rarely prices: verify each "toVerify" item from the official site first, or ask the host (message validated by the user before sending). Never book without an explicit order from the user.`,
+    note: `Price target ${settings.night_price_target}, ceiling ${settings.night_price_max}. OSM has no reviews and rarely prices: verify each "toVerify" item from the official site first, or ask the host (vanlife_host_message drafts it; the user validates it before it is sent). Never book without an explicit order from the user.`,
   };
 }
 

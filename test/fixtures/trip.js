@@ -79,8 +79,9 @@ function build({ fixed = false } = {}) {
     days,
     accommodations,
     reservations: [
-      { id: 501, title: 'Camping Example (night 1)', status: 'confirmed', confirmation_number: null, accommodation_id: '1' },
-      { id: 502, title: 'Camping Old Choice', status: 'pending', confirmation_number: null, accommodation_id: '2' },
+      // As TREK lists them: a hotel booking joined to its lodging block (accommodation_*).
+      { id: 501, type: 'hotel', title: 'Camping Example (night 1)', status: 'confirmed', confirmation_number: null, accommodation_id: '1', accommodation_place_id: 13, accommodation_start_day_id: 101 },
+      { id: 502, type: 'hotel', title: 'Camping Old Choice', status: 'pending', confirmation_number: null, accommodation_id: '2', accommodation_place_id: 16, accommodation_start_day_id: 102 },
     ],
     costs: [
       { id: 601, name: 'Night 13/10 — Camping Old Choice', category: 'Accommodation', total_price: 30 },

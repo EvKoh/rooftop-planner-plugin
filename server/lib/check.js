@@ -11,6 +11,8 @@ const rules = require('./rules');
 const routing = require('./routing');
 const { highwayAllowed } = require('./settings');
 const { nightOf, nightBefore, nameKey, unplannedNights } = require('./trip');
+const contacts = require('./contacts');
+const nightStatus = require('./night-status');
 
 const LEVELS = ['blocking', 'fix', 'verify', 'info'];
 
@@ -36,7 +38,7 @@ function carPos(stop) {
   return parkingFromNotes(stop.place.notes, stop.place.description) || pos(stop.place);
 }
 
-async function checkTrip(ctx, model, { settings, network = true, deadline, lang } = {}) {
+async function checkTrip(ctx, model, { settings, network = true, deadline, lang, now = Date.now() } = {}) {
   const L = lang || settings.language;
   const findings = [];
   const dayLabel = (d) => t(L, 'day', { n: d.n, date: d.date || '?' });
@@ -182,6 +184,10 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang 
         const pv = rules.priceVerdict(nuit.price, settings);
         const cur = model.currency;
         if (pv) add(pv.level, J, pv.key, { name: nuit.name, price: money(nuit.price, cur, L), max: money(settings.night_price_max, cur, L), target: money(settings.night_price_target, cur, L) }, extra);
+        // No way to ask the host anything: no e-mail, no phone (plugin record or TREK's field).
+        if (!contacts.hasContact(nuit.info && nuit.info.contacts) && !nuit.nativePhone) add('verify', J, 'night_no_contact', { name: nuit.name }, extra);
+        const waiting = nightStatus.waitingDays(nightStatus.reservationFor(nuit, model.reservations), nuit.info, now);
+        if (waiting != null && waiting > nightStatus.STALE_DAYS) add('verify', J, 'contact_stale', { name: nuit.name, n: waiting }, extra);
       }
       // Entered amenities win over words in the notes.
       const dry = am.water === 'no' || (am.water !== 'yes' && rules.noWater(nuit.text));

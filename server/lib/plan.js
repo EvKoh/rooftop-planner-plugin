@@ -26,7 +26,7 @@ function planRequest(req) {
     steps: [
       { tool: 'create_trip', args: { title: req.destination ? `${req.destination}` : 'Road trip', start_date: req.start_date, end_date: req.end_date }, why: 'days are generated from the dates' },
       { tool: 'search_place / create_and_assign_place', why: 'one sourced place per wish (closing days, hours, season, booking, parking, dog rules, time on site), grouped by area so no valley is crossed twice', wishes },
-      { tool: 'create_place + create_accommodation', why: 'one campsite or farm per night (never a motorhome area); use vanlife_find_nights for candidates, then set booking status back to pending' },
+      { tool: 'create_place + create_accommodation', why: 'one campsite or farm per night (never a motorhome area); use vanlife_find_nights for candidates, vanlife_host_message to draft the question to the host, vanlife_night to record where each night stands' },
       { tool: 'plugin_vanlife_vanlife_plan_trip', args: { tripId: '<new trip id>' }, why: 'check, routes, schedules and budget' },
     ],
     reminder: SAFETY,
@@ -64,7 +64,7 @@ async function planTrip(ctx, model, o, opts) {
           const best = r.candidates.filter((c) => !c.blocked.length).slice(0, 3);
           out.results.nights.push({ day: d.n, current: r.currentNight, best });
           const cheaper = best.find((c) => c.price != null && r.currentNight && r.currentNight.price != null && c.price < r.currentNight.price && (c.detourMinutes ?? 99) <= 30 && !c.legalRisk);
-          if (cheaper) out.actions.push({ priority: 2, action: `Day ${d.n}: "${cheaper.name}" (${cheaper.price}, ${cheaper.detourMinutes} min detour) could replace "${r.currentNight.name}" (${r.currentNight.price}): verify ${cheaper.toVerify.join(', ')}, then ask the user` });
+          if (cheaper) out.actions.push({ priority: 2, action: `Day ${d.n}: "${cheaper.name}" (${cheaper.price}, ${cheaper.detourMinutes} min detour) could replace "${r.currentNight.name}" (${r.currentNight.price}): verify ${cheaper.toVerify.join(', ')} (vanlife_host_message drafts the question to the host), then ask the user` });
         } catch (e) {
           out.results.nights.push({ day: d.n, error: String(e.message || e) });
         }
@@ -102,7 +102,7 @@ async function planTrip(ctx, model, o, opts) {
   }
   if (!out.continuation) out.continuation = null;
   out.actions.sort((a, b) => a.priority - b.priority);
-  out.reminder = `${SAFETY} Re-run vanlife_check_trip after each change; a change is finished when it reports no blocking point.`;
+  out.reminder = `${SAFETY} Re-run vanlife_check_trip after each change; a change is finished when it reports no blocking point. vanlife_night lists where each night stands (spotted, contacted, booked, dropped).`;
   return out;
 }
 

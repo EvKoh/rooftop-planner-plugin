@@ -1,16 +1,17 @@
 // vanlife — plans road trips with a rooftop tent, a campervan or a motorhome in TREK.
 //
 // What it plugs into (TREK's own surfaces only; the plugin has a single screen):
-//   • widget, slot "place-detail" → the place's amenities and price details, at the foot of
-//                                   the place panel (client/index.html)
+//   • widget, slot "place-detail" → the place's amenities, price details, host contacts and
+//                                   night status, at the foot of the place panel (client/index.html)
 //   • mcpToolProvider  → 7 MCP tools `vanlife_*` (advertised as plugin_vanlife_vanlife_*)
 //   • warningProvider  → the planner's warnings banner (cache-only, 5 s budget)
 //   • routeProvider    → two route profiles in the planner's route toggle
-//   • tableContributor → price and amenities columns on each place (view "places")
+//   • tableContributor → night status, price and amenities columns on each place (view "places")
 // Settings are TREK's native forms (user: vehicle and rules; instance: defaults).
 //
 // Every trip read is membership-checked by the host against the acting user; the plugin
-// never names a user. Nothing here books, pays or messages anyone.
+// never names a user. Nothing here books, pays or messages anyone: night statuses are what
+// the user declares, and messages to hosts are drafts for the user to send.
 const { definePlugin } = require('trek-plugin-sdk');
 const cache = require('./lib/cache');
 const routing = require('./lib/routing');
@@ -22,6 +23,8 @@ const { warnings } = require('./lib/report');
 const placeInfo = require('./lib/place-info');
 const amenityFill = require('./lib/amenity-fill');
 const { placeColumns } = require('./lib/contributions');
+const nightStatus = require('./lib/night-status');
+const contacts = require('./lib/contacts');
 const { gentle } = require('./lib/gentle');
 const { bundle, lang } = require('./lib/i18n');
 
@@ -102,10 +105,11 @@ module.exports = definePlugin({
           // The user's own language setting wins; "auto" follows the language TREK gives the frame.
           const own = await ctx.settings.get('language').catch(() => undefined);
           const L = own && own !== 'auto' ? lang(own) : req.body.locale ? lang(req.body.locale) : settings.language;
-          const info = await placeInfo.get(ctx, at.placeId);
+          const [info, resas] = await Promise.all([placeInfo.get(ctx, at.placeId), ctx.trips.getReservations(at.tripId).catch(() => [])]);
+          const status = nightStatus.statusByPlace(resas).get(at.placeId) || null;
           return json(200, {
             language: L,
-            strings: bundle(L, ['ui.', 'am', 'opt.', 'per.', 'fee']),
+            strings: bundle(L, ['ui.', 'am', 'opt.', 'per.', 'fee', 'st.', 'ch.']),
             vehicle: settings.vehicle,
             price: place.price == null ? null : +place.price,
             currency: place.currency || null,
@@ -114,6 +118,10 @@ module.exports = definePlugin({
             summary: placeInfo.amenitiesText(info, L),
             refused: placeInfo.refuses(info, settings),
             amenities: placeInfo.AMENITIES,
+            channels: contacts.CHANNELS,
+            // TREK's own fields, shown when the plugin's record has nothing.
+            trek: { website: place.website || null, phone: place.phone || null },
+            nightStatus: status,
           });
         } catch (e) {
           return json(403, { error: String((e && e.message) || e) });
@@ -130,8 +138,9 @@ module.exports = definePlugin({
         const at = ids(req.body);
         if (!at) return json(400, { error: 'tripId and placeId required' });
         try {
-          if (!(await placeOf(ctx, at.tripId, at.placeId))) return json(404, { error: 'place not in this trip' });
-          return json(200, { saved: true, info: await placeInfo.set(ctx, at.tripId, at.placeId, (req.body && req.body.set) || {}) });
+          const place = await placeOf(ctx, at.tripId, at.placeId);
+          if (!place) return json(404, { error: 'place not in this trip' });
+          return json(200, { saved: true, info: await placeInfo.set(ctx, at.tripId, at.placeId, (req.body && req.body.set) || {}, { place }) });
         } catch (e) {
           return json(e instanceof placeInfo.InfoError ? 400 : 403, { error: String((e && e.message) || e) });
         }
@@ -151,7 +160,7 @@ module.exports = definePlugin({
         if (!Number.isInteger(tripId) || tripId < 1) return json(400, { error: 'tripId required' });
         try {
           const settings = await readSettings(ctx, ['language']);
-          const opts = { park4night: settings.park4night };
+          const opts = { park4night: settings.park4night, language: settings.language };
           if (Number.isInteger(placeId) && placeId > 0) {
             if (!(await placeOf(ctx, tripId, placeId))) return json(404, { error: 'place not in this trip' });
             opts.placeIds = [placeId];

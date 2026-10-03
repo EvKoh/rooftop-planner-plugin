@@ -6,7 +6,8 @@
   <title>Vanlife</title>
   <!-- trek:ui -->
   <style>
-    /* A widget at the foot of TREK's place panel: a summary read at a glance, the editor
+    /* A widget at the foot of TREK's place panel: the night's status, the host's contact
+       (e-mail, phone, website as links) and the amenities read at a glance; the editor
        folded until asked for. TREK's header already shows the place's price, so only what
        it cannot show (per person, dog fee) is repeated here. Text is never under 12 px. */
     body.trek-ui { margin: 0; }
@@ -17,6 +18,9 @@
     .line span { white-space: nowrap; }
     .muted { font-size: 13px; color: var(--text-muted); overflow-wrap: anywhere; }
     .edit-btn { min-height: 44px; }
+    .contact { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; }
+    .contact a { color: var(--accent, inherit); text-decoration: underline; overflow-wrap: anywhere; min-height: 24px; }
+    .sub { font-size: 12px; font-weight: 700; color: var(--text-faint); margin-top: 4px; }
     form { display: flex; flex-direction: column; gap: 10px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
     label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-muted); }
@@ -48,8 +52,32 @@
       try { return new Intl.NumberFormat(st.locale, { style: 'currency', currency: cur || 'EUR' }).format(v); } catch (e) { return v + ' ' + (cur || ''); }
     }
 
+    var STATUS_TONE = { booked: 'success', contacted: 'warning', dropped: 'danger' };
+    function contactLinks(d) {
+      var c = d.info.contacts || {};
+      var phone = c.phone || (d.trek && d.trek.phone);
+      var site = c.website || (d.trek && d.trek.website);
+      var links = [];
+      if (c.email) links.push(h('a', { href: 'mailto:' + c.email, text: c.email }));
+      if (phone) links.push(h('a', { href: 'tel:' + String(phone).replace(/[^+0-9]/g, ''), text: phone }));
+      if (c.whatsapp) links.push(h('a', { href: 'https://wa.me/' + String(c.whatsapp).replace(/\D/g, ''), target: '_blank', rel: 'noopener noreferrer', text: S('ch.whatsapp') + ' ' + c.whatsapp }));
+      if (site && /^https?:\/\//i.test(site)) links.push(h('a', { href: site, target: '_blank', rel: 'noopener noreferrer', text: site.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '') }));
+      var kids = [h('div', { class: 'sub', text: S('ui.contacts') })];
+      kids.push(links.length ? h('div', { class: 'contact' }, links) : h('div', { class: 'muted', text: S('ui.noContact') }));
+      var more = [];
+      if (c.contact_name) more.push(c.contact_name);
+      if (c.preferred_channel) more.push(S('ui.preferredChannel') + ': ' + S('ch.' + c.preferred_channel));
+      if (c.languages && c.languages.length) more.push(c.languages.join(', '));
+      if (c.notes) more.push(c.notes);
+      if (more.length) kids.push(h('div', { class: 'muted', text: more.join(' · ') }));
+      var last = d.info.log && d.info.log[0];
+      if (last) kids.push(h('div', { class: 'muted', text: S('ui.lastExchange').replace('{date}', last.date).replace('{summary}', last.summary) }));
+      return kids;
+    }
+
     function summary(d) {
       var kids = [];
+      if (d.nightStatus && STATUS_TONE[d.nightStatus]) kids.push(h('span', { class: 'trek-chip trek-chip--' + STATUS_TONE[d.nightStatus], text: S('ui.night').replace('{status}', S('st.' + d.nightStatus)) }));
       // What TREK's header cannot say about the price.
       var extra = [];
       if (d.info.per === 'person') extra.push(S('per.person'));
@@ -59,13 +87,18 @@
       else kids.push(h('div', { class: 'muted', text: S('ui.none') }));
       if (extra.length) kids.push(h('div', { class: 'muted', text: extra.join(' · ') }));
       if (d.info.source) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.source) + (d.info.checked ? ' · ' + new Intl.DateTimeFormat(st.locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(d.info.checked + 'T12:00:00Z')) : '') }));
-      return kids;
+      return kids.concat(contactLinks(d));
     }
 
     function field(label, input) { return h('label', {}, [h('span', { text: label }), input]); }
     function select(name, options, value, labelOf) {
       var s = h('select', { class: 'trek-select', name: name }, options.map(function (o) { var e = h('option', { value: o, text: labelOf(o) }); if (o === value) e.selected = true; return e; }));
       return s;
+    }
+    function textInput(name, value, type, extra) {
+      var i = h('input', Object.assign({ class: 'trek-input', type: type || 'text', name: name, maxlength: '300' }, extra || {}));
+      if (value != null) i.value = String(value);
+      return i;
     }
     function number(name, value, step) {
       var i = h('input', { class: 'trek-input', type: 'number', name: name, step: step || '0.01', min: '0', inputmode: 'decimal' });
@@ -75,6 +108,7 @@
 
     function editor(d) {
       var opt = function (o) { return S('opt.' + o); };
+      var c = d.info.contacts || {};
       var cur = h('input', { class: 'trek-input', name: 'currency', maxlength: '3', autocapitalize: 'characters' });
       cur.value = d.currency || 'EUR';
       var src = h('input', { class: 'trek-input', name: 'source', maxlength: '300' });
@@ -97,6 +131,17 @@
           field(S('ui.maxWeight'), number('max_weight_t', d.info.max_weight_t)),
         ]),
         h('div', { class: 'grid' }, [field(S('ui.source'), src), field(S('ui.checked'), chk)]),
+        h('div', { class: 'sub', text: S('ui.contacts') }),
+        h('div', { class: 'grid' }, [
+          field(S('ui.email'), textInput('c_email', c.email, 'email', { autocomplete: 'off', inputmode: 'email' })),
+          field(S('ui.phone'), textInput('c_phone', c.phone, 'tel', { autocomplete: 'off' })),
+          field(S('ui.whatsapp'), textInput('c_whatsapp', c.whatsapp, 'tel', { autocomplete: 'off' })),
+          field(S('ui.website'), textInput('c_website', c.website, 'url', { autocomplete: 'off', inputmode: 'url' })),
+          field(S('ui.contactName'), textInput('c_contact_name', c.contact_name)),
+          field(S('ui.languages'), textInput('c_languages', (c.languages || []).join(', '))),
+          field(S('ui.preferredChannel'), select('c_preferred_channel', [''].concat(d.channels || []), c.preferred_channel || '', function (o) { return o ? S('ch.' + o) : S('ui.noPreference'); })),
+          field(S('ui.contactNotes'), textInput('c_notes', c.notes)),
+        ]),
         h('p', { class: 'muted', text: S('ui.onlySourced') }),
         h('div', { class: 'actions' }, [
           h('button', { class: 'trek-btn trek-btn--primary', type: 'submit', text: S('ui.save') }),
@@ -141,8 +186,14 @@
       }
     }
     async function save(form) {
-      var set = {};
-      new FormData(form).forEach(function (v, k) { set[k] = v; });
+      var set = {}, contacts = {};
+      // Contact fields (c_*) go in one object; an emptied field is erased (null).
+      new FormData(form).forEach(function (v, k) {
+        if (k.indexOf('c_') === 0) contacts[k.slice(2)] = String(v).trim() === '' ? null : String(v).trim();
+        else set[k] = v;
+      });
+      if (contacts.languages) contacts.languages = contacts.languages.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+      set.contacts = contacts;
       ['price_amount', 'dog_fee', 'max_height_m', 'max_length_m', 'max_weight_t'].forEach(function (k) { set[k] = set[k] === '' ? null : Number(set[k]); });
       set.currency = String(set.currency || 'EUR').toUpperCase();
       try {

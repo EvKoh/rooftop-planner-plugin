@@ -8,12 +8,18 @@
 // Only unknown values are filled: what a person recorded is never overwritten. A source
 // that does not mention an amenity leaves it unknown; "no" is written only when OSM says
 // so explicitly (park4night lists what a place has, not what it lacks).
+// Contacts (e-mail, phone, website) are filled the same way, field by field, from what the
+// place itself says first — TREK's own website and phone, then the e-mails, numbers and
+// web addresses quoted in its notes or description — then OpenStreetMap, then park4night;
+// each filled field names its source.
 // Places looked at are remembered for a while in the plugin's db (ids and a date only), so
 // a place with nothing to find is not asked about on every visit.
 const overpass = require('./overpass');
 const park4night = require('./park4night');
 const placeInfo = require('./place-info');
+const contacts = require('./contacts');
 const { distKm } = require('./util');
+const { t } = require('./i18n');
 
 const OSM_RADIUS_M = 150;
 const P4N_RADIUS_M = 60;
@@ -109,6 +115,27 @@ async function remember(ctx, ids) {
   } catch { /* the log only saves work */ }
 }
 
+const CONTACT_KEYS = ['email', 'phone', 'website'];
+
+/** Is anything left to look for on this record? (an unknown amenity, or an empty contact) */
+function incomplete(r) {
+  return !r || Object.values(r.amenities).some((v) => v === 'unknown') || CONTACT_KEYS.some((k) => !r.contacts[k]);
+}
+
+/**
+ * Contacts a place states itself: TREK's own website and phone fields, and what its notes
+ * or description quote. → [{ values: {email, phone, website}, source }], best first.
+ */
+function ownContacts(place, L) {
+  const out = [];
+  const trek = contacts.fromOsmTags({ website: place.website && !contacts.NOT_OWN_SITE.test(place.website) ? place.website : null, phone: place.phone });
+  if (trek.website || trek.phone) out.push({ values: trek, source: t(L, 'src.trek') });
+  const x = contacts.extract(`${place.notes || ''}\n${place.description || ''}`);
+  const fromText = { email: x.emails[0] || null, phone: x.phones[0] || null, website: x.urls[0] || null };
+  if (fromText.email || fromText.phone || fromText.website) out.push({ values: fromText, source: t(L, 'src.notes') });
+  return out;
+}
+
 /** Places worth looking at: real places (no road geometry) with a position. */
 function candidates(places) {
   return places.filter((p) => !p.route_geometry && p.lat != null && p.lng != null);
@@ -116,8 +143,9 @@ function candidates(places) {
 
 /**
  * Fill the amenities of up to BATCH places of a trip that have unknown ones.
- * opts: { placeIds?: number[] (only these, rechecked even if seen lately), park4night: boolean }
- * → { looked, filled, nothing, remaining, park4nightLimited, osmBusy }
+ * opts: { placeIds?: number[] (only these, rechecked even if seen lately), park4night: boolean,
+ *         language?: the language the "notes of the place" source is named in }
+ * → { looked, filled, contacts, nothing, remaining, park4nightLimited, osmBusy }
  */
 async function fill(ctx, tripId, opts = {}) {
   const t0 = Date.now();
@@ -143,18 +171,21 @@ async function fill(ctx, tripId, opts = {}) {
     if (batch.length >= BATCH || Date.now() > until) break;
     read++;
     const r = await placeInfo.get(ctx, p.id);
-    if (r && !Object.values(r.amenities).some((v) => v === 'unknown')) { complete.push(p.id); continue; }
+    if (!incomplete(r)) { complete.push(p.id); continue; }
     records.set(p.id, r);
     batch.push(p);
   }
   lap('read', t);
-  const res = { looked: batch.length, filled: 0, nothing: 0, remaining: todo.length - read, park4nightLimited: false, osmBusy: false, ms };
+  const res = { looked: batch.length, filled: 0, contacts: 0, nothing: 0, remaining: todo.length - read, park4nightLimited: false, osmBusy: false, ms };
   if (!batch.length) { await remember(ctx, complete); return res; }
 
   let osm = [];
   t = Date.now();
   try {
-    const body = `(${batch.map((p) => `nwr(around:${OSM_RADIUS_M},${(+p.lat).toFixed(5)},${(+p.lng).toFixed(5)})[tourism~"^(camp_site|caravan_site)$"];`).join('')});out tags center;`;
+    const body = `(${batch.map((p) => {
+      const a = `(around:${OSM_RADIUS_M},${(+p.lat).toFixed(5)},${(+p.lng).toFixed(5)})`;
+      return `nwr${a}[tourism~"^(camp_site|caravan_site)$"];nwr${a}[agriturismo=yes];`;
+    }).join('')});out tags center;`;
     osm = (await overpass.query(ctx, body, { timeoutMs: 8000 })) || [];
   } catch (e) {
     if (e instanceof overpass.OverpassBusy) res.osmBusy = true; else throw e;
@@ -169,10 +200,13 @@ async function fill(ctx, tripId, opts = {}) {
     done++;
     const found = {};
     const sources = [];
+    // Contact candidates, best first: the place itself, OSM, park4night.
+    const contactFrom = ownContacts(place, opts.language);
     const camp = nearest(place, osm, OSM_RADIUS_M);
     if (camp) {
       for (const [k, v] of Object.entries(fromOsm(camp.tags))) if (v) found[k] = v;
       sources.push(`OpenStreetMap ${overpass.osmUrl(camp.id)}`);
+      contactFrom.push({ values: contacts.fromOsmTags(camp.tags), source: `OpenStreetMap ${overpass.osmUrl(camp.id)}` });
     }
     const id = p4nId(place);
     let list = opts.park4night ? p4nAreas.find((a) => km(place, a.center) < 3) : null;
@@ -188,6 +222,7 @@ async function fill(ctx, tripId, opts = {}) {
         if (hit) {
           for (const [k, v] of Object.entries(fromP4n([...(hit.services || []), ...(hit.activities || [])]))) if (!found[k]) found[k] = v;
           sources.push(`park4night #${hit.id}`);
+          if (hit.contact) contactFrom.push({ values: hit.contact, source: `park4night #${hit.id}` });
         }
       } catch (e) {
         // Rate limit: stop asking park4night in this batch. Any other failure: OSM alone.
@@ -199,10 +234,20 @@ async function fill(ctx, tripId, opts = {}) {
     const current = records.get(place.id) || null;
     const patch = {};
     for (const [k, v] of Object.entries(found)) if (!current || current.amenities[k] === 'unknown') patch[k] = v;
-    if (!Object.keys(patch).length) { res.nothing++; continue; }
-    if (!current || !current.source) patch.source = `${sources.join(' · ')} (auto)`.slice(0, 300);
-    if (!current || !current.checked) patch.checked = new Date().toISOString().slice(0, 10);
-    await placeInfo.set(ctx, tripId, place.id, patch);
+    const amenitiesFound = Object.keys(patch).length > 0;
+    // Only empty contact fields, each from the first source that has it.
+    const cpatch = {};
+    const csources = {};
+    for (const k of CONTACT_KEYS) {
+      if (current && current.contacts[k]) continue;
+      const hit = contactFrom.find((c) => c.values && c.values[k]);
+      if (hit) { cpatch[k] = hit.values[k]; csources[k] = hit.source; }
+    }
+    if (!amenitiesFound && !Object.keys(cpatch).length) { res.nothing++; continue; }
+    if (Object.keys(cpatch).length) { patch.contacts = cpatch; patch.contact_sources = csources; res.contacts++; }
+    if (amenitiesFound && (!current || !current.source)) patch.source = `${sources.join(' · ')} (auto)`.slice(0, 300);
+    if (amenitiesFound && (!current || !current.checked)) patch.checked = new Date().toISOString().slice(0, 10);
+    await placeInfo.set(ctx, tripId, place.id, patch, { place });
     res.filled++;
   }
   res.remaining += batch.length - done;
@@ -212,4 +257,4 @@ async function fill(ctx, tripId, opts = {}) {
   return res;
 }
 
-module.exports = { P4N, LOG_SQL, fill, fromOsm, fromP4n, p4nId, migrate, MIGRATION, BATCH, OSM_RADIUS_M, P4N_RADIUS_M };
+module.exports = { CONTACT_KEYS, incomplete, ownContacts, P4N, LOG_SQL, fill, fromOsm, fromP4n, p4nId, migrate, MIGRATION, BATCH, OSM_RADIUS_M, P4N_RADIUS_M };

@@ -5,7 +5,9 @@
 // ctx.places.update and shown by TREK in the place header. It is never stored twice. What
 // TREK lacks lives in the plugin's namespaced data on the place, ctx.meta('place', id,
 // 'info.v1'): price per night or per person, dog fee, height/length/weight limits, the
-// amenities, and the source. The host checks the place belongs to a trip the user can
+// amenities, and the source; the host's contacts (e-mail, phone, WhatsApp, website, name,
+// languages, preferred channel, notes), where each automatic one came from, and the log of
+// exchanges with the host (contacts.js). The host checks the place belongs to a trip the user can
 // access, and writes need place_edit.
 //
 // An index of (trip, place) pairs that HAVE a record, in the plugin's own db, lets the
@@ -17,6 +19,7 @@
 // Every value may be "unknown": nothing is ever guessed.
 const { toNum, pmap } = require('./util');
 const { t, money, num } = require('./i18n');
+const contacts = require('./contacts');
 
 const META_KEY = 'info.v1';
 const TRISTATE = ['yes', 'no', 'unknown'];
@@ -66,6 +69,9 @@ const blank = () => ({
   amenities: Object.fromEntries(Object.keys(AMENITIES).map((k) => [k, 'unknown'])),
   source: null,
   checked: null,
+  contacts: contacts.blankContacts(),
+  contact_sources: {},
+  log: [],
 });
 
 function numberField(p, k, min, max) {
@@ -108,7 +114,70 @@ function merge(stored, patch) {
     out.checked = p.checked || null;
   }
   if (out.dog_fee != null && out.amenities.dog === 'unknown') out.amenities.dog = 'fee';
+  mergeContacts(out, stored, p);
   return out;
+}
+
+/**
+ * Contacts, their sources and the exchange log. Patch keys: `contacts` ({ field: value|null }),
+ * `contact_sources` ({ field: text }, written by the filler), `log` (one entry to add, or
+ * null to empty the log). A field a person sets loses its automatic source.
+ */
+function mergeContacts(out, stored, p) {
+  out.contacts = { ...contacts.blankContacts(), ...((stored && stored.contacts) || {}) };
+  out.contact_sources = { ...((stored && stored.contact_sources) || {}) };
+  out.log = Array.isArray(stored && stored.log) ? stored.log.slice(0, contacts.LOG_MAX) : [];
+  try {
+    if ('contacts' in p && p.contacts != null) {
+      const r = contacts.patchContacts(out.contacts, p.contacts);
+      out.contacts = r.contacts;
+      for (const k of r.changed) delete out.contact_sources[k];
+    }
+    if (p.contact_sources) {
+      for (const [k, v] of Object.entries(p.contact_sources)) if (contacts.FIELDS.includes(k) && v) out.contact_sources[k] = String(v).slice(0, 200);
+    }
+    if ('log' in p) out.log = p.log === null ? [] : contacts.addLog(out.log, contacts.logEntry(p.log));
+  } catch (e) {
+    throw new InfoError(e.message);
+  }
+  for (const k of Object.keys(out.contact_sources)) if (out.contacts[k] == null || (Array.isArray(out.contacts[k]) && !out.contacts[k].length)) delete out.contact_sources[k];
+}
+
+const NUMBER_FIELDS = ['dog_fee', ...Object.keys(LIMITS)];
+
+/**
+ * The patch that clears the named fields: an amenity goes back to unknown, a number to null,
+ * a contact field to empty; "amenities", "contacts" and "log" clear the whole group.
+ */
+function clearPatch(fields) {
+  const patch = {};
+  const contactPatch = {};
+  for (const f of fields || []) {
+    const k = String(f).replace(/^contacts\./, '');
+    if (k in AMENITIES) patch[k] = 'unknown';
+    else if (NUMBER_FIELDS.includes(k)) patch[k] = null;
+    else if (k === 'per') patch.per = 'night';
+    else if (k === 'source' || k === 'checked') patch[k] = null;
+    else if (k === 'amenities') for (const a of Object.keys(AMENITIES)) patch[a] = 'unknown';
+    else if (k === 'contacts') for (const c of contacts.FIELDS) contactPatch[c] = null;
+    else if (k === 'log') patch.log = null;
+    else if (contacts.FIELDS.includes(k)) contactPatch[k] = null;
+    else throw new InfoError(`cannot clear "${f}": name an amenity (${Object.keys(AMENITIES).slice(0, 4).join(', ')}...), ${NUMBER_FIELDS.join(', ')}, per, source, checked, a contact field (${contacts.FIELDS.join(', ')}), or amenities / contacts / log`);
+  }
+  if (Object.keys(contactPatch).length) patch.contacts = contactPatch;
+  return patch;
+}
+
+/**
+ * TREK's own website and phone fields of a place, filled from the contacts when they are
+ * empty there (TREK has no e-mail field: the e-mail stays in the plugin's record).
+ */
+function nativeContacts(place, rec) {
+  if (!place || !rec || !rec.contacts) return null;
+  const out = {};
+  if (rec.contacts.website && !place.website) out.website = rec.contacts.website;
+  if (rec.contacts.phone && !place.phone) out.phone = rec.contacts.phone;
+  return Object.keys(out).length ? out : null;
 }
 
 /** The native price fields of a patch: { price, currency } to send to TREK, or null. */
@@ -191,15 +260,19 @@ async function get(ctx, placeId) {
   return v && typeof v === 'object' && v.amenities ? merge(v, {}) : null;
 }
 
-/** Validate; write the price on TREK's own place, the rest on the place's plugin data; index it. */
-async function set(ctx, tripId, placeId, patch) {
+/**
+ * Validate; write the price (and an empty website or phone, given `place`, TREK's own row)
+ * on TREK's own place, the rest on the place's plugin data; index it.
+ */
+async function set(ctx, tripId, placeId, patch, { place } = {}) {
   const price = nativePrice(patch);
   const rest = { ...(patch || {}) };
   delete rest.price_amount;
   delete rest.currency;
   const current = await get(ctx, placeId);
   const next = merge(current, rest);
-  if (price) await ctx.places.update(Number(tripId), Number(placeId), price);
+  const native = { ...(price || {}), ...(nativeContacts(place, next) || {}) };
+  if (Object.keys(native).length) await ctx.places.update(Number(tripId), Number(placeId), native);
   await ctx.meta.set('place', Number(placeId), META_KEY, next);
   try {
     await ctx.db.exec('INSERT OR IGNORE INTO place_info_index (trip_id, place_id) VALUES (?, ?)', Number(tripId), Number(placeId));
@@ -253,4 +326,4 @@ async function getAll(ctx, tripId, placeIds) {
   return out;
 }
 
-module.exports = { COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

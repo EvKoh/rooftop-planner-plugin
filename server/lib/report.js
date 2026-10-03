@@ -38,7 +38,13 @@ function bannerText(f, settings) {
  *  - at most BANNER_MAX individual lines, the rest summed up in ONE chip (the full list is
  *    what vanlife_check_trip returns); prices above the ceiling are never one chip each.
  */
-function bannerFrom(findings, settings) {
+// Points worth a list, not a chip: every night of a new trip lacks a contact at first, and
+// a chip per night would push the real problems out of the banner. vanlife_check_trip and
+// vanlife_night list them.
+const NOT_IN_BANNER = new Set(['night_no_contact']);
+
+function bannerFrom(all, settings) {
+  const findings = all.filter((f) => !NOT_IN_BANNER.has(f.key));
   const sev = findings.filter((f) => f.level === 'blocking' || f.level === 'fix');
   const verify = findings.filter((f) => f.level === 'verify');
   const prices = verify.filter((f) => f.key === 'price_high');
@@ -70,4 +76,4 @@ async function warnings(ctx, model, settings) {
   return bannerFrom(r.findings, { ...settings, currency: model.currency });
 }
 
-module.exports = { warnings, WARNING_LEVEL, bannerText, bannerFrom, shortName, BANNER_MAX };
+module.exports = { NOT_IN_BANNER, warnings, WARNING_LEVEL, bannerText, bannerFrom, shortName, BANNER_MAX };

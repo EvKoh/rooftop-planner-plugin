@@ -17,6 +17,9 @@ const { nightOf } = require('./trip');
 const placeInfo = require('./place-info');
 const amenityFill = require('./amenity-fill');
 const { isNightCategory } = require('./classify');
+const contacts = require('./contacts');
+const nightStatus = require('./night-status');
+const hostMessage = require('./host-message');
 
 const TOOL_BUDGET_MS = 12500;
 const MAX_BYTES = 60000; // under the host's 64 KiB, with room for its envelope
@@ -59,35 +62,84 @@ function sunTable(model, settings) {
   });
 }
 
-/** Read all / read one / write one / clear one place's price and amenities. */
-async function placeInfoTool(ctx, model, a, settings) {
-  if (a.fill) return amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, budgetMs: 6000 });
+// Amenities that decide whether a night works for this party, for the "missing_amenities" list.
+function keyAmenities(settings) {
+  return ['water', 'toilets', 'shower', ...(settings.dog ? ['dog'] : []), ...(settings.vehicle === 'rooftop_tent' ? ['rooftop_tent'] : ['electricity'])];
+}
+
+/** One place, as the place tool shows it. */
+function placeView(model, p, info, settings, { full = false } = {}) {
   const L = settings.language;
-  const view = (p, info) => ({
+  const rec = info || placeInfo.blank();
+  const statuses = (model.reservations || []).filter((r) => nightStatus.placeOfReservation(r) != null && Number(nightStatus.placeOfReservation(r)) === p.id && (r.type === 'hotel' || r.accommodation_id != null));
+  const out = {
     placeId: p.id, name: p.name,
-    price: placeInfo.priceText(p.price, p.raw ? p.raw.currency || model.currency : model.currency, info, L),
-    amenities: placeInfo.amenitiesText(info, L),
+    plannedNights: model.nights.filter((n) => n.placeId === p.id).map((n) => (model.days.find((d) => d.id === n.startDayId) || {}).n).filter(Boolean),
+    price: placeInfo.priceText(p.price, (p.raw && p.raw.currency) || model.currency, info, L),
     nightTotal: placeInfo.nightTotal(p.price, info, settings),
-    record: info,
-  });
+    amenities: placeInfo.amenitiesText(info, L),
+    contacts: { ...rec.contacts, ...(full ? {} : { notes: undefined, languages: undefined }) },
+    trekFields: { website: (p.raw && p.raw.website) || null, phone: (p.raw && p.raw.phone) || null },
+    lastExchange: rec.log[0] || null,
+    nightStatus: statuses.map((r) => ({ reservationId: r.id, status: nightStatus.statusOf(r), confirmation: r.confirmation_number || null })),
+  };
+  if (full) Object.assign(out, { recorded: !!info, record: rec, contactSources: rec.contact_sources, log: rec.log });
+  return out;
+}
+
+/** List / read / set / log / clear / fill the record of the places of a trip. */
+async function placeTool(ctx, model, a, settings) {
+  if (a.fill) return amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, language: settings.language, budgetMs: 6000 });
   if (!a.placeId) {
-    const withInfo = model.pool.filter((p) => p.info).map((p) => view(p, p.info));
+    if (a.set || a.log || a.clear || (a.clear_fields && a.clear_fields.length)) throw new Error('placeId is required to set, log or clear');
     const planned = new Set(model.nights.map((n) => n.placeId));
-    const toFill = model.pool.filter((p) => !p.info && (planned.has(p.id) || isNightCategory(p.categoryName)) && !p.geometry)
-      .map((p) => ({ placeId: p.id, name: p.name, plannedNight: planned.has(p.id) }))
-      .sort((x, y) => y.plannedNight - x.plannedNight).slice(0, 60);
-    return { places: withInfo, toFill, note: 'Fill from cited sources only; unknown stays unknown.' };
+    const real = model.pool.filter((p) => !p.geometry);
+    const nightish = real.filter((p) => planned.has(p.id) || isNightCategory(p.categoryName));
+    const keys = keyAmenities(settings);
+    const missingContact = (p) => !contacts.hasContact(p.info && p.info.contacts) && !(p.raw && p.raw.phone);
+    const missingAmenities = (p) => keys.filter((k) => !p.info || p.info.amenities[k] === 'unknown');
+    const filter = a.filter || 'nights';
+    const chosen = filter === 'all' ? real
+      : filter === 'missing_contacts' ? nightish.filter(missingContact)
+        : filter === 'missing_amenities' ? nightish.filter((p) => missingAmenities(p).length) : nightish;
+    const rows = chosen.map((p) => {
+      const missing = [...(missingContact(p) ? ['contact'] : []), ...missingAmenities(p)];
+      return { ...placeView(model, p, p.info, settings), missing };
+    }).sort((x, y) => (y.plannedNights.length > 0) - (x.plannedNights.length > 0)).slice(0, 80);
+    return { filter, count: chosen.length, places: rows, note: 'Fill from cited sources only; unknown stays unknown. fill=true looks the empty ones up.' };
   }
   const place = model.poolById.get(a.placeId);
   if (!place) throw new Error(`place ${a.placeId} is not in trip ${model.tripId}`);
   if (a.clear) { await placeInfo.clear(ctx, model.tripId, place.id); return { placeId: place.id, cleared: true }; }
-  if (a.set) {
-    const rec = await placeInfo.set(ctx, model.tripId, place.id, a.set);
-    const priced = 'price_amount' in a.set ? { ...place, price: a.set.price_amount, raw: { ...place.raw, currency: a.set.currency || place.raw.currency } } : place;
-    return { saved: true, ...view(priced, rec) };
+  const patch = { ...(a.set || {}) };
+  if (a.clear_fields && a.clear_fields.length) Object.assign(patch, placeInfo.clearPatch(a.clear_fields));
+  if (a.log) patch.log = a.log;
+  if (Object.keys(patch).length) {
+    const before = await placeInfo.get(ctx, place.id);
+    const native = placeInfo.nativeContacts(place.raw, placeInfo.merge(before, { ...patch, price_amount: undefined, currency: undefined }));
+    const rec = await placeInfo.set(ctx, model.tripId, place.id, patch, { place: place.raw });
+    const priced = 'price_amount' in patch ? { ...place, price: patch.price_amount, raw: { ...place.raw, currency: patch.currency || place.raw.currency } } : place;
+    const raw = native ? { ...priced.raw, ...native } : priced.raw;
+    return { saved: true, ...(native ? { copiedToTrek: native } : {}), ...placeView(model, { ...priced, raw }, rec, settings, { full: true }) };
   }
   // One place: read its value directly, not through the index.
-  return view(place, (await placeInfo.get(ctx, place.id)) || placeInfo.blank());
+  return placeView(model, place, await placeInfo.get(ctx, place.id), settings, { full: true });
+}
+
+/** The three day actions that used to be three tools. */
+async function dayTool(ctx, model, a, opts) {
+  const needDay = () => { if (!a.dayNumber) throw new Error(`dayNumber is required for action "${a.action}"`); };
+  if (a.action === 'routes') return computeRoutes(ctx, model, { days: (a.dayNumbers || []).map((n) => ({ dayNumber: n })), apply: a.apply, startAt: a.startAt }, opts);
+  if (a.action === 'schedule') {
+    needDay();
+    const stays = Object.fromEntries((a.stays || []).map((x) => [x.assignmentId, x.minutes]));
+    return scheduleDay(ctx, model, { dayNumber: a.dayNumber }, { ...opts, departure: a.departure, stays });
+  }
+  if (a.action === 'supplies') {
+    needDay();
+    return suppliesForDay(ctx, model, { dayNumber: a.dayNumber }, { kinds: a.kinds, at: a.at, corridorKm: a.corridor_km }, opts);
+  }
+  throw new Error('action must be routes, schedule or supplies');
 }
 
 async function callTool({ name, args }, ctx, { now } = {}) {
@@ -126,23 +178,23 @@ async function callTool({ name, args }, ctx, { now } = {}) {
         res.sun = { sunset: hhmm(ss), latestArrival: hhmm(ss == null ? null : ss - settings.sunset_margin_min) };
       }
       break;
-    case 'vanlife_compute_routes':
+    case 'vanlife_day':
       needTrip();
-      res = await computeRoutes(ctx, model, { days: (a.dayNumbers || []).map((n) => ({ dayNumber: n })), apply: a.apply, startAt: a.startAt }, opts);
+      res = await dayTool(ctx, model, a, opts);
       break;
-    case 'vanlife_schedule_day': {
+    case 'vanlife_place':
       needTrip();
-      const stays = Object.fromEntries((a.stays || []).map((s) => [s.assignmentId, s.minutes]));
-      res = await scheduleDay(ctx, model, { dayNumber: a.dayNumber }, { ...opts, departure: a.departure, stays });
+      res = await placeTool(ctx, model, a, settings);
       break;
-    }
-    case 'vanlife_place_info':
+    case 'vanlife_night':
       needTrip();
-      res = await placeInfoTool(ctx, model, a, settings);
+      if (a.action === 'list') res = nightStatus.list(model, settings, { now: now ? now() : undefined });
+      else if (a.action === 'set') res = await nightStatus.set(ctx, model, a);
+      else throw new Error('action must be list or set');
       break;
-    case 'vanlife_supplies_on_route':
+    case 'vanlife_host_message':
       needTrip();
-      res = await suppliesForDay(ctx, model, { dayNumber: a.dayNumber }, { kinds: a.kinds, at: a.at, corridorKm: a.corridor_km }, opts);
+      res = hostMessage.draft(model, settings, a);
       break;
     default:
       throw new Error(`unhandled tool ${name}`);
@@ -150,4 +202,4 @@ async function callTool({ name, args }, ctx, { now } = {}) {
   return fit(res);
 }
 
-module.exports = { callTool, fit, sunTable, TOOL_BUDGET_MS };
+module.exports = { callTool, fit, sunTable, keyAmenities, TOOL_BUDGET_MS };

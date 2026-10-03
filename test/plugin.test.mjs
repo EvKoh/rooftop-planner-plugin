@@ -58,7 +58,7 @@ describe('manifest and tool declarations', () => {
 
   it('applies schema defaults by hand', () => {
     expect(withDefaults('vanlife_find_nights', {})).toEqual({ radius_km: 15 });
-    expect(withDefaults('vanlife_compute_routes', { apply: true })).toEqual({ apply: true, startAt: 0 });
+    expect(withDefaults('vanlife_day', { action: 'routes', apply: true })).toEqual({ action: 'routes', apply: true, startAt: 0, corridor_km: 2 });
     expect(withDefaults('nope', null)).toEqual({});
   });
 });
@@ -107,7 +107,7 @@ describe('MCP tools through the mock host', () => {
 
   it('compute_routes proposes by default and writes only with apply=true', async () => {
     const h = makeHost();
-    const p = await call(h, 'vanlife_compute_routes', { tripId: 1 });
+    const p = await call(h, 'vanlife_day', { action: 'routes', tripId: 1 });
     expect(p.applied).toBe(false);
     expect(p.days.filter((d) => d.km).length).toBe(3);
     expect(p.days[3].skipped).toMatch(/fewer than 2/); // last day: no destination in the trip
@@ -118,7 +118,7 @@ describe('MCP tools through the mock host', () => {
 
     const trip = build();
     const hw = makeHost({ trip });
-    const a = await call(hw, 'vanlife_compute_routes', { tripId: 1, dayNumbers: [2], apply: true });
+    const a = await call(hw, 'vanlife_day', { action: 'routes', tripId: 1, dayNumbers: [2], apply: true });
     expect(a.writes).toHaveLength(1);
     expect(a.writes[0].deletedPlaceId).toBe(21);
     expect(hw.calls.map((c) => c.method)).toEqual(expect.arrayContaining(['places.create', 'itinerary.assign', 'places.delete']));
@@ -132,23 +132,23 @@ describe('MCP tools through the mock host', () => {
 
   it('compute_routes cannot write without the write grants', async () => {
     const h = makeHost({ grants: manifest.permissions.filter((g) => g !== 'db:write:places') });
-    await expect(call(h, 'vanlife_compute_routes', { tripId: 1, dayNumbers: [1], apply: true })).rejects.toThrow(/PERMISSION_DENIED|db:write:places/);
+    await expect(call(h, 'vanlife_day', { action: 'routes', tripId: 1, dayNumbers: [1], apply: true })).rejects.toThrow(/PERMISSION_DENIED|db:write:places/);
   });
 
   it('schedule_day computes times from drive times and flags a late night', async () => {
     const h = makeHost();
-    const r = await call(h, 'vanlife_schedule_day', { tripId: 1, dayNumber: 1, departure: '09:30' });
+    const r = await call(h, 'vanlife_day', { action: 'schedule', tripId: 1, dayNumber: 1, departure: '09:30' });
     expect(r.departure).toBe('09:30');
     expect(r.stops.map((s) => s.name)).toEqual(['Lago di Braies', 'Mountain Museum Example', 'Supermarket Example']);
     expect(r.night.name).toBe('Camping Example');
     expect(r.coreCalls.every((c) => c.tool === 'update_assignment_time')).toBe(true);
-    const late = await call(h, 'vanlife_schedule_day', { tripId: 1, dayNumber: 1, departure: '14:00', stays: [{ assignmentId: 1002, minutes: 240 }] });
+    const late = await call(h, 'vanlife_day', { action: 'schedule', tripId: 1, dayNumber: 1, departure: '14:00', stays: [{ assignmentId: 1002, minutes: 240 }] });
     expect(late.night.ok).toBe(false);
     expect(late.night.lateByMinutes).toBeGreaterThan(0);
     expect(late.night.fixes[0]).toMatch(/leave \d+ min earlier/);
-    const d2 = await call(h, 'vanlife_schedule_day', { tripId: 1, dayNumber: 2, departure: '12:30' });
+    const d2 = await call(h, 'vanlife_day', { action: 'schedule', tripId: 1, dayNumber: 2, departure: '12:30' });
     expect(d2.conflicts.some((c) => c.name === 'Visitor Centre Example')).toBe(true);
-    await expect(call(h, 'vanlife_schedule_day', { tripId: 1, dayNumber: 99 })).rejects.toThrow(/day not found/);
+    await expect(call(h, 'vanlife_day', { action: 'schedule', tripId: 1, dayNumber: 99 })).rejects.toThrow(/day not found/);
   });
 
   it('check_trip can add the sun table; find_nights gives the sunset at the evening point', async () => {
@@ -163,7 +163,7 @@ describe('MCP tools through the mock host', () => {
 
   it('supplies_on_route lists shops along the route with their hours', async () => {
     const h = makeHost();
-    const r = await call(h, 'vanlife_supplies_on_route', { tripId: 1, dayNumber: 1, at: '10:00', kinds: ['groceries', 'fuel', 'water'] });
+    const r = await call(h, 'vanlife_day', { action: 'supplies', tripId: 1, dayNumber: 1, at: '10:00', kinds: ['groceries', 'fuel', 'water'] });
     expect(r.geometrySource).toBe('route place');
     const m = r.groceries.find((x) => x.name === 'Market On Route Example');
     expect(m.withinDetourLimit).toBe(true);
@@ -175,7 +175,7 @@ describe('MCP tools through the mock host', () => {
     const far = r.groceries.find((x) => x.name === 'Far Shop Example');
     expect(far.withinDetourLimit).toBe(false);
     // day 3 has no route place: the geometry is computed
-    const d3 = await call(h, 'vanlife_supplies_on_route', { tripId: 1, dayNumber: 3 });
+    const d3 = await call(h, 'vanlife_day', { action: 'supplies', tripId: 1, dayNumber: 3 });
     expect(d3.geometrySource).toMatch(/Valhalla/);
     expect(d3.water).toBeUndefined();
   });
@@ -214,7 +214,7 @@ describe('MCP tools through the mock host', () => {
     const n = await call(h, 'vanlife_find_nights', { tripId: 1, dayNumber: 1 });
     expect(n.osmError).toMatch(/busy/);
     expect(n.candidates).toEqual([]);
-    const s = await call(h, 'vanlife_supplies_on_route', { tripId: 1, dayNumber: 1 });
+    const s = await call(h, 'vanlife_day', { action: 'supplies', tripId: 1, dayNumber: 1 });
     expect(s.osmError).toMatch(/busy/);
     const p = await call(makeHost(), 'vanlife_plan_trip', { tripId: 1 });
     expect(p.results.nightsSkipped).toMatch(/busy.*find_nights/);

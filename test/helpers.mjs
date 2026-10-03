@@ -41,7 +41,7 @@ export function encode(points) {
 }
 
 export const OSM_NIGHTS = [
-  { type: 'node', id: 1, lat: 46.6, lon: 12.17, tags: { tourism: 'camp_site', name: 'Camping Lakeside Example', charge: '18 EUR', tents: 'yes', dog: 'yes', opening_hours: 'May-Oct: Mo-Su 08:00-22:00' } },
+  { type: 'node', id: 1, lat: 46.6, lon: 12.17, tags: { tourism: 'camp_site', name: 'Camping Lakeside Example', charge: '18 EUR', tents: 'yes', dog: 'yes', opening_hours: 'May-Oct: Mo-Su 08:00-22:00', email: 'info@lakeside.example.com', 'contact:phone': '+39 000 000 0001', website: 'https://lakeside.example.com' } },
   { type: 'way', id: 2, center: { lat: 46.57, lon: 12.2 }, tags: { tourism: 'camp_site', name: 'Camping Pricey Example', charge: '45 EUR' } },
   { type: 'node', id: 3, lat: 46.56, lon: 12.22, tags: { tourism: 'caravan_site', name: 'Motorhome Area Example', charge: '10 EUR' } },
   { type: 'node', id: 4, lat: 46.62, lon: 12.1, tags: { tourism: 'camp_site', name: 'Camping No Tents Example', tents: 'no', charge: '12 EUR' } },

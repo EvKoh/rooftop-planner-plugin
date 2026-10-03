@@ -78,25 +78,30 @@ describe('place info through the plugin', () => {
   it('records with the MCP tool (price on TREK\'s place), lists, reads one and clears', async () => {
     const trip = build();
     const h = makeHost({ trip });
-    const saved = await call(h, 'vanlife_place_info', { tripId: 1, placeId: 13, set: { price_amount: 18, water: 'yes', rooftop_tent: 'yes', source: 'Camping Example website' } });
+    const saved = await call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: { price_amount: 18, water: 'yes', rooftop_tent: 'yes', source: 'Camping Example website' } });
     expect(saved).toMatchObject({ saved: true, placeId: 13, price: '€18.00/night', nightTotal: 18 });
     expect(trip.places.find((p) => p.id === 13).price).toBe(18);
     expect(h.calls.map((c) => c.method)).toEqual(expect.arrayContaining(['places.update', 'meta.set', 'db.exec']));
-    const one = await call(h, 'vanlife_place_info', { tripId: 1, placeId: 13 });
+    const one = await call(h, 'vanlife_place', { tripId: 1, placeId: 13 });
     expect(one.record.amenities.water).toBe('yes');
-    const empty = await call(h, 'vanlife_place_info', { tripId: 1, placeId: 16 });
+    const empty = await call(h, 'vanlife_place', { tripId: 1, placeId: 16 });
     expect(empty.record.amenities.water).toBe('unknown');
     // the list reads the index (the mock db does not run SQL: seed its answer)
     const h2 = makeHost({ queryResults: { [INDEX_SQL]: [{ place_id: 13 }] } });
     await h2.ctx.meta.set('place', 13, pi.META_KEY, pi.merge(null, { water: 'yes' }));
-    const list = await call(h2, 'vanlife_place_info', { tripId: 1 });
-    expect(list.places.map((p) => p.placeId)).toEqual([13]);
-    expect(list.places[0].price).toBe('€38.00/night'); // TREK's price
-    expect(list.toFill[0]).toMatchObject({ plannedNight: true });
-    expect(list.toFill.some((p) => p.placeId === 13)).toBe(false);
-    expect(await call(h2, 'vanlife_place_info', { tripId: 1, placeId: 13, clear: true })).toEqual({ placeId: 13, cleared: true });
-    await expect(call(h, 'vanlife_place_info', { tripId: 1, placeId: 999, set: {} })).rejects.toThrow(/not in trip/);
-    await expect(call(h, 'vanlife_place_info', { tripId: 1, placeId: 13, set: { water: 'maybe' } })).rejects.toThrow(/water must be/);
+    const list = await call(h2, 'vanlife_place', { tripId: 1 });
+    // the default list: planned nights first, each with what is still missing
+    expect(list.filter).toBe('nights');
+    expect(list.places.slice(0, 3).map((p) => p.placeId)).toEqual([13, 16, 18]);
+    expect(list.places[0]).toMatchObject({ price: '€38.00/night', plannedNights: [1], amenities: '✓ water' }); // TREK's price
+    expect(list.places[0].missing).toEqual(['contact', 'toilets', 'shower', 'dog', 'rooftop_tent']);
+    const noAmenity = await call(h2, 'vanlife_place', { tripId: 1, filter: 'missing_amenities' });
+    expect(noAmenity.places.every((p) => p.missing.some((m) => m !== 'contact'))).toBe(true);
+    const all = await call(h2, 'vanlife_place', { tripId: 1, filter: 'all' });
+    expect(all.count).toBe(10); // every place but the three route places
+    expect(await call(h2, 'vanlife_place', { tripId: 1, placeId: 13, clear: true })).toEqual({ placeId: 13, cleared: true });
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 999, set: {} })).rejects.toThrow(/not in trip/);
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: { water: 'maybe' } })).rejects.toThrow(/water must be/);
   });
 
   it('feeds the check and the budget: recorded details count, notes are overridden', async () => {
@@ -200,7 +205,7 @@ describe('place info through the plugin', () => {
 
   it('cannot write without db:meta', async () => {
     const h = makeHost({ grants: manifest.permissions.filter((g) => g !== 'db:meta') });
-    await expect(call(h, 'vanlife_place_info', { tripId: 1, placeId: 13, set: { water: 'yes' } })).rejects.toThrow(/db:meta|PERMISSION/);
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: { water: 'yes' } })).rejects.toThrow(/db:meta|PERMISSION/);
   });
 });
 

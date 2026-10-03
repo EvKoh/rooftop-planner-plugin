@@ -1,5 +1,6 @@
 'use strict';
-// Planner columns (`tableContributor`, view "places"): on each place, the price, one column
+// Planner columns (`tableContributor`, view "places"): on each place, the status of its night
+// (booked / in discussion / dropped, from TREK's own bookings), the price, one column
 // per amenity the place has, and one column listing what it lacks when that refuses the
 // vehicle or the dog. TREK shows each column as a chip on the places list and the map's
 // hover card. The price is TREK's own field (with the per-person / dog-fee details the
@@ -8,7 +9,16 @@
 // and the symbols ✗ ↕ ↔, which survive. Editing happens in the place widget, so no button
 // is added here.
 const placeInfo = require('./place-info');
+const nightStatus = require('./night-status');
 const { t, num, locale } = require('./i18n');
+
+// Night status chip: TREK's tones are default | success | warn | danger. A spotted place
+// (no booking) gets no chip.
+const STATUS_CHIP = {
+  booked: { tone: 'success', icon: 'BedDouble' },
+  contacted: { tone: 'warn', icon: 'Clock' },
+  dropped: { tone: 'danger', icon: 'XCircle' },
+};
 
 // Lucide icon per amenity (names known to lucide-react 0.344, the SDK's snapshot).
 const ICONS = {
@@ -46,13 +56,21 @@ function missingText(rec, L) {
 
 async function placeColumns(ctx, tripId, settings) {
   const L = settings.language;
-  const places = await ctx.trips.getPlaces(Number(tripId));
+  // Places and bookings in parallel: one request each, under the columns' short time limit.
+  const [places, resas] = await Promise.all([
+    ctx.trips.getPlaces(Number(tripId)),
+    ctx.trips.getReservations(Number(tripId)).catch(() => []),
+  ]);
+  const status = nightStatus.statusByPlace(resas);
   // Route places carry a road geometry, not a price.
   const real = places.filter((p) => !p.route_geometry);
   const info = await placeInfo.getAll(ctx, tripId, real.map((p) => p.id));
   const out = [];
   for (const p of real) {
     const rec = info.get(p.id) || null;
+    // First, so the host's cap of 20 columns per place never drops it.
+    const st = status.get(p.id);
+    if (STATUS_CHIP[st]) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-night', label: t(L, 'col.night'), value: t(L, `st.chip.${st}`), ...STATUS_CHIP[st] });
     const price = placeInfo.priceText(p.price == null ? null : +p.price, p.currency || 'EUR', rec, L);
     // A free stop (lunch break, viewpoint) is not a night: no "0,00 €/night" on it.
     if (price && !(+p.price === 0 && !rec)) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-price', label: t(L, 'col.price'), value: price.slice(0, 256), icon: 'Euro' });
@@ -67,4 +85,4 @@ async function placeColumns(ctx, tripId, settings) {
   return out;
 }
 
-module.exports = { placeColumns, amenityChips, missingText, ICONS };
+module.exports = { placeColumns, amenityChips, missingText, ICONS, STATUS_CHIP };

@@ -28,7 +28,7 @@ describe('gentle ctx', () => {
     vi.stubGlobal('fetch', stubFetch());
     const h = makeHost();
     const drv = h.run(plugin);
-    expect((await drv.hook('mcpToolProvider', 'callTool', { name: 'vanlife_place_info', args: { tripId: 1 } })).toFill.length).toBeGreaterThan(0);
+    expect((await drv.hook('mcpToolProvider', 'callTool', { name: 'vanlife_place', args: { tripId: 1 } })).places.length).toBeGreaterThan(0);
     expect(Array.isArray(await drv.hook('warningProvider', 'getWarnings', 1))).toBe(true);
     expect((await drv.route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13 } })).status).toBe(200);
     // the columns hook reads only the 6 settings it needs

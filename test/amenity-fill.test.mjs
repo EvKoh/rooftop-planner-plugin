@@ -159,7 +159,7 @@ describe('amenities filled from open sources', () => {
     sources();
     const h = host({ park4night: false, queryResults: { 'SELECT place_id FROM place_info_index WHERE trip_id = ?': [{ place_id: 13 }] } });
     await pi.migrate(h.ctx); await fillLib.migrate(h.ctx);
-    const r = await h.run(plugin).hook('mcpToolProvider', 'callTool', { name: 'vanlife_place_info', args: { tripId: 1, fill: true } });
+    const r = await h.run(plugin).hook('mcpToolProvider', 'callTool', { name: 'vanlife_place', args: { tripId: 1, fill: true } });
     expect(r.filled).toBe(1);
     const drv = h.run(plugin);
     const post = (path, body) => drv.route({ method: 'POST', path }, { body });
