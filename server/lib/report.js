@@ -23,7 +23,7 @@ function shortName(name, max = 18) {
   return n.length > max ? `${n.slice(0, max - 1).trimEnd()}…` : n;
 }
 
-/** One banner line: "J2 Roderhof : ferme au Tyrol du Sud" — the essential first, no level word. */
+/** One banner line: "J2 Farm Example : ferme au Tyrol du Sud" — the essential first, no level word. */
 function bannerText(f, settings) {
   const L = settings.language;
   const key = `s.${f.key}`;
