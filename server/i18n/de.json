@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Grund (optional)",
   "ui.nightSet": "Übernachtung: {status}",
   "ui.confirmAvailable": "Zurück auf verfügbar: Die Buchung dieser Nacht wird aus TREK gelöscht. Der Aufenthalt bleibt geplant.",
-  "walk.noLink": "Noch keine Seite mit der vollständigen Route bekannt"
+  "walk.noLink": "Noch keine Seite mit der vollständigen Route bekannt",
+  "walk.loop": "Rundweg",
+  "walk.outAndBack": "Hin und zurück",
+  "walk_no_parking": "Wanderung „{hike}“: kein Parkplatz „P“ als Start, der Weg wird nicht gezeichnet: mit dem Parkplatz verknüpfen, an dem sie beginnt (vanlife_place set.walk)",
+  "walk_parking_to_parking": "Wanderung „{hike}“: der Weg ginge vom Parkplatz „{parking}“ zu einem anderen Parkplatz, „{other}“: als Rundweg zurück zu „{parking}“ oder hin und zurück zu einem Punkt, der kein Parkplatz ist (bis dahin nicht gezeichnet)",
+  "col.parking": "Parkplatz",
+  "park.camperYes": "Wohnmobile erlaubt",
+  "park.camperNo": "keine Wohnmobile",
+  "park.overnightYes": "Übernachten erlaubt",
+  "park.overnightNo": "Übernachten verboten"
 }

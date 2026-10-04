@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Indok (nem kötelező)",
   "ui.nightSet": "Szállás: {status}",
   "ui.confirmAvailable": "Vissza szabadra: az éjszaka foglalása törlődik a TREK-ből. A tartózkodás tervben marad.",
-  "walk.noLink": "Még nem ismert oldal a teljes útvonallal"
+  "walk.noLink": "Még nem ismert oldal a teljes útvonallal",
+  "walk.loop": "Körtúra",
+  "walk.outAndBack": "Oda-vissza",
+  "walk_no_parking": "túra „{hike}”: nincs „P” parkoló indulásnak, az útvonal nem rajzolódik ki: kösse ahhoz a parkolóhoz, ahonnan indul (vanlife_place set.walk)",
+  "walk_parking_to_parking": "túra „{hike}”: az útvonal a(z) „{parking}” parkolóból egy másik parkolóba, „{other}” vezetne: legyen körtúra vissza „{parking}” felé, vagy oda-vissza egy nem parkoló ponthoz (addig nem rajzolódik ki)",
+  "col.parking": "Parkoló",
+  "park.camperYes": "lakóautó engedélyezett",
+  "park.camperNo": "lakóautó tilos",
+  "park.overnightYes": "éjszakázás engedélyezett",
+  "park.overnightNo": "éjszakázás tilos"
 }

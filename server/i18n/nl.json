@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Reden (optioneel)",
   "ui.nightSet": "Overnachting: {status}",
   "ui.confirmAvailable": "Terug naar beschikbaar: de boeking van deze nacht wordt uit TREK verwijderd. Het verblijf blijft gepland.",
-  "walk.noLink": "Nog geen pagina met de volledige route bekend"
+  "walk.noLink": "Nog geen pagina met de volledige route bekend",
+  "walk.loop": "Rondwandeling",
+  "walk.outAndBack": "Heen en terug",
+  "walk_no_parking": "wandeling \"{hike}\": geen parkeerplaats \"P\" als start, de route wordt niet getekend: koppel hem aan de parkeerplaats waar hij begint (vanlife_place set.walk)",
+  "walk_parking_to_parking": "wandeling \"{hike}\": de route zou van parkeerplaats \"{parking}\" naar een andere parkeerplaats gaan, \"{other}\": maak er een rondwandeling terug naar \"{parking}\" van of heen en terug naar een punt dat geen parkeerplaats is (tot dan niet getekend)",
+  "col.parking": "Parkeerplaats",
+  "park.camperYes": "campers toegestaan",
+  "park.camperNo": "geen campers",
+  "park.overnightYes": "overnachten toegestaan",
+  "park.overnightNo": "overnachten verboden"
 }

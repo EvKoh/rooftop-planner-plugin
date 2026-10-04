@@ -99,6 +99,7 @@ const CHIP = {
   booking: { icon: 'CalendarCheck', tone: TONE.watch },
   toll: { icon: 'Ticket', tone: TONE.info },
   missing: { icon: 'Ban', tone: TONE.rulesOut },
+  parking: { icon: 'ParkingSquare', tone: TONE.info },
 };
 
 /** Pictogram of a night, by the ground it is spent on (classify.nightKind). */

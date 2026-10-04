@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Anledning (valfritt)",
   "ui.nightSet": "Övernattning: {status}",
   "ui.confirmAvailable": "Tillbaka till tillgänglig: nattens bokning raderas från TREK. Vistelsen förblir planerad.",
-  "walk.noLink": "Ingen sida med hela leden känd än"
+  "walk.noLink": "Ingen sida med hela leden känd än",
+  "walk.loop": "Slinga",
+  "walk.outAndBack": "Fram och tillbaka",
+  "walk_no_parking": "vandring \"{hike}\": ingen parkering \"P\" att starta från, leden ritas inte: koppla den till parkeringen den utgår från (vanlife_place set.walk)",
+  "walk_parking_to_parking": "vandring \"{hike}\": leden skulle gå från parkeringen \"{parking}\" till en annan parkering, \"{other}\": gör en slinga tillbaka till \"{parking}\" eller fram och tillbaka till en punkt som inte är en parkering (ritas inte förrän dess)",
+  "col.parking": "Parkering",
+  "park.camperYes": "husbilar tillåtna",
+  "park.camperNo": "inga husbilar",
+  "park.overnightYes": "övernattning tillåten",
+  "park.overnightNo": "övernattning förbjuden"
 }

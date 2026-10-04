@@ -152,6 +152,8 @@ module.exports = definePlugin({
             priceText: placeInfo.priceText(place.price == null ? null : +place.price, place.currency || 'EUR', info, L, { night }),
             units: placeInfo.PER,
             visitText: placeInfo.visitText(info),
+            // A car park's hours, payment, motorhomes and overnight rules, notes.
+            parkingText: placeInfo.parkingText(info, L),
             // Timed access, booking, toll: the planner's chips, as text.
             access: placeInfo.accessChips(info, L, place.currency || 'EUR').map((c) => ({ key: c.key, value: c.value, tone: c.tone })),
             recorded: !!info,

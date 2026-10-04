@@ -95,6 +95,8 @@
       else kids.push(h('div', { class: 'muted', text: S('ui.none') }));
       if (extra.length) kids.push(h('div', { class: 'muted', text: extra.join(' · ') }));
       if (d.visitText) kids.push(h('div', { class: 'line' }, [h('span', { text: S('ui.visit') + ' : ' + d.visitText })]));
+      if (d.parkingText) kids.push(h('div', { class: 'line' }, [h('span', { text: d.parkingText })]));
+      if (d.info.source_url && /^https?:\/\//i.test(d.info.source_url)) kids.push(h('div', { class: 'contact' }, [h('a', { href: d.info.source_url, target: '_blank', rel: 'noopener noreferrer', text: d.info.source_url.replace(/^https?:\/\/(www\.)?/i, '').split('/')[0] })]));
       // Timed access, booking, toll: the planner's chips, then the booking link and note.
       if (d.access && d.access.length) kids.push(h('div', { class: 'line' }, d.access.map(function (a) { return h('span', { class: a.tone === 'warn' ? 'trek-chip trek-chip--warning' : 'trek-chip', text: a.value }); })));
       var bk = [];

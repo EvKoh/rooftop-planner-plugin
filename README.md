@@ -171,21 +171,35 @@ of the trip is a home.
 
 ### Hikes and their car park
 
-Each hike is tied to the car park that gives access to it, and its walking route is drawn dotted
-from that car park, through the points it passes, to the hike (and back, for a loop), on footpaths
-([Valhalla](https://valhalla1.openstreetmap.de) pedestrian routing, cached for 30 days). The car
-park is, in this order: the one set on the hike (`vanlife_place` `set.walk.parking_place_id`);
-a car park planned right before or after the hike that day; the nearest one planned that day
-within 3 km, or any day within 2 km; a *"Start: … 46.1234, 11.5678"* line in the hike's notes.
-A hike that is not planned gets its walk as soon as it is tied to a planned car park. Hovering
-the dotted line gives the hike, the walk and its car park; a click opens the **hike card**: the
-distance, the climb (from the terrain model), the hiking time (DIN 33466 rule:
-4 km/h, 300 m/h up, 500 m/h down), the start car park, and a link to the page with the full track
-and elevation profile: the one set with `set.walk.url`, else the first Outdooractive, Komoot,
-Wikiloc or AllTrails address written in the hike's website or notes. No link is ever made up:
-with none, the card says so.
-`vanlife_place` `filter: "hikes"` lists every hike with its car park and walk; `set.walk.via`
-(points `[lat, lng]`) and `set.walk.loop` shape the route. Off with the *walking routes* setting.
+A walk always starts at a car park "P" and comes back to that same P: a **loop**, or an
+**out-and-back** to a turnaround point and back the same way. Never from one P to another. The
+walk is drawn dotted on footpaths ([Valhalla](https://valhalla1.openstreetmap.de) pedestrian
+routing, cached for 30 days); an out-and-back is drawn one way and counted twice.
+
+The car park is the one set on the hike (`vanlife_place` `set.walk.parking_place_id`), else a
+car park planned right before or after the hike that day, else the nearest one planned that day
+within 3 km, or any day within 2 km. The shape is `set.walk.shape` (`loop` or `out_and_back`),
+else a loop when the hike's place is the car park itself, else an out-and-back to the hike's
+place. `set.walk.via` (points `[lat, lng]`) shapes a loop. The tool refuses a walk with no car
+park, with no shape, from a place that is not a car park, or whose turnaround is another car
+park; the check (`vanlife_check_trip`) reports such walks, and they are not drawn. A hike that is
+not planned gets its walk as soon as it is tied to a planned car park.
+
+Hovering the dotted line gives the hike, the walk and its car park; a click opens the **hike
+card**: loop or out-and-back, the total distance, the climb (from the terrain model), the hiking
+time (DIN 33466 rule: 4 km/h, 300 m/h up, 500 m/h down), the start car park, and a link to the
+page with the full track and elevation profile: the one set with `set.walk.url`, else the first
+Outdooractive, Komoot, Wikiloc or AllTrails address written in the hike's website or notes. No
+link is ever made up: with none, the card says so. `vanlife_place` `filter: "hikes"` lists every
+hike with its car park, shape, walk and any rule it breaks. Off with the *walking routes* setting.
+
+### Car parks
+
+One `vanlife_place` call sets a car park: its price on TREK's own price with its unit
+(`per: "day"` or `"hour"`), its height limit (`max_height_m`), and `set.parking` — opening hours,
+payment, motorhomes allowed, overnight allowed, notes and the source address. They show as a
+"P" chip on the place (*15,00 €/jour*, *05:00–23:00 · online booking only · no overnight*) and in
+the place panel, with the source link.
 
 From an assistant, one sentence sets both: *"the farm on day 2, we booked it"* is
 `vanlife_night` with `kind: "farm"` and `status: "booked"` — the place moves to the trip's farm

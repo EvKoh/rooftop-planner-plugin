@@ -22,6 +22,7 @@ const contacts = require('./contacts');
 const nightStatus = require('./night-status');
 const hostMessage = require('./host-message');
 const walks = require('./walks');
+const { activityKind } = require('./design');
 
 const TOOL_BUDGET_MS = 12500;
 const MAX_BYTES = 60000; // under the host's 64 KiB, with room for its envelope
@@ -84,6 +85,7 @@ function placeView(model, p, info, settings, { full = false } = {}) {
     price: placeInfo.priceText(p.price, (p.raw && p.raw.currency) || model.currency, info, L, { night }),
     nightTotal: night ? placeInfo.nightTotal(p.price, info, settings) : null,
     amenities: placeInfo.amenitiesText(info, L),
+    parking: placeInfo.parkingText(info, L),
     visit: placeInfo.visitText(info),
     // Timed access, booking and toll: "Before 09:00 · Booking · Toll €40.00", or null.
     access: placeInfo.accessText(info, L, (p.raw && p.raw.currency) || model.currency),
@@ -103,8 +105,11 @@ function walkView(w, geo, L) {
   return {
     hikeId: w.hikeId, hike: w.hike, day: w.day, planned: w.planned,
     accessParking: w.access ? { placeId: w.access.placeId, name: w.access.name, point: w.access.point, found: w.access.how } : null,
-    loop: w.loop, via: Math.max(0, w.points.length - 2),
-    walk: geo ? { km: geo.km, minutes: walks.walkMinutes(geo), climb_m: geo.up ?? null, descent_m: geo.down ?? null, text: walks.statsText(geo, L) } : null,
+    shape: w.shape, via: Math.max(0, w.points.length - 2),
+    // Breaks "from one P, back to the same P": not drawn until fixed.
+    problem: w.problem ? w.problem.key : null,
+    ...(w.problem && w.problem.other ? { otherParking: w.problem.other } : {}),
+    walk: geo ? (({ km, up, down }) => ({ km, minutes: walks.walkMinutes(walks.walked(geo, w.shape)), climb_m: up ?? null, descent_m: down ?? null, text: walks.statsText(walks.walked(geo, w.shape), L) }))(walks.walked(geo, w.shape)) : null,
     url: w.url,
   };
 }
@@ -162,12 +167,15 @@ async function placeTool(ctx, model, a, settings, opts = {}) {
   const kindRes = a.kind ? await applyKind(ctx, model, place, a.kind) : null;
   if (kindRes) { place.categoryId = kindRes.categoryId; place.categoryName = kindRes.category; place.raw = { ...place.raw, category_id: kindRes.categoryId }; }
   if (a.clear || (a.clear_fields || []).includes('all')) { await placeInfo.clear(ctx, model.tripId, place.id); return { placeId: place.id, cleared: true }; }
-  const patch = placeInfo.expandWalk({ ...(a.set || {}) });
+  const patch = placeInfo.expandParking(placeInfo.expandWalk({ ...(a.set || {}) }));
   const parkId = patch.access_parking_place_id;
   if (parkId != null && parkId !== '') {
     if (Number(parkId) === place.id) throw new Error('walk.parking_place_id must be another place: the car park the hike starts from');
-    if (!model.poolById.get(Number(parkId))) throw new Error(`place ${parkId} is not in trip ${model.tripId}`);
+    const park = model.poolById.get(Number(parkId));
+    if (!park) throw new Error(`place ${parkId} is not in trip ${model.tripId}`);
+    if (activityKind(park) !== 'parking') throw new Error(`place ${parkId} ("${park.name}") is not a car park (category "${park.categoryName || 'none'}"): file it as one first (vanlife_place kind "parking"), a walk starts at a car park "P"`);
   }
+  if (placeInfo.WALK_FIELDS.some((k) => k in patch)) await checkWalk(ctx, model, place, patch);
   if (a.clear_fields && a.clear_fields.length) Object.assign(patch, placeInfo.clearPatch(a.clear_fields));
   if (a.log) patch.log = a.log;
   if (Object.keys(patch).length) {
@@ -183,6 +191,27 @@ async function placeTool(ctx, model, a, settings, opts = {}) {
   // One place: read its value directly, not through the index.
   const walk = await hikeWalk(ctx, model, place.id, settings, opts);
   return { ...(kindRes ? { kind: kindRes } : {}), ...placeView(model, place, await placeInfo.get(ctx, place.id), settings, { full: true }), ...(walk ? { hike: walk } : {}) };
+}
+
+/**
+ * A walk being set must keep the rule: from a car park "P", back to the same P, as a loop or
+ * an out-and-back. Throws a readable error, before anything is saved, when it would not.
+ */
+async function checkWalk(ctx, model, place, patch) {
+  const before = await placeInfo.get(ctx, place.id);
+  const rec = placeInfo.merge(before, patch);
+  if (placeInfo.WALK_FIELDS.every((k) => rec[k] == null)) return; // cleared
+  if (!rec.walk_shape && !rec.walk_loop) throw new Error('walk.shape is required: "loop" (back to the same car park another way) or "out_and_back" (to a turnaround point and back the same way)');
+  const saved = place.info;
+  place.info = rec;
+  try {
+    const w = walks.hikeWalks(model).find((x) => x.hikeId === place.id);
+    if (!w) return; // neither the hike nor its car park is planned: nothing drawn
+    if (w.problem && w.problem.key === 'no_parking') throw new Error(`a walk starts at a car park "P": give walk.parking_place_id, the car park place of this trip the walk leaves from and comes back to`);
+    if (w.problem && w.problem.key === 'parking_to_parking') throw new Error(`the walk would go from car park "${w.access.name}" to another car park, "${w.problem.other}": a walk comes back to the car park it left. Make it a loop (shape "loop", via points) or an out-and-back to a turnaround that is not a car park`);
+  } finally {
+    place.info = saved;
+  }
 }
 
 /** The walk of one hike (its route computed now, so the map finds it cached), or null. */

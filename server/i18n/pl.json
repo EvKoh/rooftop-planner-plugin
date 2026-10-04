@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Powód (opcjonalnie)",
   "ui.nightSet": "Nocleg: {status}",
   "ui.confirmAvailable": "Z powrotem dostępny: rezerwacja tej nocy zostaje usunięta z TREK. Pobyt pozostaje zaplanowany.",
-  "walk.noLink": "Brak znanej strony z pełną trasą"
+  "walk.noLink": "Brak znanej strony z pełną trasą",
+  "walk.loop": "Pętla",
+  "walk.outAndBack": "Tam i z powrotem",
+  "walk_no_parking": "szlak „{hike}”: brak parkingu „P” na start, trasa nie jest rysowana: powiąż go z parkingiem, z którego wychodzi (vanlife_place set.walk)",
+  "walk_parking_to_parking": "szlak „{hike}”: trasa prowadziłaby z parkingu „{parking}” na inny parking, „{other}”: zrób pętlę z powrotem do „{parking}” lub trasę tam i z powrotem do punktu, który nie jest parkingiem (do tego czasu nie rysowana)",
+  "col.parking": "Parking",
+  "park.camperYes": "kampery dozwolone",
+  "park.camperNo": "zakaz kamperów",
+  "park.overnightYes": "nocleg dozwolony",
+  "park.overnightNo": "nocleg zabroniony"
 }

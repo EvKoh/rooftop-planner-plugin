@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Reason (optional)",
   "ui.nightSet": "Night: {status}",
   "ui.confirmAvailable": "Back to available: this night's booking is deleted from TREK. The stay stays planned.",
-  "walk.noLink": "No page with the full track is known yet"
+  "walk.noLink": "No page with the full track is known yet",
+  "walk.loop": "Loop",
+  "walk.outAndBack": "Out and back",
+  "walk_no_parking": "hike \"{hike}\": no car park \"P\" to start from, so its walk is not drawn: tie it to the car park it leaves from (vanlife_place set.walk)",
+  "walk_parking_to_parking": "hike \"{hike}\": the walk would go from car park \"{parking}\" to another car park, \"{other}\": make it a loop back to \"{parking}\" or an out-and-back to a point that is not a car park (not drawn until then)",
+  "col.parking": "Car park",
+  "park.camperYes": "motorhomes allowed",
+  "park.camperNo": "no motorhomes",
+  "park.overnightYes": "overnight allowed",
+  "park.overnightNo": "no overnight"
 }

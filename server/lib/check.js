@@ -405,6 +405,16 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
   }
 
   if (pending) add('info', model.trip.title || `#${model.tripId}`, 'route_pending', { n: pending });
+  // Walks of the hikes: from one car park "P", back to the same P (walks.js).
+  for (const w of require('./walks').hikeWalks(model)) {
+    if (!w.problem) continue;
+    const d = w.day != null ? model.days.find((x) => x.n === w.day) : null;
+    const scope = d ? dayLabel(d) : w.hike;
+    const ids = { dayNumber: d ? d.n : null, placeId: w.hikeId };
+    if (w.problem.key === 'no_parking') add('fix', scope, 'walk_no_parking', { hike: w.hike }, ids);
+    else add('fix', scope, 'walk_parking_to_parking', { hike: w.hike, parking: w.access.name, other: w.problem.other }, ids);
+  }
+
   findings.sort((a, b) => LEVELS.indexOf(a.level) - LEVELS.indexOf(b.level) || (a.dayNumber ?? 999) - (b.dayNumber ?? 999));
   const counts = Object.fromEntries(LEVELS.map((l) => [l, findings.filter((f) => f.level === l).length]));
   return { ok: counts.blocking === 0, counts, findings, pendingRoutes: pending };

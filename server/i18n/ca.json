@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Motiu (opcional)",
   "ui.nightSet": "Nit: {status}",
   "ui.confirmAvailable": "De nou disponible: la reserva d'aquesta nit s'elimina de TREK. L'estada continua planificada.",
-  "walk.noLink": "Encara no es coneix cap pàgina amb el recorregut complet"
+  "walk.noLink": "Encara no es coneix cap pàgina amb el recorregut complet",
+  "walk.loop": "Circular",
+  "walk.outAndBack": "Anada i tornada",
+  "walk_no_parking": "excursió «{hike}»: cap aparcament «P» de sortida, no es dibuixa: vincular-la a l'aparcament d'on surt (vanlife_place set.walk)",
+  "walk_parking_to_parking": "excursió «{hike}»: aniria de l'aparcament «{parking}» a un altre aparcament, «{other}»: fer-la circular de tornada a «{parking}» o d'anada i tornada a un punt que no sigui un aparcament (no es dibuixa fins aleshores)",
+  "col.parking": "Aparcament",
+  "park.camperYes": "autocaravanes admeses",
+  "park.camperNo": "autocaravanes prohibides",
+  "park.overnightYes": "pernocta permesa",
+  "park.overnightNo": "pernocta prohibida"
 }

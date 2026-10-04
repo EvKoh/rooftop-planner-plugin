@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Dôvod (nepovinné)",
   "ui.nightSet": "Nocľah: {status}",
   "ui.confirmAvailable": "Späť na voľné: rezervácia tejto noci sa z TREK vymaže. Pobyt zostáva v pláne.",
-  "walk.noLink": "Stránka s celou trasou zatiaľ nie je známa"
+  "walk.noLink": "Stránka s celou trasou zatiaľ nie je známa",
+  "walk.loop": "Okruh",
+  "walk.outAndBack": "Tam a späť",
+  "walk_no_parking": "túra „{hike}“: žiadne parkovisko „P“ na štart, trasa sa nekreslí: prepojte ju s parkoviskom, odkiaľ vychádza (vanlife_place set.walk)",
+  "walk_parking_to_parking": "túra „{hike}“: trasa by viedla z parkoviska „{parking}“ na iné parkovisko, „{other}“: urobte okruh späť na „{parking}“ alebo cestu tam a späť k bodu, ktorý nie je parkovisko (dovtedy sa nekreslí)",
+  "col.parking": "Parkovisko",
+  "park.camperYes": "obytné autá povolené",
+  "park.camperNo": "obytné autá zakázané",
+  "park.overnightYes": "prenocovanie povolené",
+  "park.overnightNo": "prenocovanie zakázané"
 }

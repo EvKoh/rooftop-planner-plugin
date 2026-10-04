@@ -7,8 +7,13 @@
 //   3. the nearest car park planned the same day within 3 km, then any day within 2 km;
 //   4. a "Start/Departure/Parking … lat, lng" line in the hike's notes (a point, no place).
 // A hike that is not planned still shows when the user tied it to a planned car park.
+// The user's rule (04/10/2026): a walk starts at a car park "P" and comes back to that same P,
+// as a LOOP or as an OUT-AND-BACK to a turnaround point; never from one P to another. A walk
+// that breaks it (no P to start from, or a turnaround on another car park) is not drawn and
+// the check reports it.
 // The route itself: Valhalla on footpaths, car park → points of the walk (walk_via) → the hike
-// (→ back to the car park for a loop), cached in db:own. The map hook reads the cache and
+// (→ back to the car park for a loop; an out-and-back is drawn one way and counted twice),
+// cached in db:own. The map hook reads the cache and
 // computes what is missing only while its 5 s budget allows; the place tool fills it.
 
 const { activityKind, WALK_LINE, TONE } = require('./design');
@@ -22,6 +27,9 @@ const ADJACENT_KM = 5;
 const SAME_DAY_KM = 3;
 const ANY_DAY_KM = 2;
 const SAME_POINT_KM = 0.05;
+// A turnaround this close to another car park makes the walk "one P to another".
+const OTHER_PARKING_KM = 0.15;
+const SHAPES = ['loop', 'out_and_back'];
 const MAX_WALKS = 60;
 
 const pt = (p) => [p.lat, p.lng];
@@ -60,14 +68,43 @@ function accessFor(model, stop, info, parkings) {
   return fromNotes ? { point: fromNotes, how: 'notes' } : null;
 }
 
-/** The points walked: car park → via → hike (→ car park for a loop), close points merged. */
+/**
+ * Shape of a walk: the one set on the record, else a loop when the hike's place is the car park
+ * itself (a tour that starts there), else an out-and-back to the hike's place.
+ */
+function shapeOf(hike, access, info) {
+  if (info && SHAPES.includes(info.walk_shape)) return info.walk_shape;
+  if (info && info.walk_loop) return 'loop';
+  return access && distKm(access.point, pt(hike)) <= SAME_POINT_KM ? 'loop' : 'out_and_back';
+}
+
+/**
+ * The points walked, close points merged: car park → via → hike, then back to the car park for
+ * a loop. An out-and-back stops at its turnaround (the hike's place): the way back is the same.
+ */
 function walkPoints(hike, access, info) {
   const start = access ? access.point : pt(hike);
   const seq = [start, ...((info && info.walk_via) || []), pt(hike)];
   const out = [];
   for (const p of seq) if (!out.length || distKm(out[out.length - 1], p) > SAME_POINT_KM) out.push(p);
-  if (info && info.walk_loop && out.length > 1 && distKm(out[out.length - 1], start) > SAME_POINT_KM) out.push(start);
+  if (shapeOf(hike, access, info) === 'loop' && out.length > 1 && distKm(out[out.length - 1], start) > SAME_POINT_KM) out.push(start);
   return out.length > 1 ? out : [];
+}
+
+/** The car parks of the trip (planned or not), as { place, point }. */
+const tripParkings = (model) => model.pool.filter((p) => p.lat != null && p.lng != null && activityKind(p) === 'parking').map((p) => ({ place: p, point: pt(p) }));
+
+/**
+ * What breaks the rule "from one P, back to the same P", or null:
+ *   { key: 'no_parking' }                       no car park place to start from;
+ *   { key: 'parking_to_parking', other }        an out-and-back whose turnaround is another car park.
+ */
+function problemOf(w, parkings) {
+  if (!w.access || !w.access.placeId) return { key: 'no_parking' };
+  if (w.shape !== 'out_and_back' || !w.points.length) return null;
+  const end = w.points[w.points.length - 1];
+  const other = parkings.find((c) => c.place.id !== w.access.placeId && distKm(c.point, end) <= OTHER_PARKING_KM);
+  return other ? { key: 'parking_to_parking', other: other.place.name, otherId: other.place.id } : null;
 }
 
 const walkKey = (points) => `walk:${points.map((p) => roundPt(p).join(',')).join('|')}`;
@@ -81,7 +118,8 @@ function entry(model, hike, info, access, day, planned) {
     planned,
     day: day ? day.n : null,
     access: access ? { placeId: access.place ? access.place.id : null, name: access.place ? access.place.name : null, point: access.point, how: access.how } : null,
-    loop: !!(info && info.walk_loop),
+    shape: shapeOf(hike, access, info),
+    loop: shapeOf(hike, access, info) === 'loop',
     url: hikeUrl(model.poolById.get(hike.id) || hike, info),
     points,
     key: points.length ? walkKey(points) : null,
@@ -108,7 +146,16 @@ function hikeWalks(model) {
     seen.add(p.id);
     out.push(entry(model, p, p.info, { place: park.place, point: pt(park.place), how: 'set' }, park.day, false));
   }
+  const cps = tripParkings(model);
+  for (const w of out) w.problem = problemOf(w, cps);
   return out.slice(0, MAX_WALKS);
+}
+
+/** The walk as walked: an out-and-back counts its way twice (distance, time, climb both ways). */
+function walked(geo, shape) {
+  if (!geo || shape !== 'out_and_back') return geo;
+  const both = geo.up == null ? null : geo.up + (geo.down || 0);
+  return { ...geo, km: Math.round(geo.km * 20) / 10, minutes: geo.minutes * 2, up: both, down: both };
 }
 
 /**
@@ -222,17 +269,18 @@ function shortName(name, max) {
 /** The map layer: one dotted polyline per walk (the straight line until the route is computed). */
 function walkLayers(walks, geometry, settings) {
   const L = settings.language;
-  const features = walks.filter((w) => w.key).map((w) => {
-    const geo = geometry.get(w.key);
+  const features = walks.filter((w) => w.key && !w.problem).map((w) => {
+    const geo = walked(geometry.get(w.key), w.shape);
     // TREK caps a label at 80 characters: the hike, the walk, then the car park, each by the
     // first meaningful part of its name ("Hike — Example loop → hut" → "Example loop").
     const label = [shortName(w.hike, 32), statsText(geo, L, { climb: false }), w.access && w.access.name ? t(L, 'walk.from', { parking: shortName(w.access.name, 24) }) : null].filter(Boolean).join(' · ');
     // The card a click opens: the hike, its walk, its car park, the page with the full track.
-    const popupText = [w.hike, statsText(geo, L), w.access && w.access.name ? t(L, 'walk.from', { parking: w.access.name }) : null, w.url ? null : t(L, 'walk.noLink')]
+    const shapeName = t(L, w.shape === 'loop' ? 'walk.loop' : 'walk.outAndBack');
+    const popupText = [w.hike, [shapeName, statsText(geo, L)].filter(Boolean).join(' · '), w.access && w.access.name ? t(L, 'walk.from', { parking: w.access.name }) : null, w.url ? null : t(L, 'walk.noLink')]
       .filter(Boolean).join('\n').slice(0, 280);
     return { type: 'polyline', points: geo && geo.points && geo.points.length > 1 ? geo.points : w.points, tone: TONE.planned, ...WALK_LINE, label: label.slice(0, 80), popupText, ...(w.url ? { url: w.url } : {}) };
   });
   return features.length ? [{ id: 'walks', name: t(L, 'walk.layer'), features }] : [];
 }
 
-module.exports = { climb, walkMinutes, hikeUrl, TRACK_HOSTS, shortName, hikeWalks, walkGeometry, walkLayers, walkPoints, walkKey, statsText, accessFor, plannedStops };
+module.exports = { SHAPES, shapeOf, problemOf, walked, climb, walkMinutes, hikeUrl, TRACK_HOSTS, shortName, hikeWalks, walkGeometry, walkLayers, walkPoints, walkKey, statsText, accessFor, plannedStops };
