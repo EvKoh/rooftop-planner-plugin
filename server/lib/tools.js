@@ -5,6 +5,7 @@
 const { TOOL_NAMES, withDefaults } = require('./tool-specs');
 const { readSettings } = require('./settings');
 const { loadTrip } = require('./trip');
+const { applyKind } = require('./place-kind');
 const { checkTrip } = require('./check');
 const { findNights, findNightsForDay } = require('./nights');
 const { computeRoutes } = require('./traces');
@@ -132,6 +133,10 @@ async function placeTool(ctx, model, a, settings) {
   }
   const place = model.poolById.get(a.placeId);
   if (!place) throw new Error(`place ${a.placeId} is not in trip ${model.tripId}`);
+  // The kind first: it moves the place to the matching category, so the rest of the answer
+  // (and the map) shows its new pictogram.
+  const kindRes = a.kind ? await applyKind(ctx, model, place, a.kind) : null;
+  if (kindRes) { place.categoryId = kindRes.categoryId; place.categoryName = kindRes.category; place.raw = { ...place.raw, category_id: kindRes.categoryId }; }
   if (a.clear) { await placeInfo.clear(ctx, model.tripId, place.id); return { placeId: place.id, cleared: true }; }
   const patch = { ...(a.set || {}) };
   if (a.clear_fields && a.clear_fields.length) Object.assign(patch, placeInfo.clearPatch(a.clear_fields));
@@ -142,10 +147,10 @@ async function placeTool(ctx, model, a, settings) {
     const rec = await placeInfo.set(ctx, model.tripId, place.id, patch, { place: place.raw });
     const priced = 'price_amount' in patch ? { ...place, price: patch.price_amount, raw: { ...place.raw, currency: patch.currency || place.raw.currency } } : place;
     const raw = native ? { ...priced.raw, ...native } : priced.raw;
-    return { saved: true, ...(native ? { copiedToTrek: native } : {}), ...placeView(model, { ...priced, raw }, rec, settings, { full: true }) };
+    return { saved: true, ...(kindRes ? { kind: kindRes } : {}), ...(native ? { copiedToTrek: native } : {}), ...placeView(model, { ...priced, raw }, rec, settings, { full: true }) };
   }
   // One place: read its value directly, not through the index.
-  return placeView(model, place, await placeInfo.get(ctx, place.id), settings, { full: true });
+  return { ...(kindRes ? { kind: kindRes } : {}), ...placeView(model, place, await placeInfo.get(ctx, place.id), settings, { full: true }) };
 }
 
 /** The three day actions that used to be three tools. */

@@ -89,14 +89,13 @@ camping on public ground.
   where a municipal rule forbids it); impossible times; a shopping detour over the limit; nights in a row without water; a
   place that refuses the vehicle, the dog, or the vehicle's height, length or weight.
 - **Map overview** — every planned stop of every day as a small dot on the trip map, whatever day
-  is selected: green means planned (a visit, or a booked night), amber a night in discussion, red a
-  dropped one; a place with no dot is not in the plan.
+  is selected, each with the pictogram of its kind: green means confirmed or planned, blue a night not
+  asked for yet, amber a night in discussion, red a cancelled one; a place with no dot is not in the
+  plan.
   A tap gives the days and the times. Off with the *map overview* setting.
-- **One look everywhere** — every colour and pictogram the plugin shows comes from one catalogue
-  (`server/lib/design.js`). Colour is the state: green planned or booked, amber in discussion or a
-  point to watch, red dropped or ruled out. The pictogram is the kind of place: a tent, a farm, a
-  home, a hut, a motorhome area or a bed for a night; a mountain, a lake, a viewpoint, a village,
-  a market, groceries, a café or a fuel stop for an activity.
+- **One look everywhere** — every colour and pictogram the plugin shows comes from one catalogue,
+  `server/lib/design.js`. On the map, the **colour says the state** (disc and border), the
+  **pictogram says the kind** of place. See *Map legend* below.
 - **Nights** — candidates between the evening's last visit and the next morning's first stop, from
   OpenStreetMap and, if the instance enables it, park4night; ranked by legality, price and real
   detour.
@@ -142,6 +141,38 @@ is *to fix*, a booking with none recorded in TREK's bookings or the stop's notes
 with the link. `vanlife_day` `schedule` moves the proposed departure so every access is met.
 The toll is added to that day's budget in `vanlife_plan_trip`. Each recorded field shows as a
 small chip on the place: *Before 9:00 AM*, *Booking*, *Toll €30.00*.
+
+
+## Map legend
+
+The colour of a marker is its state, and nothing else:
+
+| | State | Meaning |
+|---|---|---|
+| <img src="./docs/icons/state-booked.svg" width="32" alt="green"> | **Booked** | the host confirmed the night |
+| <img src="./docs/icons/state-discussion.svg" width="32" alt="amber"> | **In discussion** | the host was asked, no answer or no confirmation yet |
+| <img src="./docs/icons/state-cancelled.svg" width="32" alt="red"> | **Cancelled** | the night was dropped |
+| <img src="./docs/icons/state-available.svg" width="32" alt="blue"> | **Available** | planned or not, but neither booked, in discussion nor cancelled — an activity is always blue |
+
+The pictogram is the kind of place. The plugin draws its own for the ways to sleep that TREK's
+icon set lacks (`assets/icons/*.svg`, built into the markers by `npm run build-glyphs`):
+
+| | | | | | |
+|---|---|---|---|---|---|
+| <img src="./docs/icons/motorhome.svg" width="40" alt="motorhome"> | <img src="./docs/icons/rooftop-tent.svg" width="40" alt="rooftop tent"> | <img src="./docs/icons/campervan.svg" width="40" alt="campervan"> | <img src="./docs/icons/car.svg" width="40" alt="car"> | <img src="./docs/icons/tent.svg" width="40" alt="tent"> | <img src="./docs/icons/sleeping-bag.svg" width="40" alt="sleeping bag"> |
+| Motorhome area | Rooftop tent | Campervan | Car | Campsite / tent | Bivouac |
+
+A night in a car park or a wild spot shows the traveller's own vehicle (rooftop tent, campervan or
+motorhome, from the settings). Other kinds use TREK's icons: a leaf for a farm (agricamping), a
+home for a private host or a cabin, a mountain for a hut, a bed for a hotel; for activities a
+mountain (hike, lift), waves (lake, beach, pool), a tree (nature), a camera (viewpoint), a church,
+a landmark (village, museum), a store (market), a bag (groceries), cutlery (restaurant, hut), a cup
+(café), wine, beer, theatre, music, a bike, a boat, a train, a bus, a plane, a dumbbell (sport), a
+compass (tourist office), a heart (zoo), a car (fuel, parking) and a flag (departure and return).
+
+From an assistant, one sentence sets both: *"the farm on day 2, we booked it"* is
+`vanlife_night` with `kind: "farm"` and `status: "booked"` — the place moves to the trip's farm
+category (leaf) and its marker turns green.
 
 ## MCP tools
 
@@ -191,7 +222,7 @@ reconnect the connector.
   places list, and the map's hover card
   once an admin lets the plugin in (Admin → Default user settings → *Plugin info on places*).
 
-  <img src="./docs/hover-card.png" alt="Hover card of a booked farm night: green bed marker, Booked chip, price per night and one chip per amenity" width="254">
+  <img src="./docs/hover-card.png" alt="Hover card of a booked farm night: green marker, Booked chip, price per night and one chip per amenity" width="254"> <img src="./docs/hover-card-discussion.png" alt="Hover card of a campsite in discussion: amber tent marker, In discussion chip, price and amenities" width="299">
 - **Place panel** — a widget at the foot of the place view shows the night's status, the host's
   contact (e-mail, phone and website as links, last exchange) and the amenities; it edits the
   amenities and the contact, and has a *Fill the trip's amenities* button. Opening a place with

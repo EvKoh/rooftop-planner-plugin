@@ -1,8 +1,8 @@
 'use strict';
 // Every planned stop of the whole trip as a small dot on the map, whatever day is selected:
 // the overview the planner's one-day view does not give. Nights take their booking state
-// (green booked, amber in discussion, red dropped), visits green: green means planned, the
-// same rule as the bed marker of a booked night. A place planned
+// (green booked, amber in discussion, red dropped, blue otherwise) and a pictogram for their
+// kind, all from design.js. A place planned
 // on several days is one dot listing them. Declarative markers only: TREK draws them.
 
 const { isTrace } = require('./classify');
@@ -46,7 +46,7 @@ function overviewMarkers(model, settings) {
       lng: m.lng,
       label: `${m.days.join(', ')} · ${m.name}`.slice(0, 120),
       popupText: lines.join('\n').slice(0, 500),
-      ...markerStyle(m.place, { night: m.night, status: st }),
+      ...markerStyle(m.place, { night: m.night, status: st, vehicle: settings.vehicle }),
     };
   });
 }

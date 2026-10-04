@@ -31,6 +31,7 @@ describe('manifest and tool declarations', () => {
         if (k === 'properties') walk(v, depth, true);
         if (k === 'items') walk(v, depth + 1, false);
         if (k === 'pattern') expect(v.length).toBeLessThanOrEqual(200);
+        if (k === 'enum') expect(v.length, 'an enum lists at most 32 values').toBeLessThanOrEqual(32);
         if (k === 'format') expect(['email', 'uuid', 'uri', 'date-time', 'date']).toContain(v);
         if (k === 'description' && typeof v === 'string') expect(v.length).toBeLessThanOrEqual(512);
       }

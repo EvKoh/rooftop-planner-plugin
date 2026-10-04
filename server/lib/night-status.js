@@ -126,6 +126,8 @@ async function set(ctx, model, a) {
   if (!day) throw new NightError('give dayNumber (or dayId) of the evening the night starts');
   const place = model.poolById.get(a.placeId);
   if (!place) throw new NightError(`place ${a.placeId} is not in trip ${model.tripId}`);
+  // "A farm we booked": the kind sets the place's category (its pictogram) with the status.
+  const kindRes = a.kind ? await require('./place-kind').applyKind(ctx, model, place, a.kind) : null;
   const resas = model.reservations || [];
   const night = nightOf(model, day);
   const isNight = !!night && night.placeId === place.id;
@@ -138,7 +140,7 @@ async function set(ctx, model, a) {
       throw new NightError(`"${place.name}" already has a booking for day ${day.n} (${statusOf(res)}, reservation ${res.id}). `
         + 'Use status "dropped" to mark it given up; deleting a booking is done in TREK itself, by the user.');
     }
-    return { placeId: place.id, day: day.n, status: 'spotted', changed: false, note: 'No booking exists: the place is a spotted night.' };
+    return { placeId: place.id, day: day.n, status: 'spotted', changed: false, ...(kindRes ? { kind: kindRes } : {}), note: 'No booking exists: the place is a spotted night.' };
   }
 
   const input = { status: TO_TREK[a.status] };
@@ -173,6 +175,7 @@ async function set(ctx, model, a) {
   return {
     placeId: place.id, place: place.name, day: day.n, date: day.date,
     status: a.status, trekStatus: input.status, action,
+    ...(kindRes ? { kind: kindRes } : {}),
     reservationId: written && written.id != null ? written.id : res ? res.id : null,
     ...(warnings.length ? { warnings } : {}),
     note: 'Recorded as the user declared it. Nothing was booked, paid or sent to the host.',
