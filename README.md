@@ -76,14 +76,15 @@ and as a small panel at the foot of the place view.
 The vehicle is a setting, and the rules follow it. A rooftop tent has to be unfolded in daylight,
 and opening it anywhere other than a campsite or a farm that hosts campers is camping. Sleeping
 inside a van or a motorhome without setting anything out is parking in Italy (Codice della strada
-art. 185), so a motorhome area is fine there, while Tyrol forbids sleeping in a vehicle outside
-campsites.
+art. 185), so a motorhome area is fine there, while many South Tyrol municipalities forbid
+camping on public ground.
 
 - **Trip check** — day by day, at four levels (blocking / to fix / to verify / info): arrival at
   the night later than *sunset minus a margin* (computed for the exact date and place); a stop
   visited on its closing day or outside the hours quoted in its notes; a check-in window or minimum
-  stay not met; a night the vehicle may not use; a farm night where farm camping is illegal (South
-  Tyrol); impossible times; a shopping detour over the limit; nights in a row without water; a
+  stay not met; a night the vehicle may not use; a farm night to check where local rules apply
+  (South Tyrol: allowed on private ground with the owner's consent, except in protected areas or
+  where a municipal rule forbids it); impossible times; a shopping detour over the limit; nights in a row without water; a
   place that refuses the vehicle, the dog, or the vehicle's height, length or weight.
 - **Nights** — candidates between the evening's last visit and the next morning's first stop, from
   OpenStreetMap and, if the instance enables it, park4night; ranked by legality, price and real

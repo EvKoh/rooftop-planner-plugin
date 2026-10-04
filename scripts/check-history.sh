@@ -13,8 +13,10 @@ hits=$(git log -p --all --format='@@commit %h' -- . ':!package-lock.json' ':!scr
   | grep -E '^\+' | grep -vE '^\+\+\+' | grep -E "$PAT" | grep -vE '@vitest|@media|@param|@deprecated|noreply|@clack' || true)
 lock=$(git log -p --all --format= -- package-lock.json | grep -E '/home/|file:' || true)
 trailers=$(git log --all --format=%B | grep -i 'co-authored' || true)
-authors=$(git log --all --format='%ae %ce' | sort -u)
-if [ -n "$hits$lock$trailers" ] || [ "$authors" != "1309463+EvKoh@users.noreply.github.com 1309463+EvKoh@users.noreply.github.com" ]; then
+# Only GitHub no-reply identities: the owner's, and GitHub's own on a merge made in its UI.
+authors=$(git log --all --format='%ae%n%ce' | sort -u \
+  | grep -vxE '(1309463\+)?EvKoh@users\.noreply\.github\.com|noreply@github\.com' || true)
+if [ -n "$hits$lock$trailers$authors" ]; then
   printf '%s\n%s\n%s\n%s\n' "$hits" "$lock" "$trailers" "$authors" | sed '/^$/d' | cut -c1-160
   echo "history check FAILED"; exit 1
 fi

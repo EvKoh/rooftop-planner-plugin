@@ -99,7 +99,7 @@ describe('MCP tools through the mock host', () => {
     expect(first.savingVsCurrent).toBeGreaterThan(0);
     expect(first.totalCost).toBeGreaterThanOrEqual(first.price);
     const farm = r.candidates.find((c) => c.kind === 'farm');
-    expect(farm.legalRisk).toMatch(/authorised campsite/);
+    expect(farm.legalRisk).toMatch(/private farm with the owner's consent it is allowed/);
     const free = await call(h, 'vanlife_find_nights', { lat: 46.53, lng: 12.13, morning_lat: 46.58, morning_lng: 12.25, date: '2026-10-12' });
     expect(free.candidates.length).toBeGreaterThan(0);
     await expect(call(h, 'vanlife_find_nights', {})).rejects.toThrow(/give tripId/);
