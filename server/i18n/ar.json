@@ -286,5 +286,18 @@
   "walk.layer": "المشي: مسارات على الأقدام",
   "walk.from": "سيرًا من {parking}",
   "walk.stats": "{km} كم · {time} سيرًا",
-  "walk.access": "موقف لـ: {hike}"
+  "walk.access": "موقف لـ: {hike}",
+  "ui.nightTitle": "المبيت",
+  "ui.nightOf": "أي ليلة",
+  "ui.dayOption": "اليوم {n} · {date}",
+  "ui.dayOnly": "اليوم {n}",
+  "ui.nightsN": "{n} ليالٍ",
+  "ui.state.spotted": "متاح",
+  "ui.state.contacted": "قيد النقاش",
+  "ui.state.booked": "محجوز",
+  "ui.state.dropped": "ملغى",
+  "ui.confirmationOpt": "رقم التأكيد (اختياري)",
+  "ui.reasonOpt": "السبب (اختياري)",
+  "ui.nightSet": "المبيت: {status}",
+  "ui.confirmAvailable": "العودة إلى متاح: يُحذف حجز هذه الليلة من TREK. تبقى الإقامة مخططة."
 }

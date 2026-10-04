@@ -286,5 +286,18 @@
   "walk.layer": "Túry: pešie trasy",
   "walk.from": "Pešo z {parking}",
   "walk.stats": "{km} km · {time} pešo",
-  "walk.access": "Parkovisko pre: {hike}"
+  "walk.access": "Parkovisko pre: {hike}",
+  "ui.nightTitle": "Nocľah",
+  "ui.nightOf": "Ktorá noc",
+  "ui.dayOption": "Deň {n} · {date}",
+  "ui.dayOnly": "Deň {n}",
+  "ui.nightsN": "Nocí: {n}",
+  "ui.state.spotted": "Voľné",
+  "ui.state.contacted": "V jednaní",
+  "ui.state.booked": "Rezervované",
+  "ui.state.dropped": "Zrušené",
+  "ui.confirmationOpt": "Číslo potvrdenia (nepovinné)",
+  "ui.reasonOpt": "Dôvod (nepovinné)",
+  "ui.nightSet": "Nocľah: {status}",
+  "ui.confirmAvailable": "Späť na voľné: rezervácia tejto noci sa z TREK vymaže. Pobyt zostáva v pláne."
 }

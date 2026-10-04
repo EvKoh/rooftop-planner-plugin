@@ -286,5 +286,18 @@
   "walk.layer": "Yürüyüşler: yürüyüş rotaları",
   "walk.from": "{parking} otoparkından yürüyerek",
   "walk.stats": "{km} km · {time} yürüyüş",
-  "walk.access": "Otopark: {hike}"
+  "walk.access": "Otopark: {hike}",
+  "ui.nightTitle": "Konaklama",
+  "ui.nightOf": "Hangi gece",
+  "ui.dayOption": "Gün {n} · {date}",
+  "ui.dayOnly": "Gün {n}",
+  "ui.nightsN": "{n} gece",
+  "ui.state.spotted": "Müsait",
+  "ui.state.contacted": "Görüşülüyor",
+  "ui.state.booked": "Rezerve edildi",
+  "ui.state.dropped": "İptal edildi",
+  "ui.confirmationOpt": "Onay numarası (isteğe bağlı)",
+  "ui.reasonOpt": "Neden (isteğe bağlı)",
+  "ui.nightSet": "Konaklama: {status}",
+  "ui.confirmAvailable": "Yeniden müsait: bu gecenin rezervasyonu TREK'ten silinir. Konaklama planda kalır."
 }

@@ -286,5 +286,18 @@
   "walk.layer": "Rutas de senderismo a pie",
   "walk.from": "A pie desde {parking}",
   "walk.stats": "{km} km · {time} a pie",
-  "walk.access": "Aparcamiento para: {hike}"
+  "walk.access": "Aparcamiento para: {hike}",
+  "ui.nightTitle": "Noche",
+  "ui.nightOf": "Qué noche",
+  "ui.dayOption": "Día {n} · {date}",
+  "ui.dayOnly": "Día {n}",
+  "ui.nightsN": "{n} noches",
+  "ui.state.spotted": "Disponible",
+  "ui.state.contacted": "En conversación",
+  "ui.state.booked": "Reservada",
+  "ui.state.dropped": "Cancelada",
+  "ui.confirmationOpt": "Número de confirmación (opcional)",
+  "ui.reasonOpt": "Motivo (opcional)",
+  "ui.nightSet": "Noche: {status}",
+  "ui.confirmAvailable": "De nuevo disponible: la reserva de esta noche se elimina de TREK. La estancia sigue planificada."
 }

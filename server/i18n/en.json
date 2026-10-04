@@ -286,5 +286,18 @@
   "walk.layer": "Hikes: walking routes",
   "walk.from": "On foot from {parking}",
   "walk.stats": "{km} km · {time} on foot",
-  "walk.access": "Car park for: {hike}"
+  "walk.access": "Car park for: {hike}",
+  "ui.nightTitle": "Night",
+  "ui.nightOf": "Which night",
+  "ui.dayOption": "Day {n} · {date}",
+  "ui.dayOnly": "Day {n}",
+  "ui.nightsN": "{n} nights",
+  "ui.state.spotted": "Available",
+  "ui.state.contacted": "In discussion",
+  "ui.state.booked": "Booked",
+  "ui.state.dropped": "Cancelled",
+  "ui.confirmationOpt": "Confirmation number (optional)",
+  "ui.reasonOpt": "Reason (optional)",
+  "ui.nightSet": "Night: {status}",
+  "ui.confirmAvailable": "Back to available: this night's booking is deleted from TREK. The stay stays planned."
 }

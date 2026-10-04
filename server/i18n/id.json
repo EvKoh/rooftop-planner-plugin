@@ -286,5 +286,18 @@
   "walk.layer": "Pendakian: rute jalan kaki",
   "walk.from": "Jalan kaki dari {parking}",
   "walk.stats": "{km} km · {time} jalan kaki",
-  "walk.access": "Parkir untuk: {hike}"
+  "walk.access": "Parkir untuk: {hike}",
+  "ui.nightTitle": "Menginap",
+  "ui.nightOf": "Malam yang mana",
+  "ui.dayOption": "Hari {n} · {date}",
+  "ui.dayOnly": "Hari {n}",
+  "ui.nightsN": "{n} malam",
+  "ui.state.spotted": "Tersedia",
+  "ui.state.contacted": "Dalam pembicaraan",
+  "ui.state.booked": "Dipesan",
+  "ui.state.dropped": "Dibatalkan",
+  "ui.confirmationOpt": "Nomor konfirmasi (opsional)",
+  "ui.reasonOpt": "Alasan (opsional)",
+  "ui.nightSet": "Menginap: {status}",
+  "ui.confirmAvailable": "Kembali tersedia: pemesanan malam ini dihapus dari TREK. Masa inap tetap direncanakan."
 }

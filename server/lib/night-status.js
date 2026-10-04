@@ -22,6 +22,19 @@ class NightError extends Error {}
 
 // schedule.js has the same lookup, but requiring it here would loop (schedule → check → here).
 const findDay = (model, { dayId, dayNumber }) => model.days.find((d) => (dayId != null && d.id === dayId) || (dayNumber != null && d.n === dayNumber)) || null;
+/** The stay that covers `day` without starting on it (the 2nd night of a 3-night stay), or null. */
+function nightCovering(model, day) {
+  const at = (id) => (model.days.find((d) => d.id === id) || {}).index;
+  return model.nights.find((n) => {
+    const s = at(n.startDayId);
+    const e = at(n.endDayId);
+    return s != null && e != null && s < day.index && day.index < e;
+  }) || null;
+}
+
+/** Tonight's stay on `day`: the one starting that evening, else the one running through it. */
+const nightOn = (model, day) => nightOf(model, day) || nightCovering(model, day);
+
 const statusOf = (res) => (res ? FROM_TREK[res.status] || 'contacted' : 'spotted');
 const same = (a, b) => a != null && b != null && String(a) === String(b);
 
@@ -75,6 +88,36 @@ function contactView(info, raw) {
   };
 }
 
+/**
+ * The nights a place can be set for, one per evening of the trip (every day but the
+ * last; a later night of a stay of this place folds into the stay's first evening):
+ * the evening, what is planned there, and this place's booking for it. `day` is the
+ * evening to propose first: a booking of the place, else its planned stay, else a day
+ * it is visited, else the first evening.
+ */
+function placeNights(model, placeId) {
+  const resas = model.reservations || [];
+  const rows = [];
+  model.days.slice(0, -1).forEach((d) => {
+    const night = nightOn(model, d);
+    const mine = !!night && night.placeId === placeId;
+    if (mine && night.startDayId !== d.id) return;
+    const res = mine ? reservationFor(night, resas) : candidateReservation(resas, placeId, d.id);
+    rows.push({
+      dayId: d.id, day: d.n, date: d.date,
+      nights: mine ? night.nights : 1,
+      planned: night ? { placeId: night.placeId, name: night.name, mine } : null,
+      status: res ? statusOf(res) : mine ? 'spotted' : null,
+      reservationId: res ? res.id : null,
+      confirmation: res ? res.confirmation_number || null : null,
+    });
+  });
+  const pick = rows.find((r) => r.reservationId) || rows.find((r) => r.planned && r.planned.mine)
+    || rows.find((r) => (model.days.find((d) => d.id === r.dayId) || { assignments: [] }).assignments.some((x) => x.place.id === placeId))
+    || rows[0] || null;
+  return { nights: rows, dayId: pick ? pick.dayId : null };
+}
+
 /** One row per night of the trip (every day but the last), with its status, contact, last exchange and price. */
 function list(model, settings, { now } = {}) {
   const L = settings.language;
@@ -118,7 +161,8 @@ function notesText(a, res) {
 
 /**
  * Record the status of a night: create or update the place's hotel booking for that day.
- * a: { placeId, dayNumber | dayId, status, confirmation?, reason?, notes?, nights? }
+ * a: { placeId, dayNumber | dayId, status, confirmation?, reason?, notes?, nights?, clear? }
+ * `clear` (the place panel only): status "spotted" deletes the place's booking for that night.
  */
 async function set(ctx, model, a) {
   if (!STATUSES.includes(a.status)) throw new NightError(`status must be one of ${STATUSES.join(', ')}`);
@@ -129,13 +173,21 @@ async function set(ctx, model, a) {
   // "A farm we booked": the kind sets the place's category (its pictogram) with the status.
   const kindRes = a.kind ? await require('./place-kind').applyKind(ctx, model, place, a.kind) : null;
   const resas = model.reservations || [];
-  const night = nightOf(model, day);
+  const night = nightOn(model, day);
   const isNight = !!night && night.placeId === place.id;
   const res = isNight ? reservationFor(night, resas) : candidateReservation(resas, place.id, day.id);
   const notes = notesText(a, res);
   const warnings = [];
 
   if (a.status === 'spotted') {
+    if (res && a.clear) {
+      // The user, in TREK's own place panel, puts the night back to available: the
+      // booking goes, the stay it was tied to stays planned (unlinked first, or TREK
+      // would delete the stay with its booking).
+      if (res.accommodation_id != null) await ctx.reservations.update(model.tripId, res.id, { accommodation_id: null });
+      await ctx.reservations.delete(model.tripId, res.id);
+      return { placeId: place.id, place: place.name, day: day.n, date: day.date, status: 'spotted', action: 'deleted', reservationId: res.id, ...(kindRes ? { kind: kindRes } : {}) };
+    }
     if (res) {
       throw new NightError(`"${place.name}" already has a booking for day ${day.n} (${statusOf(res)}, reservation ${res.id}). `
         + 'Use status "dropped" to mark it given up; deleting a booking is done in TREK itself, by the user.');
@@ -184,5 +236,5 @@ async function set(ctx, model, a) {
 
 module.exports = {
   STATUSES, TO_TREK, FROM_TREK, STALE_DAYS, NightError,
-  statusOf, reservationFor, candidateReservation, statusByPlace, placeOfReservation, waitingDays, list, set,
+  statusOf, reservationFor, candidateReservation, statusByPlace, placeOfReservation, waitingDays, list, set, placeNights, nightCovering,
 };

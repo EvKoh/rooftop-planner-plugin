@@ -286,5 +286,18 @@
   "walk.layer": "Escursioni: percorsi a piedi",
   "walk.from": "A piedi da {parking}",
   "walk.stats": "{km} km · {time} a piedi",
-  "walk.access": "Parcheggio per: {hike}"
+  "walk.access": "Parcheggio per: {hike}",
+  "ui.nightTitle": "Notte",
+  "ui.nightOf": "Quale notte",
+  "ui.dayOption": "Giorno {n} · {date}",
+  "ui.dayOnly": "Giorno {n}",
+  "ui.nightsN": "{n} notti",
+  "ui.state.spotted": "Disponibile",
+  "ui.state.contacted": "In trattativa",
+  "ui.state.booked": "Prenotata",
+  "ui.state.dropped": "Annullata",
+  "ui.confirmationOpt": "Numero di conferma (facoltativo)",
+  "ui.reasonOpt": "Motivo (facoltativo)",
+  "ui.nightSet": "Notte: {status}",
+  "ui.confirmAvailable": "Di nuovo disponibile: la prenotazione di questa notte viene eliminata da TREK. Il soggiorno resta pianificato."
 }

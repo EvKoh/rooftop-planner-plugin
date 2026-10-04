@@ -286,5 +286,18 @@
   "walk.layer": "健行：步行路線",
   "walk.from": "從 {parking} 步行",
   "walk.stats": "{km} 公里 · 步行 {time}",
-  "walk.access": "停車場：{hike}"
+  "walk.access": "停車場：{hike}",
+  "ui.nightTitle": "住宿",
+  "ui.nightOf": "哪一晚",
+  "ui.dayOption": "第 {n} 天 · {date}",
+  "ui.dayOnly": "第 {n} 天",
+  "ui.nightsN": "{n} 晚",
+  "ui.state.spotted": "可用",
+  "ui.state.contacted": "洽談中",
+  "ui.state.booked": "已預訂",
+  "ui.state.dropped": "已取消",
+  "ui.confirmationOpt": "確認號碼（選填）",
+  "ui.reasonOpt": "原因（選填）",
+  "ui.nightSet": "住宿：{status}",
+  "ui.confirmAvailable": "恢復為可用：這一晚的預訂會從 TREK 刪除，住宿安排保留。"
 }

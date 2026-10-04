@@ -60,6 +60,27 @@ const NIGHT_STATUS = {
   dropped: { tone: TONE.dropped, icon: 'XCircle' },
 };
 
+/** The colour of each tone, the same hexes TREK's map draws its markers with. */
+const TONE_COLOR = { default: '#2563eb', success: '#16a34a', warn: '#f59e0b', danger: '#dc2626' };
+
+/** Lucide pictograms (ISC licence) as SVG inner markup, for the widget, which has no icon set. */
+const STATE_SVG = {
+  MapPin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  Clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  BedDouble: '<path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/>',
+  XCircle: '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+};
+
+/**
+ * The four states a night can be set to from the place panel, in the order of its
+ * buttons: available (no booking, blue), in discussion (amber), booked (green),
+ * cancelled (red). Each with its tone, colour, lucide icon and that icon's SVG.
+ */
+const NIGHT_STATES = ['spotted', 'contacted', 'booked', 'dropped'].map((status) => {
+  const { tone, icon } = NIGHT_STATUS[status] || { tone: TONE.spotted, icon: 'MapPin' };
+  return { status, tone, color: TONE_COLOR[tone], icon, svg: STATE_SVG[icon] };
+});
+
 /** One icon per amenity (names known to lucide-react 0.344, the SDK's snapshot). */
 const AMENITY_ICONS = {
   dog: 'Dog', water: 'Droplet', electricity: 'Zap', toilets: 'Bath', shower: 'ShowerHead',
@@ -197,4 +218,4 @@ function categoryForKind(categories, kind) {
   return list.find((c) => RE.night.test(norm(c.name)) === night) || list[0] || null;
 }
 
-module.exports = { KINDS, NIGHT_KINDS, categoryForKind, activityKind, ACTIVITY_GLYPH, WALK_LINE, TONE, NIGHT_STATUS, AMENITY_ICONS, CHIP, NIGHT_PICTOGRAM, ACTIVITY_PICTOGRAM, MARKER_ICONS, GLYPHS, VEHICLE_GLYPH, pictogramFor, markerStyle };
+module.exports = { KINDS, NIGHT_KINDS, categoryForKind, activityKind, ACTIVITY_GLYPH, WALK_LINE, TONE, TONE_COLOR, NIGHT_STATUS, NIGHT_STATES, AMENITY_ICONS, CHIP, NIGHT_PICTOGRAM, ACTIVITY_PICTOGRAM, MARKER_ICONS, GLYPHS, VEHICLE_GLYPH, pictogramFor, markerStyle };
