@@ -45,6 +45,8 @@ function nightKind(categoryName, placeName) {
 const isNightCategory = (cat) => test(RE.night, cat);
 const isShopping = (cat, stopType) => stopType === 'fuel' || test(RE.shop, cat) || test(RE.fuel, cat);
 const isHike = (cat) => test(RE.hike, cat);
+/** A car park (by its category): where the car waits, not a visit. */
+const isParkingCategory = (cat) => test(RE.parking, cat);
 /** A route place carries a geometry; the category name is the fallback when it is not loaded. */
 // A drawn route, whatever its category: TREK's row (route_geometry) or the loaded model (geometry).
 const isTrace = (cat, place) => !!(place && (place.route_geometry || place.geometry?.length)) || test(RE.trace, cat);
@@ -59,4 +61,4 @@ function parkingFromNotes(...texts) {
   return m ? [+m[1], +m[2]] : null;
 }
 
-module.exports = { nightKind, isNightCategory, isShopping, isHike, isTrace, parkingFromNotes, RE };
+module.exports = { nightKind, isNightCategory, isShopping, isHike, isTrace, parkingFromNotes, RE, isParkingCategory };

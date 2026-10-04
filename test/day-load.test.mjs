@@ -187,6 +187,21 @@ describe('the day\'s load in the check', () => {
     expect(of(await check(stop), 'too_many_activities').some((f) => f.dayNumber === 2)).toBe(true);
   });
 
+  it('a car park is not an activity, and on a hike day its time is the hike\'s', async () => {
+    const trip = build();
+    const day2 = trip.days[1].assignments;
+    const lake = day2.find((a) => a.place.id === 14).place;
+    const park = day2.find((a) => a.place.id === 15).place;
+    lake.category = { id: 90, name: 'See – Hike' };
+    park.category = { id: 91, name: 'Route – Parking' };
+    const h = makeHost({ trip, userSettings: { timezone: 'Europe/Rome' }, queryResults: { [pi.INDEX_SQL]: [{ place_id: 14 }, { place_id: 15 }] } });
+    await h.ctx.meta.set('place', 14, pi.META_KEY, pi.merge(null, { visit_min_minutes: 240 }));
+    await h.ctx.meta.set('place', 15, pi.META_KEY, pi.merge(null, { visit_min_minutes: 240 }));
+    const r = await check(h);
+    expect(of(r, 'too_many_activities').some((f) => f.dayNumber === 2)).toBe(false);
+    expect(of(r, 'day_overloaded').some((f) => f.dayNumber === 2)).toBe(false);
+  });
+
   it('lists the visits whose duration nobody knows, not the shop', async () => {
     const trip = build();
     Object.assign(asgPlace(trip, 1002), { place_time: null, end_time: null });
