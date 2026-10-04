@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.5.10",
+  "version": "0.5.11",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -1133,63 +1133,7 @@
                 },
                 "contacts": {
                   "type": "object",
-                  "additionalProperties": false,
-                  "description": "The host's contacts; null erases a field.",
-                  "properties": {
-                    "email": {
-                      "type": "string",
-                      "maxLength": 254,
-                      "nullable": true
-                    },
-                    "phone": {
-                      "type": "string",
-                      "maxLength": 40,
-                      "nullable": true,
-                      "description": "International form preferred: +39 0471 000000."
-                    },
-                    "whatsapp": {
-                      "type": "string",
-                      "maxLength": 40,
-                      "nullable": true
-                    },
-                    "website": {
-                      "type": "string",
-                      "maxLength": 500,
-                      "nullable": true,
-                      "description": "http(s) address."
-                    },
-                    "contact_name": {
-                      "type": "string",
-                      "maxLength": 100,
-                      "nullable": true
-                    },
-                    "languages": {
-                      "type": "array",
-                      "maxItems": 8,
-                      "nullable": true,
-                      "items": {
-                        "type": "string",
-                        "maxLength": 20
-                      },
-                      "description": "Languages the host speaks, e.g. [\"it\", \"de\", \"en\"]."
-                    },
-                    "preferred_channel": {
-                      "type": "string",
-                      "enum": [
-                        "email",
-                        "phone",
-                        "whatsapp",
-                        "website_form"
-                      ],
-                      "nullable": true
-                    },
-                    "notes": {
-                      "type": "string",
-                      "maxLength": 300,
-                      "nullable": true,
-                      "description": "Short, e.g. \"answers in the evening\"."
-                    }
-                  }
+                  "description": "The host's contacts, null erases a field: email, phone (+39 0471 000000), whatsapp, website (http), contact_name, languages ([\"it\", \"de\"]), preferred_channel (email | phone | whatsapp | website_form), notes (short)."
                 }
               }
             },
@@ -1242,7 +1186,11 @@
                 "type": "string",
                 "maxLength": 40
               },
-              "description": "Clear only these: an amenity key, dog_fee, max_height_m, visit_min_minutes, per, price_note, source, checked, access_before, access_after, booking_required, booking_url, booking_note, toll_amount, toll_currency, walk, parking, a contact field (email, phone...), amenities / contacts / log, or all (the whole record)."
+              "description": "Clear only these: any key of set (an amenity, dog_fee, per, walk, booking_url...), a contact field (email, phone...), amenities / contacts / log, or all (the whole record)."
+            },
+            "sheet_set": {
+              "type": "object",
+              "description": "Write \"sheet\" fields into the notes: { field: \"text\" }, null removes, a list 1 item per line."
             },
             "fill": {
               "type": "boolean",

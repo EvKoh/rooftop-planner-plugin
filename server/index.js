@@ -33,6 +33,8 @@ const { gentle } = require('./lib/gentle');
 const { bundle, lang } = require('./lib/i18n');
 const { isNightCategory } = require('./lib/classify');
 const { NIGHT_STATES } = require('./lib/design');
+const placeSheet = require('./lib/place-sheet');
+const walks = require('./lib/walks');
 
 const json = (status, body) => ({ status, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const ids = (b) => {
@@ -47,7 +49,6 @@ async function placeOf(ctx, tripId, placeId) {
   return places.find((p) => p.id === placeId) || null;
 }
 
-const walks = require('./lib/walks');
 const { deadline: makeDeadline } = require('./lib/util');
 
 // Hooks answer within 5 s: the map layer computes missing walking routes only inside this.
@@ -140,6 +141,11 @@ module.exports = definePlugin({
           const catName = (cats || []).find((c) => c.id === place.category_id);
           const night = (accs || []).some((a) => a.place_id === at.placeId) || isNightCategory(place.category_name || (catName && catName.name) || '');
           const site = place.website && !contacts.notOwnSite(place.website) ? place.website : null;
+          // The structured card: description and notes read into the fixed sections of its kind.
+          const categoryName = place.category_name || (catName && catName.name) || '';
+          const sheet = placeSheet.view(placeSheet.sheetOf({ ...place, categoryName, raw: place }, { night }), L, {
+            trackUrl: walks.hikeUrl({ raw: place, description: place.description, notes: place.notes }, info),
+          });
           return json(200, {
             language: L,
             strings: bundle(L, ['ui.', 'am', 'opt.', 'per.', 'fee', 'st.', 'ch.', 'chip.']),
@@ -165,6 +171,7 @@ module.exports = definePlugin({
             // A platform page (park4night, Google Maps...) is not the host's site.
             trek: { website: site, phone: place.phone || null },
             nightStatus: status,
+            sheet,
           });
         } catch (e) {
           return json(403, { error: String((e && e.message) || e) });

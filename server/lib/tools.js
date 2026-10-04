@@ -3,6 +3,7 @@
 // settings, load the trip when one is named, run the tool under a 12.5 s budget (the host
 // cuts at 15 s), and shrink the answer under the 64 KiB result cap.
 const { TOOL_NAMES, withDefaults } = require('./tool-specs');
+const placeSheet = require('./place-sheet');
 const { readSettings } = require('./settings');
 const { loadTrip } = require('./trip');
 const { applyKind } = require('./place-kind');
@@ -96,7 +97,13 @@ function placeView(model, p, info, settings, { full = false } = {}) {
     lastExchange: rec.log[0] || null,
     nightStatus: statuses.map((r) => ({ reservationId: r.id, status: nightStatus.statusOf(r), confirmation: r.confirmation_number || null })),
   };
-  if (full) Object.assign(out, { recorded: !!info, record: rec, contactSources: rec.contact_sources, log: rec.log });
+  if (full) {
+    Object.assign(out, { recorded: !!info, record: rec, contactSources: rec.contact_sources, log: rec.log });
+    // The description and notes read into typed fields (place-sheet.js): what the widget's
+    // card shows; edit a field with sheet_set, which rewrites its line in the notes.
+    const sh = placeSheet.sheetOf(p, { night });
+    out.sheet = { kind: sh.kind, fields: sh.fields, otherNotes: sh.other, about: sh.about, freeNotes: sh.text };
+  }
   return out;
 }
 
@@ -130,7 +137,7 @@ async function placeTool(ctx, model, a, settings, opts = {}) {
   if (!a.placeId && a.filter === 'hikes') return hikesList(ctx, model, settings, opts);
   if (a.fill) return amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, language: settings.language, budgetMs: 6000 });
   if (!a.placeId) {
-    if (a.set || a.log || a.clear || (a.clear_fields && a.clear_fields.length)) throw new Error('placeId is required to set, log or clear');
+    if (a.set || a.log || a.clear || a.sheet_set || (a.clear_fields && a.clear_fields.length)) throw new Error('placeId is required to set, log or clear');
     const planned = new Set(model.nights.map((n) => n.placeId));
     const real = model.pool.filter((p) => !p.geometry);
     // Three sets of nights: planned (a lodging in the trip), candidates (a night category but
@@ -167,6 +174,21 @@ async function placeTool(ctx, model, a, settings, opts = {}) {
   const kindRes = a.kind ? await applyKind(ctx, model, place, a.kind) : null;
   if (kindRes) { place.categoryId = kindRes.categoryId; place.categoryName = kindRes.category; place.raw = { ...place.raw, category_id: kindRes.categoryId }; }
   if (a.clear || (a.clear_fields || []).includes('all')) { await placeInfo.clear(ctx, model.tripId, place.id); return { placeId: place.id, cleared: true }; }
+  const sheetSet = a.sheet_set && typeof a.sheet_set === 'object' ? Object.entries(a.sheet_set) : [];
+  if (sheetSet.length) {
+    // Field by field into TREK's own description and notes: the only copy.
+    const raw = place.raw || {};
+    let texts = { description: raw.description || '', notes: raw.notes || '' };
+    for (const [field, value] of sheetSet) texts = placeSheet.setField(texts.description, texts.notes, field, value == null ? null : Array.isArray(value) ? value.map(String) : String(value), settings.language);
+    const patchTexts = { notes: texts.notes, ...(texts.description !== (raw.description || '') ? { description: texts.description } : {}) };
+    await ctx.places.update(model.tripId, place.id, patchTexts);
+    Object.assign(raw, patchTexts);
+    place.raw = raw;
+    if (!a.set && !a.log && !(a.clear_fields && a.clear_fields.length)) {
+      const sh = placeSheet.sheetOf(place, { night: model.nights.some((x) => x.placeId === place.id) });
+      return { saved: true, placeId: place.id, sheetFields: sheetSet.map(([f]) => f), sheet: { kind: sh.kind, fields: sh.fields, otherNotes: sh.other } };
+    }
+  }
   const patch = placeInfo.expandParking(placeInfo.expandWalk({ ...(a.set || {}) }));
   const parkId = patch.access_parking_place_id;
   if (parkId != null && parkId !== '') {
