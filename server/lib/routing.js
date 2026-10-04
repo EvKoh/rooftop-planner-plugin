@@ -20,8 +20,12 @@ const MATRIX_MAX_KM = 110;
 /** Decode a Valhalla polyline (precision 6) into [lat, lng] pairs. */
 /** Routing options of the traveller's vehicle, from the settings. */
 function vehicleOpts(settings, tolls) {
-  return { tolls, vehicle: settings.vehicle, height: settings.vehicle_height_m, length: settings.vehicle_length_m, weight: settings.vehicle_weight_t };
+  return { tolls, vehicle: settings.vehicle, height: settings.vehicle_height_m, length: settings.vehicle_length_m, weight: settings.vehicle_weight_t, factor: settings.drive_time_factor };
 }
+
+// The open router is slow on mountain roads (measured against the traveller's own map):
+// the user's factor rescales every drive time. The cache keeps the router's own minutes.
+const scaled = (minutes, opts) => (minutes == null || !(opts.factor > 0) || opts.factor === 1 ? minutes : Math.round(minutes * opts.factor));
 
 function decodePolyline(str, precision = 6) {
   const out = [];
@@ -83,8 +87,8 @@ async function route(points, opts = {}) {
   const pts = [].concat(...d.trip.legs.map((l) => decodePolyline(l.shape)));
   return {
     km: Math.round(d.trip.summary.length * 10) / 10,
-    minutes: Math.round(d.trip.summary.time / 60),
-    legs: d.trip.legs.map((l) => ({ km: Math.round(l.summary.length * 10) / 10, minutes: Math.round(l.summary.time / 60) })),
+    minutes: scaled(Math.round(d.trip.summary.time / 60), opts),
+    legs: d.trip.legs.map((l) => ({ km: Math.round(l.summary.length * 10) / 10, minutes: scaled(Math.round(l.summary.time / 60), opts) })),
     points: thin(pts, opts.maxPoints ?? 1500),
   };
 }
@@ -133,7 +137,7 @@ async function legs(ctx, pairs, opts = {}) {
     await pmap(far, 2, async (i) => {
       if (opts.deadline && opts.deadline.left() < 5000) { pending++; return; }
       try {
-        const r = await route(pairs[i], { ...opts, maxPoints: 2, timeoutMs: opts.deadline ? Math.min(12000, opts.deadline.left() - 1500) : 12000 });
+        const r = await route(pairs[i], { ...opts, factor: 1, maxPoints: 2, timeoutMs: opts.deadline ? Math.min(12000, opts.deadline.left() - 1500) : 12000 });
         const v = { minutes: r.minutes, km: r.km };
         values.set(i, v);
         fresh.push([keys[i], v]);
@@ -180,6 +184,7 @@ async function legs(ctx, pairs, opts = {}) {
   } else {
     pending = todo.length;
   }
+  for (const [i, v] of values) if (v) values.set(i, { ...v, minutes: scaled(v.minutes, opts) });
   return { values, pending };
 }
 

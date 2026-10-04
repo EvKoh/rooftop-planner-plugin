@@ -32,12 +32,13 @@ const DEFAULTS = Object.freeze({
   day_start: '08:30',
   // A visit this long or longer is a big activity: one a day, or at most two small ones.
   big_activity_minutes: 150,
+  drive_time_factor: 1,
   timezone: 'Europe/Paris',
   language: 'auto',
 });
 
 const NUMBERS = ['vehicle_height_m', 'vehicle_length_m', 'vehicle_weight_t', 'night_price_target', 'night_price_max',
-  'sunset_margin_min', 'water_reserve_l', 'fuel_l_per_100km', 'fuel_price_per_l', 'shop_detour_max_min', 'travellers', 'big_activity_minutes'];
+  'sunset_margin_min', 'water_reserve_l', 'fuel_l_per_100km', 'fuel_price_per_l', 'shop_detour_max_min', 'travellers', 'big_activity_minutes', 'drive_time_factor'];
 
 /** The instance defaults an admin set (ctx.config is frozen at activation). */
 function instance(ctx) {
@@ -60,6 +61,7 @@ async function readSettings(ctx, keys) {
     out[k] = String(v);
   }));
   if (!VEHICLES.includes(out.vehicle)) out.vehicle = DEFAULTS.vehicle;
+  if (!(out.drive_time_factor >= 0.5 && out.drive_time_factor <= 2)) out.drive_time_factor = DEFAULTS.drive_time_factor;
   if (!['first_last', 'always', 'never'].includes(out.highway_days)) out.highway_days = DEFAULTS.highway_days;
   if (!/^([01]?\d|2[0-3])[:h][0-5]\d$/.test(out.day_start)) out.day_start = DEFAULTS.day_start;
   // "auto": the host passes no language to hooks and tools, so the admin's instance default
