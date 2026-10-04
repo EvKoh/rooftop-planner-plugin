@@ -149,10 +149,11 @@ async function walkGeometry(ctx, walks, { network = false, deadline = null, conc
   return out;
 }
 
-// Height changes under this are terrain-model noise, not climbing.
-const CLIMB_STEP_M = 5;
+// Heights come in whole metres, sampled along the route: every step counts. A threshold
+// (tried 2-5 m) lost up to a quarter of the climb on loops whose official figure is known.
+const CLIMB_STEP_M = 1;
 
-/** Metres climbed and descended along a list of heights, noise below CLIMB_STEP_M ignored. */
+/** Metres climbed and descended along a list of heights. */
 function climb(h) {
   let up = 0;
   let down = 0;
