@@ -213,6 +213,17 @@ describe('the hike\'s car park in the place tool', () => {
     expect(pts.map((p) => p.join(','))).toEqual(['46.635,11.763', '46.628,11.78', '46.62,11.76', '46.621,11.7495', '46.6135,11.744', '46.6357,11.7258', '46.635,11.763']);
   });
 
+  it('routes walks on mountain paths (SAC T2), where the hikes are', async () => {
+    const routing = require('../server/lib/routing.js');
+    const f = vi.fn(async () => ({ ok: true, json: async () => ({ trip: { summary: { length: 1, time: 900 }, legs: [{ shape: '' }] } }) }));
+    vi.stubGlobal('fetch', f);
+    await routing.walk([[46.6, 11.8], [46.61, 11.79]]);
+    const body = JSON.parse(f.mock.calls[0][1].body);
+    expect(body.costing).toBe('pedestrian');
+    expect(body.costing_options.pedestrian.max_hiking_difficulty).toBe(2);
+    vi.unstubAllGlobals();
+  });
+
   it('merges the points of a walk that coincide', () => {
     const pts = walks.walkPoints({ lat: 46.6, lng: 11.8 }, { point: [46.6, 11.8] }, { walk_via: [[46.61, 11.81]], walk_loop: true });
     expect(pts).toEqual([[46.6, 11.8], [46.61, 11.81], [46.6, 11.8]]);

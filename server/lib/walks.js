@@ -217,7 +217,7 @@ async function walkGeometry(ctx, walks, { network = false, deadline = null, conc
 // loop gives 448 m for 392-430 m published, where 1 m gave 525 m and smoothing lost a third.
 const CLIMB_STEP_M = 5;
 // Bumped when the climb is counted differently, so cached walks are measured again.
-const CLIMB_RULE = 3;
+const CLIMB_RULE = 4; // 4: walks routed on mountain paths (SAC T2)
 
 /** Metres climbed and descended along a list of heights. */
 function climb(h) {

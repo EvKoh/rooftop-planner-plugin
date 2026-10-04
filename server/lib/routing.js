@@ -192,10 +192,16 @@ async function legs(ctx, pairs, opts = {}) {
  * Walking route through `points` ([lat,lng] list, in order) on footpaths (Valhalla
  * pedestrian costing): { km, minutes, points } with at most `maxPoints` vertices.
  */
+// SAC scale: 1 hiking, 2 mountain hiking, 3 demanding mountain hiking.
+const MAX_HIKING_DIFFICULTY = 2;
+
 async function walk(points, opts = {}) {
   const d = await post('/route', {
     locations: points.map((p) => ({ lat: +p[0], lon: +p[1], type: 'break' })),
     costing: 'pedestrian',
+    // Mountain paths (SAC T2) are where the hikes are: at the default (T1 only) the router
+    // went around the trail a hike follows, doubling some walks.
+    costing_options: { pedestrian: { max_hiking_difficulty: MAX_HIKING_DIFFICULTY } },
     units: 'kilometers',
     directions_type: 'none',
   }, opts.timeoutMs ?? 12000);
