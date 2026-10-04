@@ -160,11 +160,11 @@ async function placeTool(ctx, model, a, settings, opts = {}) {
   // (and the map) shows its new pictogram.
   const kindRes = a.kind ? await applyKind(ctx, model, place, a.kind) : null;
   if (kindRes) { place.categoryId = kindRes.categoryId; place.categoryName = kindRes.category; place.raw = { ...place.raw, category_id: kindRes.categoryId }; }
-  if (a.clear) { await placeInfo.clear(ctx, model.tripId, place.id); return { placeId: place.id, cleared: true }; }
-  const patch = { ...(a.set || {}) };
+  if (a.clear || (a.clear_fields || []).includes('all')) { await placeInfo.clear(ctx, model.tripId, place.id); return { placeId: place.id, cleared: true }; }
+  const patch = placeInfo.expandWalk({ ...(a.set || {}) });
   const parkId = patch.access_parking_place_id;
   if (parkId != null && parkId !== '') {
-    if (Number(parkId) === place.id) throw new Error('access_parking_place_id must be another place: the car park the hike starts from');
+    if (Number(parkId) === place.id) throw new Error('walk.parking_place_id must be another place: the car park the hike starts from');
     if (!model.poolById.get(Number(parkId))) throw new Error(`place ${parkId} is not in trip ${model.tripId}`);
   }
   if (a.clear_fields && a.clear_fields.length) Object.assign(patch, placeInfo.clearPatch(a.clear_fields));

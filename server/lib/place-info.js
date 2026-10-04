@@ -220,12 +220,29 @@ function merge(stored, patch) {
   return out;
 }
 
+/**
+ * The tool's `walk` object ({ parking_place_id, via, loop }) as record fields (WALK_FIELDS);
+ * null clears the three. Keys left out stay as they are.
+ */
+function expandWalk(patch) {
+  if (!patch || !('walk' in patch)) return patch;
+  const { walk, ...rest } = patch;
+  if (walk == null) return { ...rest, access_parking_place_id: null, walk_via: null, walk_loop: null };
+  if (typeof walk !== 'object' || Array.isArray(walk)) throw new InfoError('walk must be an object { parking_place_id, via, loop }, or null to clear');
+  const unknown = Object.keys(walk).filter((k) => !['parking_place_id', 'via', 'loop'].includes(k));
+  if (unknown.length) throw new InfoError(`walk takes parking_place_id, via and loop, not ${unknown.join(', ')}`);
+  if ('parking_place_id' in walk) rest.access_parking_place_id = walk.parking_place_id;
+  if ('via' in walk) rest.walk_via = walk.via;
+  if ('loop' in walk) rest.walk_loop = walk.loop;
+  return rest;
+}
+
 /** The walk fields of a patch (WALK_FIELDS), validated onto `out`. */
 function mergeWalk(out, p) {
   if ('access_parking_place_id' in p) {
     const v = p.access_parking_place_id;
     if (v === null || v === '') out.access_parking_place_id = null;
-    else if (!Number.isInteger(Number(v)) || Number(v) < 1) throw new InfoError('access_parking_place_id must be the id of a car park place of the trip, or null to go back to the guess');
+    else if (!Number.isInteger(Number(v)) || Number(v) < 1) throw new InfoError('walk.parking_place_id must be the id of a car park place of the trip, or null to go back to the guess');
     else out.access_parking_place_id = Number(v);
   }
   if ('walk_via' in p) {
@@ -295,6 +312,7 @@ function clearPatch(fields) {
     else if (k === 'amenities') for (const a of Object.keys(AMENITIES)) patch[a] = 'unknown';
     else if (k === 'contacts') for (const c of contacts.FIELDS) contactPatch[c] = null;
     else if (k === 'log') patch.log = null;
+    else if (k === 'walk') for (const w of WALK_FIELDS) patch[w] = null;
     else if (contacts.FIELDS.includes(k)) contactPatch[k] = null;
     else throw new InfoError(`cannot clear "${f}": name an amenity (${Object.keys(AMENITIES).slice(0, 4).join(', ')}...), ${NUMBER_FIELDS.join(', ')}, per, price_note, source, checked, ${ACCESS_FIELDS.join(', ')}, ${WALK_FIELDS.join(', ')}, a contact field (${contacts.FIELDS.join(', ')}), or amenities / contacts / log`);
   }
@@ -544,4 +562,4 @@ async function getAll(ctx, tripId, placeIds) {
   return out;
 }
 
-module.exports = { WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

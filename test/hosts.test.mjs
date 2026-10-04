@@ -157,7 +157,7 @@ describe('vanlife_place', () => {
     expect(cleared.contacts.email).toBeNull();
     expect(cleared.record.amenities.water).toBe('unknown');
     expect(cleared.log).toHaveLength(1); // the log stays unless named
-    expect(await call(h, 'vanlife_place', { tripId: 1, placeId: 16, clear: true })).toEqual({ placeId: 16, cleared: true });
+    expect(await call(h, 'vanlife_place', { tripId: 1, placeId: 16, clear_fields: ['all'] })).toEqual({ placeId: 16, cleared: true });
     await expect(call(h, 'vanlife_place', { tripId: 1, set: { water: 'yes' } })).rejects.toThrow(/placeId is required/);
     await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 16, clear_fields: ['colour'] })).rejects.toThrow(/cannot clear/);
   });

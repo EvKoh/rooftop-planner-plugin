@@ -99,7 +99,7 @@ describe('place info through the plugin', () => {
     expect(noAmenity.places.every((p) => p.missing.some((m) => m !== 'contact'))).toBe(true);
     const all = await call(h2, 'vanlife_place', { tripId: 1, filter: 'all' });
     expect(all.count).toBe(10); // every place but the three route places
-    expect(await call(h2, 'vanlife_place', { tripId: 1, placeId: 13, clear: true })).toEqual({ placeId: 13, cleared: true });
+    expect(await call(h2, 'vanlife_place', { tripId: 1, placeId: 13, clear_fields: ['all'] })).toEqual({ placeId: 13, cleared: true });
     await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 999, set: {} })).rejects.toThrow(/not in trip/);
     await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: { water: 'maybe' } })).rejects.toThrow(/water must be/);
   });
