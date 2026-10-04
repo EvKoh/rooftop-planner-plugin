@@ -189,7 +189,8 @@ async function fill(ctx, tripId, opts = {}) {
       const a = `(around:${OSM_RADIUS_M},${(+p.lat).toFixed(5)},${(+p.lng).toFixed(5)})`;
       return `nwr${a}[tourism~"^(camp_site|caravan_site)$"];nwr${a}[agriturismo=yes];`;
     }).join('')});out tags center;`;
-    osm = (await overpass.query(ctx, body, { timeoutMs: 8000 })) || [];
+    // Within the time left: the place view gives up on a call after 8 s.
+    osm = (await overpass.query(ctx, body, { timeoutMs: Math.max(1500, Math.min(8000, until - Date.now() - 300)) })) || [];
   } catch (e) {
     if (e instanceof overpass.OverpassBusy) res.osmBusy = true; else throw e;
   }

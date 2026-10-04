@@ -216,6 +216,8 @@ module.exports = definePlugin({
           if (Number.isInteger(placeId) && placeId > 0) {
             if (!(await placeOf(ctx, tripId, placeId))) return json(404, { error: 'place not in this trip' });
             opts.placeIds = [placeId];
+            // One place, from the place view: answer well inside TREK's 8 s call limit.
+            opts.budgetMs = 5000;
           }
           return json(200, await amenityFill.fill(ctx, tripId, opts));
         } catch (e) {
