@@ -73,7 +73,7 @@ describe('warnings banner', () => {
       .toEqual({ level: 'info', message: '+ 1 points to verify' });
   });
 
-  it('end to end in French: the farm risk keeps its own chip, with the zone in French', async () => {
+  it('end to end in French: a private farm in South Tyrol raises no chip (allowed with the owner\'s consent)', async () => {
     const trip = build({ fixed: true });
     trip.reservations = []; trip.costs = []; trip.todos = [];
     // no to-fix point left: day 2's route first, a route for day 3, water at the aire
@@ -84,7 +84,7 @@ describe('warnings banner', () => {
     trip.days[2].assignments.unshift({ id: 3000, day_id: 103, order_index: -1, notes: null, accommodation_id: null, place: { id: 23, name: 'Route day 3', category: { id: 6, name: 'Route – Day route' } } });
     trip.places.find((p) => p.id === 16).notes = 'Drinking water.';
     const w = await banner(makeHost({ trip, userSettings: { language: 'fr', timezone: 'Europe/Rome' } }));
-    expect(w.map((x) => x.message)).toContain('J3 Farm Example : ferme au Tyrol du Sud');
+    expect(w.some((x) => /Farm Example/.test(x.message))).toBe(false);
     expect(w.every((x) => !/South Tyrol|TO VERIFY|À VÉRIFIER/.test(x.message))).toBe(true);
   });
 

@@ -29,7 +29,7 @@ describe('check_trip on the fictional trip', () => {
     expect(has(r, 'blocking', 'outside_hours', 2)).toBe(true);
     expect(has(r, 'blocking', 'night_aire', 2)).toBe(true);
     expect(has(r, 'fix', 'trace_not_first', 2)).toBe(true);
-    expect(has(r, 'verify', 'night_farm_zone', 3)).toBe(true);
+    expect(has(r, 'info', 'night_farm_zone', 3)).toBe(true); // allowed on a private farm: a reminder, not a problem
     expect(has(r, 'fix', 'water_fix', 3)).toBe(true);
     expect(has(r, 'blocking', 'min_nights', 3)).toBe(true);
     expect(has(r, 'fix', 'no_trace', 3)).toBe(true);

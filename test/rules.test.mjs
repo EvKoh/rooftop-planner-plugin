@@ -83,7 +83,7 @@ describe('rules', () => {
     expect(rules.nightLegality({ ...park, vehicle: 'rooftop_tent' }).key).toBe('night_aire');
     expect(rules.nightLegality({ ...park, vehicle: 'campervan' })).toMatchObject({ key: 'night_wild', level: 'verify', params: { zoneId: 'south-tyrol', rule: 'van' } });
     expect(rules.nightLegality({ categoryName: 'parking', placeName: 'P', lat: 46.07, lng: 11.12, vehicle: 'motorhome' }).params).toEqual({ zoneId: null, rule: 'van' });
-    // a farm in South Tyrol is a legal risk for a tent only
+    // a farm in South Tyrol is a point to check for a tent only (protected areas, municipal rules)
     const farm = { categoryName: 'Night – Farm', placeName: 'Hof', lat: 46.64, lng: 11.72 };
     expect(rules.nightLegality({ ...farm, vehicle: 'rooftop_tent' }).key).toBe('night_farm_zone');
     expect(rules.nightLegality({ ...farm, vehicle: 'campervan' })).toBeNull();

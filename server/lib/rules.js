@@ -6,7 +6,7 @@
 //  - never arrive somewhere closed (weekly closure, opening hours, check-in window,
 //    minimum stay);
 //  - a rooftop tent only on a campsite or a farm; a motorhome area is blocking; a farm in a
-//    zone that forbids farm camping is a risk the traveller must accept;
+//    zone with local restrictions (protected areas, municipal rules) is a point to check;
 //  - nights without water in a row need a refill plan; shopping detours stay short.
 const { norm, hm } = require('./util');
 const { nightKind } = require('./classify');
@@ -93,7 +93,7 @@ function tentBanned(text, tags = {}) {
 /**
  * Is this night's ground legal for the traveller's vehicle? Returns a finding or null.
  *  - rooftop tent: opening the tent is camping. Campsite or farm only; a motorhome area or a
- *    car park is blocking; a farm in a zone that forbids farm camping is a risk.
+ *    car park is blocking; a farm in a zone with local restrictions is a point to check.
  *  - campervan / motorhome: sleeping inside without deploying anything is parking (Italy:
  *    Codice della strada art. 185), so a motorhome area is a valid night; a car park or a
  *    wild spot depends on the local rule (zone note), so it is a point to verify.
@@ -105,8 +105,8 @@ function nightLegality({ categoryName, placeName, lat, lng, text = '', vehicle =
   if (vehicle === 'rooftop_tent') {
     if (kind === 'aire' || kind === 'parking') return { key: 'night_aire', level: 'blocking', params: {}, kind };
     const authorised = /autoris|authori[sz]ed|agricampeggio|campingplatz|licen[cs]ed/.test(norm(text));
-    if (kind === 'farm' && zone && zone.farm === 'risk' && !authorised) {
-      return { key: 'night_farm_zone', level: 'verify', params: { ...zp, rule: 'farm' }, kind, zone: zone.id };
+    if (kind === 'farm' && zone && zone.farm === 'check' && !authorised) {
+      return { key: 'night_farm_zone', level: 'info', params: { ...zp, rule: 'farm' }, kind, zone: zone.id };
     }
     if (kind === 'private' || kind === 'hut') return { key: 'night_private', level: 'verify', params: {}, kind };
     return null;

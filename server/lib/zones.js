@@ -9,9 +9,12 @@
 // README says so).
 //
 // Sources (checked 2026-10-03):
-//  - South Tyrol: municipal model regulation 2026 — camping outside authorised sites is
-//    forbidden, a tent on a vehicle is camping, fine EUR 300–900. Farm camping needs an
-//    authorisation, so a farm night there is a legal risk.
+//  - South Tyrol (checked 2026-10-04): the province bans camping and bivouacs on public
+//    ground; the 2026 municipal regulations (e.g. Braies/Prags, fines EUR 300–900) target
+//    public land. On private ground with the owner's consent it is allowed, except in nature
+//    parks, protected areas, water protection zones or where a municipal rule says otherwise
+//    (Alpenverein Südtirol, after the provincial forestry and landscape offices). A farm
+//    night there is therefore a point to check, not a ban.
 //  - Liguria: regional law LR 37/2007 art. 7 — "agricampeggio" on an agriturismo is legal.
 //  - Veneto: regional law LR 28/2012 — agriturismo camping pitches are legal.
 //  - Italy (all regions): Codice della strada art. 185 — a motorhome area allows parking,
@@ -20,9 +23,7 @@
 const ZONES = [
   {
     id: 'south-tyrol',
-    farm: 'risk',
-    note: 'only an authorised campsite is legal; farm camping without authorisation is fined EUR 300-900',
-    noteFr: 'seul un camping autorisé est légal ; camper à la ferme sans autorisation coûte 300 à 900 € d\'amende',
+    farm: 'check',
     polygon: [
       [46.85, 10.46], [47.0, 11.51], [47.09, 12.18], [46.75, 12.4], [46.65, 12.43], [46.62, 12.24],
       [46.55, 12.05], [46.53, 11.99], [46.52, 11.87], [46.51, 11.76], [46.4, 11.61], [46.24, 11.21],
