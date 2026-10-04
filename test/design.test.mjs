@@ -70,3 +70,20 @@ describe('design catalogue', () => {
     }
   });
 });
+
+describe('a place given a kind in plain words', () => {
+  it('finds the trip category for each kind from the instance\'s own names', () => {
+    const cats = [
+      { id: 1, name: 'Nuitée – Camping' }, { id: 2, name: 'Nuitée – Ferme / agricamping' }, { id: 3, name: 'Nuitée – Aire' },
+      { id: 4, name: 'Voir – Randonnée' }, { id: 5, name: 'Voir – Lac / nature' }, { id: 6, name: 'Manger – Marché / producteur' },
+    ];
+    expect(d.categoryForKind(cats, 'farm').id).toBe(2);
+    expect(d.categoryForKind(cats, 'campsite').id).toBe(1);
+    expect(d.categoryForKind(cats, 'aire').id).toBe(3);
+    expect(d.categoryForKind(cats, 'hike').id).toBe(4);
+    expect(d.categoryForKind(cats, 'lake').id).toBe(5);
+    expect(d.categoryForKind(cats, 'market').id).toBe(6);
+    expect(d.categoryForKind(cats, 'zoo')).toBeNull();
+    expect(d.KINDS).toEqual(expect.arrayContaining(['farm', 'campsite', 'aire', 'hotel', 'wild', 'hike', 'lake', 'groceries']));
+  });
+});

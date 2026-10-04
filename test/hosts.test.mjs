@@ -346,6 +346,28 @@ describe('vanlife_night', () => {
   });
 });
 
+describe('a kind and a status in one sentence', () => {
+  beforeEach(() => vi.stubGlobal('fetch', stubFetch()));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('"a farm we booked": vanlife_night sets the farm category and the booked status at once', async () => {
+    const trip = build();
+    const h = makeHost({ trip });
+    const r = await call(h, 'vanlife_night', { tripId: 1, action: 'set', placeId: 16, dayNumber: 2, status: 'booked', kind: 'farm', confirmation: 'EX-9' });
+    expect(r).toMatchObject({ status: 'booked', kind: { kind: 'farm', category: 'Night – Farm', categoryId: 3, changed: true } });
+    expect(trip.places.find((p) => p.id === 16).category_id).toBe(3);
+  });
+
+  it('vanlife_place gives a kind alone, and refuses one the trip has no category for', async () => {
+    const trip = build();
+    const h = makeHost({ trip });
+    const r = await call(h, 'vanlife_place', { tripId: 1, placeId: 12, kind: 'lake' });
+    expect(r.kind).toMatchObject({ kind: 'lake', categoryId: 4 });
+    expect(trip.places.find((p) => p.id === 12).category_id).toBe(4);
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 12, kind: 'zoo' })).rejects.toThrow(/no category of this trip matches "zoo"/);
+  });
+});
+
 describe('vanlife_host_message', () => {
   beforeEach(() => vi.stubGlobal('fetch', stubFetch()));
   afterEach(() => vi.unstubAllGlobals());
