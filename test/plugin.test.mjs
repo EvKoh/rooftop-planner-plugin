@@ -125,6 +125,10 @@ describe('MCP tools through the mock host', () => {
     const created = trip.places.find((x) => /^Route day 2 — /.test(x.name));
     expect(created.route_geometry).toMatch(/^\[\[/);
     expect(created.category_id).toBe(6);
+    // pinned halfway along its line, not on the previous night
+    const pts = JSON.parse(created.route_geometry);
+    expect([created.lat, created.lng]).toEqual(pts[Math.floor(pts.length / 2)]);
+    expect(created.notes).toMatch(/^Computed by the vanlife plugin \(Valhalla, no tolls, height/);
     expect(created.name).toMatch(/Camping Example → Aire Example Misurina \(\d+ km, /);
     expect(a.coreCalls[0]).toMatchObject({ tool: 'reorder_day_assignments', args: { tripId: 1, dayId: 102 } });
     expect(a.coreCalls[0].args.assignmentIds[0]).toBe(a.writes[0].assignmentId);

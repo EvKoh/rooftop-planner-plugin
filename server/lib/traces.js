@@ -75,11 +75,17 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
       const place = await ctx.places.create(model.tripId, {
         // In the user's language, like every text a person reads in TREK.
         name: t(settings.language, 'route.name', { n: day.n, from: r.from, to: r.to, km: Math.round(r.km), drive: r.drive }).slice(0, 200),
-        lat: r.points[0][0], lng: r.points[0][1],
+        // Pinned halfway along the line, not on its first point: that point is the previous
+        // night, and a route pin there hides the lodging under a cluster at every zoom.
+        lat: r.points[Math.floor(r.points.length / 2)][0], lng: r.points[Math.floor(r.points.length / 2)][1],
         route_geometry: JSON.stringify(r.points),
         route_color: old?.raw?.route_color || COLORS[day.index % COLORS.length],
         category_id: routeCategoryId(model, trace),
-        notes: `Computed by the vanlife plugin (Valhalla, ${r.motorway ? 'motorway allowed' : 'no tolls'}, height ${settings.vehicle_height_m} m). Legs: ${r.legs.map((l) => `${l.km} km / ${l.minutes} min`).join('; ')}.`.slice(0, 2000),
+        notes: t(settings.language, 'route.notes', {
+          mode: t(settings.language, r.motorway ? 'route.mode.motorway' : 'route.mode.notolls'),
+          height: settings.vehicle_height_m,
+          legs: r.legs.map((l) => `${l.km} km / ${l.minutes} min`).join('; '),
+        }).slice(0, 2000),
       });
       const asg = await ctx.itinerary.assign(model.tripId, day.id, place.id, null);
       if (old) await ctx.places.delete(model.tripId, old.id);
