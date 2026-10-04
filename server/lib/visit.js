@@ -15,13 +15,18 @@ const SPAN = /\b(?:de|from|dalle|von)\s+(\d{1,2})\s*[h:]\s*(\d{2})?\s*(?:a|to|al
 const quote = (s, i, len) => s.slice(Math.max(0, i - 30), i + len + 20).replace(/\s+/g, ' ').trim();
 
 /** { min, max, quote } in minutes from a free text, or null. */
+// Words that introduce opening hours, in the languages the notes come in (accents removed by norm).
+const OPENING = /\b(ouvert|ouverture|horaires?|open|opening|hours|daily|geoffnet|offnungszeiten|aperto|orari|apertura|abierto|horario|7\s*j\s*\/\s*7|7\s*\/\s*7|24\s*h)\b/;
+
 function parseVisit(text) {
   const s = norm(text);
   const span = s.match(SPAN);
   if (span) {
     const a = +span[1] * 60 + +(span[2] || 0);
     const b = +span[3] * 60 + +(span[4] || 0);
-    if (b > a && b - a <= 12 * 60) return { min: b - a, max: null, quote: quote(s, span.index, span[0].length) };
+    // "open 7/7 from 8:30 to 20:30" is opening hours, not a time on site.
+    const before = s.slice(Math.max(0, span.index - 40), span.index);
+    if (b > a && b - a <= 8 * 60 && !OPENING.test(before)) return { min: b - a, max: null, quote: quote(s, span.index, span[0].length) };
   }
   for (const m of s.matchAll(RANGE)) {
     const a = +m[1];
