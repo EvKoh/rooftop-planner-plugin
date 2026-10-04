@@ -73,8 +73,10 @@ and as a small panel at the foot of the place view.
 
 <img src="./docs/vehicles.jpg" alt="A car with a rooftop tent, a campervan and a motorhome parked at sunset" width="420" align="right">
 
-The vehicle is a setting, and the rules follow it. A rooftop tent has to be unfolded in daylight,
-and opening it anywhere other than a campsite or a farm that hosts campers is camping. Sleeping
+The vehicle is a setting, and the rules follow it, anywhere in the world. A rooftop tent has to be
+unfolded in daylight, and opening it is camping: by default the plugin applies the strictest rule
+it knows (the Alps): a campsite, a farm, or private ground with the owner's consent, never public
+ground. A night it cannot place is flagged to check. Sleeping
 inside a van or a motorhome without setting anything out is parking in Italy (Codice della strada
 art. 185), so a motorhome area is fine there, while many South Tyrol municipalities forbid
 camping on public ground.
@@ -182,6 +184,8 @@ reconnect the connector.
   water, electricity first), plus a red chip listing what it lacks when that rules it out: the
   places list, and the map's hover card
   once an admin lets the plugin in (Admin → Default user settings → *Plugin info on places*).
+
+  <img src="./docs/hover-card.png" alt="Hover card of a booked farm night: green bed marker, Booked chip, price per night and one chip per amenity" width="254">
 - **Place panel** — a widget at the foot of the place view shows the night's status, the host's
   contact (e-mail, phone and website as links, last exchange) and the amenities; it edits the
   amenities and the contact, and has a *Fill the trip's amenities* button. Opening a place with

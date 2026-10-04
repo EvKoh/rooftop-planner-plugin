@@ -246,3 +246,33 @@ describe('regressions found on a real trip (2026-10-03)', () => {
     expect(rules.tentBanned('Camping interdit sur ce parking.')).toContain('camping interdit');
   });
 });
+
+describe('closures read in any language TREK ships', () => {
+  const rules = require('../server/lib/rules.js');
+  const keyFor = (text, wd) => rules.closures(text, wd, 600, 720).map((f) => f.key);
+  it('finds a closing day written in Spanish, Dutch, Russian or Japanese', () => {
+    expect(keyFor('Museo. Cerrado los lunes.', 1)).toContain('closure_cited');
+    expect(keyFor('Museum, maandag gesloten.', 1)).toContain('closure_cited');
+    expect(keyFor('Музей: понедельник — закрыто.', 1)).toContain('closure_cited');
+    expect(keyFor('博物館 月曜日 休業', 1)).toContain('closure_cited');
+    // the same notes say nothing about another day
+    expect(keyFor('Museo. Cerrado los lunes.', 2)).not.toContain('closure_cited');
+  });
+});
+
+describe('the strict rule, anywhere in the world', () => {
+  const rules = require('../server/lib/rules.js');
+  it('flags a rooftop-tent night on ground it cannot place, far from any zone it knows', () => {
+    const r = rules.nightLegality({ categoryName: 'Night', placeName: 'Lakeside spot', lat: 44.0, lng: -110.5, vehicle: 'rooftop_tent' });
+    expect(r).toMatchObject({ key: 'night_ground_unknown', level: 'verify' });
+    expect(t('en', 'night_ground_unknown', { name: 'Lakeside spot' })).toMatch(/never public ground/);
+    // a campsite or a farm there is fine, a car park is blocking
+    expect(rules.nightLegality({ categoryName: 'Night – Campsite', placeName: 'X', lat: 44.0, lng: -110.5 })).toBeNull();
+    expect(rules.nightLegality({ categoryName: 'Night – Farm', placeName: 'X', lat: 44.0, lng: -110.5 })).toBeNull();
+    expect(rules.nightLegality({ categoryName: 'Parking', placeName: 'X', lat: 44.0, lng: -110.5 })).toMatchObject({ level: 'blocking' });
+  });
+
+  it('takes the server\'s time zone until the user sets the trip\'s, never a fixed continent', () => {
+    expect(DEFAULTS.timezone).toBe(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+  });
+});

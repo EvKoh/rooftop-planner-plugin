@@ -1,6 +1,6 @@
 'use strict';
-// Drafts the information request to the host of a night: English, a line of dashes, French
-// (and Italian or German on request). The questions come from what the place's record does
+// Drafts the information request to the host of a night: English, a line of dashes, the
+// traveller's own language (and the host's language on request), wherever the trip goes. The questions come from what the place's record does
 // not answer yet. The draft is returned to the assistant, which must show it word for word
 // to the user and wait for an explicit go before anyone sends it: nothing is ever sent here.
 // The texts are the message itself, in the host's languages, not interface strings: they
@@ -11,8 +11,11 @@ const { hhmm, toNum } = require('./util');
 const { money } = require('./i18n');
 
 const SEPARATOR = '————————————';
-const EXTRA = ['it', 'de'];
-const LOCALE = { en: 'en-GB', fr: 'fr-FR', it: 'it-IT', de: 'de-DE' };
+// Every language with a message template; English is always the first part.
+const langsOf = () => Object.keys(TEXT);
+const { locale } = require('./i18n');
+// English dates in the international order (12 October), every other language its own.
+const LOCALE = new Proxy({}, { get: (_, lg) => (lg === 'en' ? 'en-GB' : locale(String(lg))) });
 
 class MessageError extends Error {}
 
@@ -220,14 +223,16 @@ function draft(model, settings, a) {
   };
   const keys = questionsFor(info, settings, { arrival, price: priceN });
   const extraQ = (a.extra_questions || []).map((x) => String(x).slice(0, 200)).slice(0, 5);
-  const langs = ['en', 'fr', ...(EXTRA.includes(a.language_extra) ? [a.language_extra] : [])];
+  const known = langsOf();
+  const mine = known.includes(settings.language) ? settings.language : null;
+  const langs = [...new Set(['en', mine, known.includes(a.language_extra) ? a.language_extra : null].filter(Boolean))];
   const parts = langs.map((lg) => body(lg, keys, params(lg, base), extraQ));
   const text = parts.join(`\n\n${SEPARATOR}\n\n`);
   const routes = contacts.channels(info && info.contacts);
   if (!routes.length && place.raw && place.raw.phone) routes.push({ channel: 'phone', address: place.raw.phone });
   if (!routes.length && place.raw && place.raw.website && !contacts.NOT_OWN_SITE.test(place.raw.website)) routes.push({ channel: 'website_form', address: place.raw.website });
   const dateShort = day.date.split('-').reverse().join('/');
-  const subject = `${TEXT.en.subject} / ${TEXT.fr.subject}${a.language_extra && EXTRA.includes(a.language_extra) ? ` / ${TEXT[a.language_extra].subject}` : ''} — ${dateShort}${nights > 1 ? ` (${nights})` : ''}`;
+  const subject = `${langs.map((lg) => TEXT[lg].subject).join(' / ')} — ${dateShort}${nights > 1 ? ` (${nights})` : ''}`;
   return {
     placeId: place.id, place: place.name, date: day.date, nights,
     to: routes[0] ? { ...routes[0], name: (info && info.contacts.contact_name) || place.name } : null,
@@ -236,9 +241,10 @@ function draft(model, settings, a) {
     languages: (info && info.contacts.languages && info.contacts.languages.length) ? info.contacts.languages : null,
     subject,
     text,
-    questions: keys.map((k) => ({ key: k, en: fill(TEXT.en[k], params('en', base)), fr: fill(TEXT.fr[k], params('fr', base)) })).concat(extraQ.map((x) => ({ key: 'extra', en: x, fr: null }))),
+    languages_used: langs,
+    questions: keys.map((k) => Object.fromEntries([['key', k], ...langs.map((lg) => [lg, fill(TEXT[lg][k], params(lg, base))])])).concat(extraQ.map((x) => ({ key: 'extra', en: x }))),
     reminder: 'DRAFT ONLY. Show this exact text to the user and wait for their explicit validation before it is sent; the user sends it, or tells you to. It is a request for information, not a booking. Once sent, record it with vanlife_place log (direction "sent") and vanlife_night set status "contacted".',
   };
 }
 
-module.exports = { draft, questionsFor, TEXT, SEPARATOR, EXTRA, MessageError };
+module.exports = { draft, questionsFor, TEXT, SEPARATOR, langsOf, MessageError };
