@@ -322,6 +322,9 @@ describe('access chips, place tool and widget', () => {
     expect(JSON.parse(bad.body).error).toMatch(/booking_url must be an http/);
     const ok = JSON.parse((await route('/amenities/save', { tripId: 1, placeId: 14, set: { toll_amount: 15, toll_currency: 'eur', booking_required: null } })).body);
     expect(ok.info).toMatchObject({ toll_amount: 15, toll_currency: 'EUR', booking_required: null, access_before: '09:00' });
+    // the same walk shorthand as the MCP tool
+    const walk = JSON.parse((await route('/amenities/save', { tripId: 1, placeId: 14, set: { walk: { parking_place_id: 16, shape: 'loop', via: [[46.5, 12.1]], url: 'https://trails.example.com/1' } } })).body);
+    expect(walk.info).toMatchObject({ access_parking_place_id: 16, walk_shape: 'loop', hike_url: 'https://trails.example.com/1' });
   });
 
   it('the widget form has every field and sends the right types', () => {

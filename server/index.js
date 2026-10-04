@@ -190,7 +190,9 @@ module.exports = definePlugin({
         try {
           const place = await placeOf(ctx, at.tripId, at.placeId);
           if (!place) return json(404, { error: 'place not in this trip' });
-          return json(200, { saved: true, info: await placeInfo.set(ctx, at.tripId, at.placeId, (req.body && req.body.set) || {}, { place }) });
+          // The same shorthands as the MCP tool (walk, parking), so both write the same record.
+          const patch = placeInfo.expandParking(placeInfo.expandWalk({ ...((req.body && req.body.set) || {}) }));
+          return json(200, { saved: true, info: await placeInfo.set(ctx, at.tripId, at.placeId, patch, { place }) });
         } catch (e) {
           return json(e instanceof placeInfo.InfoError ? 400 : 403, { error: String((e && e.message) || e) });
         }
