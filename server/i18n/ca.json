@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Número de confirmació (opcional)",
   "ui.reasonOpt": "Motiu (opcional)",
   "ui.nightSet": "Nit: {status}",
-  "ui.confirmAvailable": "De nou disponible: la reserva d'aquesta nit s'elimina de TREK. L'estada continua planificada."
+  "ui.confirmAvailable": "De nou disponible: la reserva d'aquesta nit s'elimina de TREK. L'estada continua planificada.",
+  "walk.noLink": "Encara no es coneix cap pàgina amb el recorregut complet"
 }

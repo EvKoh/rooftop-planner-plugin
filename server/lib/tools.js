@@ -104,7 +104,8 @@ function walkView(w, geo, L) {
     hikeId: w.hikeId, hike: w.hike, day: w.day, planned: w.planned,
     accessParking: w.access ? { placeId: w.access.placeId, name: w.access.name, point: w.access.point, found: w.access.how } : null,
     loop: w.loop, via: Math.max(0, w.points.length - 2),
-    walk: geo ? { km: geo.km, minutes: geo.minutes, text: walks.statsText(geo, L) } : null,
+    walk: geo ? { km: geo.km, minutes: walks.walkMinutes(geo), climb_m: geo.up ?? null, descent_m: geo.down ?? null, text: walks.statsText(geo, L) } : null,
+    url: w.url,
   };
 }
 

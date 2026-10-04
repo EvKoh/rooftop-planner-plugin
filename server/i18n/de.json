@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Bestätigungsnummer (optional)",
   "ui.reasonOpt": "Grund (optional)",
   "ui.nightSet": "Übernachtung: {status}",
-  "ui.confirmAvailable": "Zurück auf verfügbar: Die Buchung dieser Nacht wird aus TREK gelöscht. Der Aufenthalt bleibt geplant."
+  "ui.confirmAvailable": "Zurück auf verfügbar: Die Buchung dieser Nacht wird aus TREK gelöscht. Der Aufenthalt bleibt geplant.",
+  "walk.noLink": "Noch keine Seite mit der vollständigen Route bekannt"
 }

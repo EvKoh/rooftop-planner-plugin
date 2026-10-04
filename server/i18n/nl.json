@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Bevestigingsnummer (optioneel)",
   "ui.reasonOpt": "Reden (optioneel)",
   "ui.nightSet": "Overnachting: {status}",
-  "ui.confirmAvailable": "Terug naar beschikbaar: de boeking van deze nacht wordt uit TREK verwijderd. Het verblijf blijft gepland."
+  "ui.confirmAvailable": "Terug naar beschikbaar: de boeking van deze nacht wordt uit TREK verwijderd. Het verblijf blijft gepland.",
+  "walk.noLink": "Nog geen pagina met de volledige route bekend"
 }

@@ -72,7 +72,7 @@ function walkPoints(hike, access, info) {
 
 const walkKey = (points) => `walk:${points.map((p) => roundPt(p).join(',')).join('|')}`;
 
-function entry(hike, info, access, day, planned) {
+function entry(model, hike, info, access, day, planned) {
   const points = walkPoints(hike, access, info);
   return {
     hikeId: hike.id,
@@ -82,6 +82,7 @@ function entry(hike, info, access, day, planned) {
     day: day ? day.n : null,
     access: access ? { placeId: access.place ? access.place.id : null, name: access.place ? access.place.name : null, point: access.point, how: access.how } : null,
     loop: !!(info && info.walk_loop),
+    url: hikeUrl(model.poolById.get(hike.id) || hike, info),
     points,
     key: points.length ? walkKey(points) : null,
   };
@@ -97,7 +98,7 @@ function hikeWalks(model) {
     if (s.kind !== 'hike' || seen.has(s.place.id)) continue;
     seen.add(s.place.id);
     const info = model.poolById.get(s.place.id)?.info || null;
-    out.push(entry(s.place, info, accessFor(model, s, info, parkings), s.day, true));
+    out.push(entry(model, s.place, info, accessFor(model, s, info, parkings), s.day, true));
   }
   for (const p of model.pool) {
     const id = p.info && p.info.access_parking_place_id;
@@ -105,7 +106,7 @@ function hikeWalks(model) {
     const park = parkings.find((s) => s.place.id === id);
     if (!park) continue;
     seen.add(p.id);
-    out.push(entry(p, p.info, { place: park.place, point: pt(park.place), how: 'set' }, park.day, false));
+    out.push(entry(model, p, p.info, { place: park.place, point: pt(park.place), how: 'set' }, park.day, false));
   }
   return out.slice(0, MAX_WALKS);
 }
@@ -118,7 +119,8 @@ async function walkGeometry(ctx, walks, { network = false, deadline = null, conc
   const keys = [...new Set(walks.map((w) => w.key).filter(Boolean))];
   let out = new Map();
   try { out = await cache.getMany(ctx, keys); } catch { out = new Map(); }
-  const missing = keys.filter((k) => !out.has(k));
+  // A route cached before heights were kept (no `up`) is computed again once.
+  const missing = keys.filter((k) => !out.has(k) || out.get(k).up === undefined);
   if (!network || !missing.length) return out;
   const fresh = [];
   const byKey = new Map(walks.map((w) => [w.key, w]));
@@ -127,6 +129,16 @@ async function walkGeometry(ctx, walks, { network = false, deadline = null, conc
     if (left < 1500) return;
     try {
       const r = await routing.walk(byKey.get(k).points, { timeoutMs: Math.min(9000, left - 700) });
+      r.up = null;
+      r.down = null;
+      const rest = deadline ? deadline.left() : 12000;
+      if (rest > 1200) {
+        try {
+          Object.assign(r, climb(await routing.heights(r.points, { timeoutMs: Math.min(6000, rest - 600) })));
+        } catch (e) {
+          ctx.log?.warn?.('valhalla heights failed', { error: String(e && e.message) });
+        }
+      }
       out.set(k, r);
       fresh.push([k, r]);
     } catch (e) {
@@ -137,13 +149,64 @@ async function walkGeometry(ctx, walks, { network = false, deadline = null, conc
   return out;
 }
 
-/** "4.4 km · 1 h 20 on foot", or null without a computed route. */
-function statsText(geo, L) {
+// Height changes under this are terrain-model noise, not climbing.
+const CLIMB_STEP_M = 5;
+
+/** Metres climbed and descended along a list of heights, noise below CLIMB_STEP_M ignored. */
+function climb(h) {
+  let up = 0;
+  let down = 0;
+  let ref = h[0];
+  for (const x of h.slice(1)) {
+    if (x - ref >= CLIMB_STEP_M) { up += x - ref; ref = x; } else if (ref - x >= CLIMB_STEP_M) { down += ref - x; ref = x; }
+  }
+  return { up: Math.round(up), down: Math.round(down) };
+}
+
+/**
+ * Walking time in minutes: the hiking rule of DIN 33466 (4 km/h on the flat, 300 m/h up,
+ * 500 m/h down; the larger of the two plus half the smaller) once the climb is known, else
+ * the router's flat-ground time.
+ */
+function walkMinutes(geo) {
   if (!geo) return null;
-  const h = Math.floor(geo.minutes / 60);
-  const m = geo.minutes % 60;
-  const time = h ? `${h} h${m ? ` ${String(m).padStart(2, '0')}` : ''}` : `${m} min`;
-  return t(L, 'walk.stats', { km: num(geo.km, L, 1), time });
+  if (geo.up == null) return geo.minutes;
+  const flat = geo.km / 4;
+  const vert = geo.up / 300 + (geo.down || 0) / 500;
+  return Math.round((Math.max(flat, vert) + Math.min(flat, vert) / 2) * 60);
+}
+
+const hmText = (min) => {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h ? `${h} h${m ? ` ${String(m).padStart(2, '0')}` : ''}` : `${m} min`;
+};
+
+/** "4.4 km · 1 h 20 on foot · +410 m", or null without a computed route. */
+function statsText(geo, L, { climb: withClimb = true } = {}) {
+  if (!geo) return null;
+  const s = t(L, 'walk.stats', { km: num(geo.km, L, 1), time: hmText(walkMinutes(geo)) });
+  return withClimb && geo.up != null ? `${s} · +${geo.up} m` : s;
+}
+
+// Pages hosting a full hike (exact track, elevation profile), best known first: Outdooractive
+// (the official platform of many Alpine tourist boards), then Komoot, Wikiloc, AllTrails.
+const TRACK_HOSTS = [/(^|\.)outdooractive\.com$/, /(^|\.)komoot\.(com|de)$/, /(^|\.)wikiloc\.com$/, /(^|\.)alltrails\.com$/];
+
+/**
+ * The page of a hike: the one set on its record (walk.url), else the best-known track page
+ * found in its website, description or notes. Never made up: null when none is written.
+ */
+function hikeUrl(place, info) {
+  if (info && info.hike_url) return info.hike_url;
+  const raw = (place && place.raw) || {};
+  const text = [raw.website, place && place.description, place && place.notes, raw.description, raw.notes].filter(Boolean).join('\n');
+  const urls = (text.match(/https?:\/\/[^\s<>"')\]]+/g) || []).map((u) => u.replace(/[.,;:]+$/, ''));
+  for (const host of TRACK_HOSTS) {
+    const hit = urls.find((u) => { try { return host.test(new URL(u).hostname); } catch { return false; } });
+    if (hit) return hit;
+  }
+  return null;
 }
 
 /** The first part of a place name that says something (not a 1-word prefix), at most `max` characters. */
@@ -160,10 +223,13 @@ function walkLayers(walks, geometry, settings) {
     const geo = geometry.get(w.key);
     // TREK caps a label at 80 characters: the hike, the walk, then the car park, each by the
     // first meaningful part of its name ("Hike — Example loop → hut" → "Example loop").
-    const label = [shortName(w.hike, 32), statsText(geo, L), w.access && w.access.name ? t(L, 'walk.from', { parking: shortName(w.access.name, 24) }) : null].filter(Boolean).join(' · ');
-    return { type: 'polyline', points: geo && geo.points && geo.points.length > 1 ? geo.points : w.points, tone: TONE.planned, ...WALK_LINE, label: label.slice(0, 80) };
+    const label = [shortName(w.hike, 32), statsText(geo, L, { climb: false }), w.access && w.access.name ? t(L, 'walk.from', { parking: shortName(w.access.name, 24) }) : null].filter(Boolean).join(' · ');
+    // The card a click opens: the hike, its walk, its car park, the page with the full track.
+    const popupText = [w.hike, statsText(geo, L), w.access && w.access.name ? t(L, 'walk.from', { parking: w.access.name }) : null, w.url ? null : t(L, 'walk.noLink')]
+      .filter(Boolean).join('\n').slice(0, 280);
+    return { type: 'polyline', points: geo && geo.points && geo.points.length > 1 ? geo.points : w.points, tone: TONE.planned, ...WALK_LINE, label: label.slice(0, 80), popupText, ...(w.url ? { url: w.url } : {}) };
   });
   return features.length ? [{ id: 'walks', name: t(L, 'walk.layer'), features }] : [];
 }
 
-module.exports = { shortName, hikeWalks, walkGeometry, walkLayers, walkPoints, walkKey, statsText, accessFor, plannedStops };
+module.exports = { climb, walkMinutes, hikeUrl, TRACK_HOSTS, shortName, hikeWalks, walkGeometry, walkLayers, walkPoints, walkKey, statsText, accessFor, plannedStops };

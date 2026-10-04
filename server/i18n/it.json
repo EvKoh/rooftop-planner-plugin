@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Numero di conferma (facoltativo)",
   "ui.reasonOpt": "Motivo (facoltativo)",
   "ui.nightSet": "Notte: {status}",
-  "ui.confirmAvailable": "Di nuovo disponibile: la prenotazione di questa notte viene eliminata da TREK. Il soggiorno resta pianificato."
+  "ui.confirmAvailable": "Di nuovo disponibile: la prenotazione di questa notte viene eliminata da TREK. Il soggiorno resta pianificato.",
+  "walk.noLink": "Nessuna pagina con il percorso completo nota per ora"
 }

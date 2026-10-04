@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Numéro de confirmation (facultatif)",
   "ui.reasonOpt": "Motif (facultatif)",
   "ui.nightSet": "Nuitée : {status}",
-  "ui.confirmAvailable": "Retour à disponible : la réservation de cette nuit est supprimée de TREK. Le séjour reste prévu."
+  "ui.confirmAvailable": "Retour à disponible : la réservation de cette nuit est supprimée de TREK. Le séjour reste prévu.",
+  "walk.noLink": "Aucune page du tracé complet connue pour l'instant"
 }

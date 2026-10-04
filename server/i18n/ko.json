@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "확인 번호(선택)",
   "ui.reasonOpt": "사유(선택)",
   "ui.nightSet": "숙박: {status}",
-  "ui.confirmAvailable": "가능으로 되돌리기: 이 밤의 예약이 TREK에서 삭제됩니다. 숙박 일정은 그대로 남습니다."
+  "ui.confirmAvailable": "가능으로 되돌리기: 이 밤의 예약이 TREK에서 삭제됩니다. 숙박 일정은 그대로 남습니다.",
+  "walk.noLink": "전체 경로 페이지가 아직 없습니다"
 }

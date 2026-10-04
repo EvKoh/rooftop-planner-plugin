@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Visszaigazolási szám (nem kötelező)",
   "ui.reasonOpt": "Indok (nem kötelező)",
   "ui.nightSet": "Szállás: {status}",
-  "ui.confirmAvailable": "Vissza szabadra: az éjszaka foglalása törlődik a TREK-ből. A tartózkodás tervben marad."
+  "ui.confirmAvailable": "Vissza szabadra: az éjszaka foglalása törlődik a TREK-ből. A tartózkodás tervben marad.",
+  "walk.noLink": "Még nem ismert oldal a teljes útvonallal"
 }

@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Mã xác nhận (không bắt buộc)",
   "ui.reasonOpt": "Lý do (không bắt buộc)",
   "ui.nightSet": "Nghỉ đêm: {status}",
-  "ui.confirmAvailable": "Trở lại còn trống: đặt chỗ của đêm này bị xóa khỏi TREK. Kỳ lưu trú vẫn nằm trong kế hoạch."
+  "ui.confirmAvailable": "Trở lại còn trống: đặt chỗ của đêm này bị xóa khỏi TREK. Kỳ lưu trú vẫn nằm trong kế hoạch.",
+  "walk.noLink": "Chưa biết trang nào có toàn bộ lộ trình"
 }

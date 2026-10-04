@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Bekräftelsenummer (valfritt)",
   "ui.reasonOpt": "Anledning (valfritt)",
   "ui.nightSet": "Övernattning: {status}",
-  "ui.confirmAvailable": "Tillbaka till tillgänglig: nattens bokning raderas från TREK. Vistelsen förblir planerad."
+  "ui.confirmAvailable": "Tillbaka till tillgänglig: nattens bokning raderas från TREK. Vistelsen förblir planerad.",
+  "walk.noLink": "Ingen sida med hela leden känd än"
 }

@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "確認號碼（選填）",
   "ui.reasonOpt": "原因（選填）",
   "ui.nightSet": "住宿：{status}",
-  "ui.confirmAvailable": "恢復為可用：這一晚的預訂會從 TREK 刪除，住宿安排保留。"
+  "ui.confirmAvailable": "恢復為可用：這一晚的預訂會從 TREK 刪除，住宿安排保留。",
+  "walk.noLink": "暫無完整路線頁面"
 }

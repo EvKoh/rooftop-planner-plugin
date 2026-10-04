@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Onay numarası (isteğe bağlı)",
   "ui.reasonOpt": "Neden (isteğe bağlı)",
   "ui.nightSet": "Konaklama: {status}",
-  "ui.confirmAvailable": "Yeniden müsait: bu gecenin rezervasyonu TREK'ten silinir. Konaklama planda kalır."
+  "ui.confirmAvailable": "Yeniden müsait: bu gecenin rezervasyonu TREK'ten silinir. Konaklama planda kalır.",
+  "walk.noLink": "Tam rotayı gösteren bir sayfa henüz bilinmiyor"
 }

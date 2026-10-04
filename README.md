@@ -178,7 +178,12 @@ park is, in this order: the one set on the hike (`vanlife_place` `set.walk.parki
 a car park planned right before or after the hike that day; the nearest one planned that day
 within 3 km, or any day within 2 km; a *"Start: … 46.1234, 11.5678"* line in the hike's notes.
 A hike that is not planned gets its walk as soon as it is tied to a planned car park. Hovering
-the dotted line gives the hike, the length and time of the walk, and its car park.
+the dotted line gives the hike, the walk and its car park; a click opens the **hike card**: the
+distance, the climb (terrain model, noise under 5 m ignored), the hiking time (DIN 33466 rule:
+4 km/h, 300 m/h up, 500 m/h down), the start car park, and a link to the page with the full track
+and elevation profile: the one set with `set.walk.url`, else the first Outdooractive, Komoot,
+Wikiloc or AllTrails address written in the hike's website or notes. No link is ever made up:
+with none, the card says so.
 `vanlife_place` `filter: "hikes"` lists every hike with its car park and walk; `set.walk.via`
 (points `[lat, lng]`) and `set.walk.loop` shape the route. Off with the *walking routes* setting.
 
