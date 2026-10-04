@@ -8,16 +8,20 @@
 //                    red    cancelled / dropped, or something that rules the place out
 //                    blue   available: planned or not, but neither booked, in discussion nor
 //                           cancelled (TREK's default tone)
-//   The plugin's own pictograms (assets/icons/*.svg → glyphs.json, built by
-//   scripts/build-glyphs.js) cover what TREK's icon set lacks: the vanlife vehicles and ways
-//   to sleep. A marker sends the glyph, plus the closest TREK icon as a fallback.
+//   The plugin draws NO map marker (04/10/2026): TREK's own place markers carry the state
+//   colour and the category's icon, and a marker on top of them hid them and stole their
+//   clicks. markerStyle and the glyphs (assets/icons/*.svg → glyphs.json) stay the reference
+//   look of each kind (README pictures, chips); categoryForKind files a place in the TREK
+//   category whose icon shows it.
 //   Pictogram = kind. A night by the ground it is spent on (tent, farm, home, hut, motorhome
 //                    area, hotel), an activity by what it is (hike, lake, viewpoint, village…).
-//   Two rules with no exception (the user's, 04/10/2026):
+//   Three rules with no exception (the user's, 04/10/2026):
 //     "P" = PARKING. A car park is always and only the "P" pictogram, and "P" never means
 //          anything else (a night spent in a car park shows the vehicle slept in, not a P).
 //     Dotted line = the WALKING ROUTE of a hike, from its access car park. A dotted line on
 //          the map always and only means that; nothing else the plugin draws is dotted or dashed.
+//     Grey = a day's drive route (the "day route" places). It carries no state; grey is used
+//          for nothing else, so no tone here is grey.
 //   A hike is a hiker, never a camera: a viewpoint whose name says it is reached on foot is a hike.
 //
 // Tones are TREK's palette (default | success | warn | danger); icons are lucide names.

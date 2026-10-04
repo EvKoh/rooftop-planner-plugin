@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -33,7 +33,6 @@
     "hook:trip-warning-provider",
     "hook:route-provider",
     "hook:table-contributor",
-    "hook:map-marker-provider",
     "hook:map-layer-provider",
     "http:outbound:valhalla1.openstreetmap.de",
     "http:outbound:overpass-api.de",
@@ -203,8 +202,8 @@
       "default": 1
     },
     {
-      "key": "map_overview",
-      "label": "Show every planned stop of the trip on the map (small dots: green planned — visit or booked night —, amber night in discussion, red dropped)",
+      "key": "map_walks",
+      "label": "Draw each hike's walking route on the map, dotted, from the car park it starts from",
       "scope": "user",
       "input_type": "checkbox",
       "default": true
@@ -780,7 +779,7 @@
       {
         "name": "vanlife_place",
         "title": "Everything about a place: amenities, price, contacts, exchanges",
-        "description": "Keep what TREK has no field for on a place: amenities, price details, visit duration, timed access, the host's contacts and exchanges. Without placeId: list places by \"filter\" within \"scope\" (default: planned nights; counts per scope). With placeId: read one; \"set\" records fields (price on TREK price, unit \"per\" — never night for a museum, lake or car park — and \"price_note\", a free formula; visit minutes; access_before/access_after \"HH:MM\", booking_required (+ booking_url, booking_note), toll_amount per vehicle (+ toll_currency); a hike's car park and walk (access_parking_place_id, walk_via, walk_loop); amenities yes/no/unknown; null erases a field); \"log\" adds an exchange; \"clear\" removes the record, \"clear_fields\" named fields; \"fill\" fills empty amenities, contacts and a stated visit duration from the place's notes and TREK fields, OpenStreetMap and park4night, citing each source (a platform page is never a website). Record only what a cited source states; never book, pay or message a host unvalidated.",
+        "description": "Keep what TREK has no field for on a place: amenities, price details, visit duration, timed access, the host's contacts and exchanges. Without placeId: list places by \"filter\" within \"scope\" (default: planned nights; counts per scope). With placeId: read one; \"set\" records fields (price on TREK price, unit \"per\" — never night for a museum, lake or car park — and \"price_note\", a free formula; visit minutes; access_before/access_after \"HH:MM\", booking_required (+ booking_url, booking_note), toll_amount per vehicle (+ toll_currency); a hike's \"walk\" (car park, points, loop); amenities yes/no/unknown; null erases a field); \"log\" adds an exchange; \"clear_fields\" named fields (all: the whole record); \"fill\" fills empty amenities, contacts and a stated visit duration from the place's notes and TREK fields, OpenStreetMap and park4night, citing each source (a platform page is never a website). Record only what a cited source states; never book, pay or message a host unvalidated.",
         "inputSchema": {
           "type": "object",
           "additionalProperties": false,
@@ -922,28 +921,10 @@
                   "nullable": true,
                   "description": "3-letter ISO code of the toll; default: the place's or trip's currency."
                 },
-                "access_parking_place_id": {
-                  "type": "integer",
-                  "minimum": 1,
+                "walk": {
+                  "type": "object",
                   "nullable": true,
-                  "description": "A hike: its car park (place id). null = guessed."
-                },
-                "walk_via": {
-                  "type": "array",
-                  "maxItems": 8,
-                  "nullable": true,
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    }
-                  },
-                  "description": "A hike: [lat, lng] points passed, in order."
-                },
-                "walk_loop": {
-                  "type": "boolean",
-                  "nullable": true,
-                  "description": "A hike: true for a loop back to the car park."
+                  "description": "A hike: { parking_place_id: its car park (place id; null = guessed from the plan), via: [[lat, lng], ...] points passed in order, loop: true to come back to the car park }. The map draws the walk dotted from the car park."
                 },
                 "max_height_m": {
                   "type": "number",
@@ -1253,11 +1234,6 @@
                 }
               }
             },
-            "clear": {
-              "type": "boolean",
-              "default": false,
-              "description": "Remove the whole record of the place."
-            },
             "clear_fields": {
               "type": "array",
               "maxItems": 40,
@@ -1266,7 +1242,7 @@
                 "type": "string",
                 "maxLength": 40
               },
-              "description": "Clear only these: an amenity key, dog_fee, max_height_m, visit_min_minutes, per, price_note, source, checked, access_before, access_after, booking_required, booking_url, booking_note, toll_amount, toll_currency, a walk field, a contact field (email, phone...), or amenities / contacts / log."
+              "description": "Clear only these: an amenity key, dog_fee, max_height_m, visit_min_minutes, per, price_note, source, checked, access_before, access_after, booking_required, booking_url, booking_note, toll_amount, toll_currency, walk, a contact field (email, phone...), amenities / contacts / log, or all (the whole record)."
             },
             "fill": {
               "type": "boolean",

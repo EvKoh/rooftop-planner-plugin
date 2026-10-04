@@ -44,6 +44,10 @@ describe('manifest and tool declarations', () => {
       expect(t.inputSchema.type).toBe('object');
       expect(JSON.stringify(t.inputSchema).length).toBeLessThanOrEqual(8192);
       walk(t.inputSchema, 0, false);
+      let props = 0;
+      const count = (o) => { if (Array.isArray(o)) o.forEach(count); else if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) { if (k === 'properties' && v && typeof v === 'object') { props += Object.keys(v).length; Object.values(v).forEach(count); } else count(v); } };
+      count(t.inputSchema);
+      expect(props, `${t.name}: TREK refuses a schema with more than 64 properties`).toBeLessThanOrEqual(64);
     }
     const desc = manifest.capabilities.mcpTools.find((t) => t.name === 'vanlife_plan_trip').description;
     expect(desc).toMatch(/Never book/);
