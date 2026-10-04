@@ -2,11 +2,15 @@
 // THE design catalogue of the plugin: every colour and every pictogram it shows, in one place.
 // Nothing else in the plugin picks a tone or an icon; it asks this module.
 //
-//   Colour = state.  green  confirmed (a booked night) or planned (an activity in the plan)
-//                    blue   a night in the plan but not asked for yet (TREK's default tone)
+//   Colour = state, on the marker's disc and border (the user's specification, 04/10/2026):
+//                    green  booked — and nothing else is ever green
 //                    amber  in discussion, or a point to watch (timed access, booking, warning)
 //                    red    cancelled / dropped, or something that rules the place out
-//                    neutral information on chips (price, amenity, visit time)
+//                    blue   available: planned or not, but neither booked, in discussion nor
+//                           cancelled (TREK's default tone)
+//   The plugin's own pictograms (assets/icons/*.svg → glyphs.json, built by
+//   scripts/build-glyphs.js) cover what TREK's icon set lacks: the vanlife vehicles and ways
+//   to sleep. A marker sends the glyph, plus the closest TREK icon as a fallback.
 //   Pictogram = kind. A night by the ground it is spent on (tent, farm, home, hut, motorhome
 //                    area, hotel), an activity by what it is (hike, lake, viewpoint, village…).
 //
@@ -15,10 +19,17 @@
 
 const { norm } = require('./util');
 const { nightKind, RE } = require('./classify');
+const GLYPHS = require('./glyphs.json');
+
+/** The vehicle a night in a car park or a wild spot is spent in: its own pictogram. */
+const VEHICLE_GLYPH = { rooftop_tent: 'rooftop-tent', campervan: 'campervan', motorhome: 'motorhome', car: 'car' };
+/** Glyphs by kind of night, with the TREK icon used where a host cannot draw glyphs. */
+const NIGHT_GLYPH = { campsite: ['tent', 'Tent'], aire: ['motorhome', 'Car'], bivouac: ['sleeping-bag', 'Tent'] };
+const BIVOUAC = /bivouac|bivacco|biwak|vivac|duvet|sleeping bag|schlafsack|sacco a pelo|saco de dormir|a la belle etoile/;
 
 /** State → tone. */
 const TONE = {
-  planned: 'success',
+  planned: 'default',
   booked: 'success',
   contacted: 'warn',
   spotted: 'default',
@@ -113,13 +124,26 @@ function pictogramFor(place, { night = false } = {}) {
   return 'MapPin';
 }
 
+/** The plugin glyph of a night, or null: [glyph name, fallback TREK icon]. */
+function nightGlyph(place, vehicle) {
+  const cat = norm(place.categoryName);
+  const name = norm(place.name);
+  if (BIVOUAC.test(cat) || BIVOUAC.test(name)) return NIGHT_GLYPH.bivouac;
+  const kind = nightKind(place.categoryName, place.name);
+  if (kind === 'parking') return [VEHICLE_GLYPH[vehicle] || 'rooftop-tent', 'Car'];
+  return NIGHT_GLYPH[kind] || null;
+}
+
 /**
- * Look of a planned stop on the map: { tone, icon }. `status` is the night's booking state
- * (booked | contacted | dropped | spotted), absent for an activity.
+ * Look of a planned stop on the map: { tone, icon, glyph? }. `status` is the night's booking
+ * state (booked | contacted | dropped | spotted), absent for an activity; `vehicle` the
+ * traveller's (settings), for a night spent in it.
  */
-function markerStyle(place, { night = false, status = null } = {}) {
-  const tone = night ? (status === 'spotted' || !status ? TONE.spotted : TONE[status] || TONE.spotted) : TONE.planned;
+function markerStyle(place, { night = false, status = null, vehicle = 'rooftop_tent' } = {}) {
+  const tone = night ? (TONE[status] && status !== 'spotted' ? TONE[status] : TONE.spotted) : TONE.planned;
+  const g = night ? nightGlyph(place, vehicle) : null;
+  if (g && GLYPHS[g[0]]) return { tone, icon: g[1], glyph: GLYPHS[g[0]] };
   return { tone, icon: pictogramFor(place, { night }) };
 }
 
-module.exports = { TONE, NIGHT_STATUS, AMENITY_ICONS, CHIP, NIGHT_PICTOGRAM, ACTIVITY_PICTOGRAM, MARKER_ICONS, pictogramFor, markerStyle };
+module.exports = { TONE, NIGHT_STATUS, AMENITY_ICONS, CHIP, NIGHT_PICTOGRAM, ACTIVITY_PICTOGRAM, MARKER_ICONS, GLYPHS, VEHICLE_GLYPH, pictogramFor, markerStyle };

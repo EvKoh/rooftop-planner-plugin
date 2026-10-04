@@ -19,14 +19,29 @@ describe('design catalogue', () => {
     for (const c of [...Object.values(d.NIGHT_STATUS), ...Object.values(d.CHIP)]) expect(TONES).toContain(c.tone);
   });
 
-  it('colours by state: green planned or booked, amber in discussion, red dropped', () => {
+  it('colours by state only: green booked, amber in discussion, red cancelled, blue otherwise', () => {
     const camp = { name: 'Camping X', categoryName: 'Night – Campsite' };
-    expect(d.markerStyle({ name: 'Lake walk', categoryName: 'Hike' })).toEqual({ tone: 'success', icon: 'Mountain' });
-    expect(d.markerStyle(camp, { night: true, status: 'booked' })).toEqual({ tone: 'success', icon: 'Tent' });
+    expect(d.markerStyle({ name: 'Lake walk', categoryName: 'Hike' })).toEqual({ tone: 'default', icon: 'Mountain' }); // planned is not booked
+    expect(d.markerStyle(camp, { night: true, status: 'booked' })).toMatchObject({ tone: 'success', icon: 'Tent', glyph: d.GLYPHS.tent });
     expect(d.markerStyle(camp, { night: true, status: 'contacted' }).tone).toBe('warn');
     expect(d.markerStyle(camp, { night: true, status: 'dropped' }).tone).toBe('danger');
     expect(d.markerStyle(camp, { night: true }).tone).toBe('default'); // planned, not asked yet: blue
     expect(d.markerStyle(camp, { night: true, status: 'spotted' }).tone).toBe('default');
+  });
+
+  it('draws the plugin\'s own pictograms for the ways to sleep, with a TREK icon as fallback', () => {
+    const night = (categoryName, name, vehicle) => d.markerStyle({ categoryName, name }, { night: true, vehicle });
+    expect(night('Nuitée – Aire', 'Area sosta')).toMatchObject({ icon: 'Car', glyph: d.GLYPHS.motorhome });
+    expect(night('Nuitée – geoSpot', 'Spot', 'rooftop_tent').glyph).toEqual(d.GLYPHS['rooftop-tent']);
+    expect(night('Nuitée – geoSpot', 'Spot', 'campervan').glyph).toEqual(d.GLYPHS.campervan);
+    expect(night('Nuitée – geoSpot', 'Spot', 'motorhome').glyph).toEqual(d.GLYPHS.motorhome);
+    expect(night('Night', 'Bivouac under the stars').glyph).toEqual(d.GLYPHS['sleeping-bag']);
+    expect(night('Nuitée – Ferme / agricamping', 'Farm')).toEqual({ tone: 'default', icon: 'Leaf' });
+    for (const g of Object.values(d.GLYPHS)) {
+      expect(g.length).toBeGreaterThan(0);
+      expect(g.length).toBeLessThanOrEqual(8);
+      for (const [tag] of g) expect(['path', 'circle', 'rect', 'line', 'polyline']).toContain(tag);
+    }
   });
 
   it('draws a pictogram per kind of place, from the category first, in several languages', () => {

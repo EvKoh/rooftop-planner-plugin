@@ -11,7 +11,8 @@
     "pack": "trek-plugin-sdk pack",
     "sync-manifest": "node scripts/sync-manifest.js",
     "test": "vitest run",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "build-glyphs": "node scripts/build-glyphs.js"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^3.2.4",
