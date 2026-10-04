@@ -216,9 +216,22 @@ Advertised to assistants as `plugin_vanlife_<name>`; the MCP client needs the op
 | `vanlife_check_trip` | Read-only check of a trip for the user's vehicle, including nights with no contact and hosts who have not answered for over 3 days. |
 | `vanlife_find_nights` | Night candidates for one evening (OpenStreetMap, park4night when enabled), with the contacts OpenStreetMap knows. |
 | `vanlife_day` | One tool, three actions: `routes` (road route of each day), `schedule` (times of one day from real drive times), `supplies` (groceries, fuel and water along a day's route). |
-| `vanlife_place` | Everything about a place: list by filter, read, `set` (amenities, price details, timed access, booking, toll, contacts), `log` an exchange, `clear` / `clear_fields`, `fill` from open sources. |
+| `vanlife_place` | Everything about a place: list by filter (`hikes`: each hike with its car park and walk), read, `create` a place (kind, price, planned on a day), `kind` (its pictogram), `set` (amenities, price details, timed access, booking, toll, contacts, a car park's details, a hike's `walk`), `sheet_set`, `log` an exchange, `clear` / `clear_fields`, `fill` from open sources. |
 | `vanlife_night` | `list` where each night stands; `set` a night as spotted, contacted, booked or dropped (a TREK booking pending, confirmed or cancelled). |
 | `vanlife_host_message` | Drafts the information request to a host (English, then French); sends nothing. |
+
+A whole hike in one call — the hike, its car park and its dotted walk:
+
+```json
+{ "tripId": 1,
+  "create": { "name": "Example lake loop", "lat": 46.69, "lng": 12.08, "kind": "hike", "day_number": 7 },
+  "set": { "walk": { "parking": { "name": "Example lake car park", "lat": 46.70, "lng": 12.085, "price_amount": 18, "per": "day" },
+                     "shape": "loop", "via": [[46.692, 12.087], [46.689, 12.083]],
+                     "url": "https://www.outdooractive.com/en/route/..." } } }
+```
+
+A walk always starts at a car park "P" and comes back to it, as a loop or an out-and-back;
+a walk from one car park to another is refused.
 
 TREK accepts 8 tools per plugin: the eighth place is left free on purpose.
 

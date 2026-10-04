@@ -125,6 +125,7 @@ const TOOL_SPECS = [
       properties: {
         tripId: TRIP,
         placeId: { type: 'integer', minimum: 1, description: 'TREK place id. Omit to list places.' },
+        create: { type: 'object', nullable: true, description: 'Without placeId: make a new place of the trip first, then apply set/log to it: { name, lat, lng, kind (one of the kinds below, e.g. "hike", "parking"), address, website, description, notes, price_amount, currency, per, day_number (plans it on that day) }. A hike on the map in one call: create { kind "hike", ... } + set.walk { parking { name, lat, lng, price_amount, per "day" }, shape "loop" or "out_and_back", via, url }.' },
         kind: { type: 'string', maxLength: 32, description: `With placeId: give the place its kind in plain words, one of: ${KINDS.join(', ')}. The plugin moves it to the trip category for that kind, so its pictogram on the map follows; its colour comes from its booking (vanlife_night).` },
         filter: { type: 'string', enum: ['nights', 'missing_contacts', 'missing_amenities', 'all', 'hikes'], default: 'nights', description: 'List (no placeId): nights = the nights of the scope; missing_contacts = those with no e-mail or phone; missing_amenities = those with a key amenity unknown; all = every place (scope ignored); hikes = each hike with its car park and walk (km, minutes).' },
         scope: { type: 'string', enum: ['planned', 'candidates', 'all_nights'], default: 'planned', description: 'Which nights the list covers: planned = places with a lodging in the trip (default); candidates = night-category places with no lodging; all_nights = both.' },
@@ -146,7 +147,7 @@ const TOOL_SPECS = [
             booking_note: { type: 'string', maxLength: BOOKING_NOTE_MAX, nullable: true, description: 'Short booking detail, e.g. "30-min slots, book 2 days ahead".' },
             toll_amount: { type: 'number', minimum: 0, maximum: TOLL_MAX, nullable: true, description: 'Toll or access ticket per vehicle (mountain toll road, park entry); added to that day\'s budget.' },
             toll_currency: { type: 'string', pattern: '^[A-Z]{3}$', nullable: true, description: '3-letter ISO code of the toll; default: the place\'s or trip\'s currency.' },
-            walk: { type: 'object', nullable: true, description: 'A hike, from a car park "P" back to it: { parking_place_id, shape: "loop" or "out_and_back" (to the hike\'s place and back), via: [[lat, lng], ...], url: full track page (Outdooractive...) }. Never P to another P.' },
+            walk: { type: 'object', nullable: true, description: 'A hike, from a car park "P" back to it: { parking_place_id (a car park of the trip) or parking (a new one: { name, lat, lng, price_amount, per, day_number }), shape: "loop" or "out_and_back" (to the hike\'s place and back), via: up to 8 [lat, lng] points it passes, url: full track page (Outdooractive, Komoot, Wikiloc, AllTrails) }. Never P to another P.' },
             max_height_m: { type: 'number', minimum: 1, maximum: 6, nullable: true },
             max_length_m: { type: 'number', minimum: 2, maximum: 25, nullable: true },
             max_weight_t: { type: 'number', minimum: 0.5, maximum: 60, nullable: true },

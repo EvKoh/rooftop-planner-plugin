@@ -142,6 +142,23 @@ describe('the hike\'s car park in the place tool', () => {
     expect((await call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, clear_fields: ['all'] })).cleared).toBe(true);
   });
 
+  it('puts a whole hike on the map from the place tool: a new place, a new car park, the walk', async () => {
+    const CATS2 = [{ id: 1, name: 'Night – Campsite' }, { id: 6, name: 'Route – Day route' }, { id: 8, name: 'Route – Parking' }, { id: 9, name: 'See – Hike' }];
+    const h = makeHost({ trip: trip(), categories: CATS2 });
+    // the planned hike gets a car park that is not in the trip yet
+    const r = await call(h, 'vanlife_place', { tripId: 1, placeId: HIKE.id, set: { walk: { parking: { name: 'Example New Car Park', lat: 46.601, lng: 11.801, price_amount: 5, per: 'day' }, shape: 'loop', via: [[46.61, 11.79]] } } });
+    expect(r.created).toHaveLength(1);
+    expect(r.created[0]).toMatchObject({ name: 'Example New Car Park', kind: 'parking', categoryId: 8 });
+    expect(r.hike).toMatchObject({ shape: 'loop', problem: null });
+    expect(r.hike.accessParking.placeId).toBe(r.created[0].placeId);
+    // a new hike, filed under the hike category and planned on day 1
+    const c = await call(h, 'vanlife_place', { tripId: 1, create: { name: 'Example Gorge Walk', lat: 46.63, lng: 11.85, kind: 'hike', day_number: 1 } });
+    expect(c.created[0]).toMatchObject({ name: 'Example Gorge Walk', kind: 'hike', categoryId: 9, dayNumber: 1 });
+    await expect(call(h, 'vanlife_place', { tripId: 1, create: { lat: 46, lng: 11 } })).rejects.toThrow(/create.name/);
+    await expect(call(h, 'vanlife_place', { tripId: 1, create: { name: 'X', lat: 46, lng: 11, colour: 'red' } })).rejects.toThrow(/create takes/);
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: HIKE.id, set: { walk: { parking: { name: 'P', lat: 46, lng: 11 }, parking_place_id: PARK.id, shape: 'loop' } } })).rejects.toThrow(/not both/);
+  });
+
   it('refuses a walk from one car park to another, and a walk with no shape', async () => {
     const h = await hostWith();
     // the ridge is next to another car park: an out-and-back there goes P → P
