@@ -17,7 +17,7 @@ const HIKE = { id: 81, name: 'Example Hut Chairs', lat: 46.612, lng: 11.79, cate
 const RIDGE = { id: 82, name: 'Hike to Example Ridge', lat: 46.62, lng: 11.83, category_name: 'See – Hike' };
 const LOOP = { id: 83, name: 'Example Lakes Loop', lat: 46.55, lng: 12.0, category_name: 'See – Hike' };
 const PARK2 = { id: 84, name: 'Example Pass Car Park', lat: 46.551, lng: 12.001, category_name: 'Route – Parking' };
-const FAR = { id: 85, name: 'Example Summit Trail', lat: 46.7, lng: 11.4, category_name: 'See – Hike', notes: 'Start: lay-by on the pass road, 46.6950, 11.4100' };
+const FAR = { id: 85, name: 'Example Summit Trail', lat: 46.7, lng: 11.4, category_name: 'See – Hike', notes: 'Start: lay-by on the pass road, 46.6950, 11.4100\nLinks: https://www.wikiloc.com/hiking-trails/example-1 • https://www.outdooractive.com/en/route/hiking-trail/example/123/.' };
 
 /** The fixture trip with: day 1 car park → viewpoint walked to (renamed "on foot"); day 2 a car park only, its loop not planned; day 3 a far hike with a start point in its notes. */
 function trip() {
@@ -65,6 +65,21 @@ describe('hikes and their car park on the map', () => {
     const before = fetch.calls.length;
     await layers(h);
     expect(fetch.calls.length).toBe(before);
+  });
+
+  it('opens a hike card on click: walk, climb, hiking time, car park, and the page of the full track', async () => {
+    const [layer] = await layers(await hostWith());
+    const chairs = layer.features.find((f) => /Hut Chairs/.test(f.label));
+    expect(chairs.popupText.split('\n')[0]).toBe('Example Hut Chairs on foot');
+    expect(chairs.popupText).toMatch(/km · .* on foot · \+\d+ m/);
+    expect(chairs.popupText).toMatch(/On foot from Example Trailhead Car Park/);
+    // no track page written anywhere: the card says so, no link is made up
+    expect(chairs.url).toBeUndefined();
+    expect(chairs.popupText).toMatch(/No page with the full track is known yet/);
+    // Outdooractive wins over Wikiloc, trailing punctuation dropped
+    const far = layer.features.find((f) => /Summit Trail/.test(f.label));
+    expect(far.url).toBe('https://www.outdooractive.com/en/route/hiking-trail/example/123/');
+    expect(far.popupText).not.toMatch(/No page/);
   });
 
   it('takes the start point from the notes when no car park is planned near the hike', async () => {
@@ -133,6 +148,22 @@ describe('the hike\'s car park in the place tool', () => {
     expect(walks.shortName('Example Lakes Car Park - Upper Example', 24)).toBe('Example Lakes Car Park');
     expect(walks.shortName('P1 Example — Example Plateau', 24)).toBe('P1 Example');
     expect(walks.shortName('A very long example hike name that goes on', 20)).toBe('A very long example…');
+  });
+
+  it('counts the climb above terrain noise and times the walk by the hiking rule', () => {
+    expect(walks.climb([1000, 1002, 1001, 1010, 1020, 1015, 1000])).toEqual({ up: 20, down: 20 });
+    // 8.8 km, +550/-550 m: about 4 h, the official time of such a loop
+    expect(walks.walkMinutes({ km: 8.8, minutes: 154, up: 550, down: 550 })).toBe(242);
+    expect(walks.walkMinutes({ km: 4, minutes: 50, up: null })).toBe(50);
+  });
+
+  it('keeps the page of the full hike set on the record first', () => {
+    const place = { raw: { website: 'https://www.komoot.com/tour/1' }, notes: 'https://www.alltrails.com/trail/x' };
+    expect(walks.hikeUrl(place, null)).toBe('https://www.komoot.com/tour/1');
+    expect(walks.hikeUrl(place, { hike_url: 'https://trails.example.com/1' })).toBe('https://trails.example.com/1');
+    expect(walks.hikeUrl({ raw: { website: 'https://hut.example.com' } }, null)).toBeNull();
+    expect(pi.merge(null, pi.expandWalk({ walk: { url: ' https://trails.example.com/2 ' } })).hike_url).toBe('https://trails.example.com/2');
+    expect(() => pi.merge(null, pi.expandWalk({ walk: { url: 'javascript:alert(1)' } }))).toThrow(/walk.url/);
   });
 
   it('merges the points of a walk that coincide', () => {

@@ -72,6 +72,8 @@ export function stubFetch({ failValhalla = false, failOverpass = false, failPark
     if (String(url).includes('valhalla')) {
       if (failValhalla) return { ok: false, status: 503, json: async () => ({ error: 'down' }) };
       const b = JSON.parse(init.body);
+      // Heights: a steady climb of 10 m per point.
+      if (String(url).endsWith('/height')) return ok({ height: b.shape.map((_, i) => 1000 + i * 10) });
       if (String(url).endsWith('/sources_to_targets')) {
         return ok({
           sources_to_targets: b.sources.map((s) => b.targets.map((t) => {

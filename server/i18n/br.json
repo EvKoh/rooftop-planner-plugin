@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Número de confirmação (opcional)",
   "ui.reasonOpt": "Motivo (opcional)",
   "ui.nightSet": "Pernoite: {status}",
-  "ui.confirmAvailable": "De volta a disponível: a reserva desta noite é excluída do TREK. A estadia continua planejada."
+  "ui.confirmAvailable": "De volta a disponível: a reserva desta noite é excluída do TREK. A estadia continua planejada.",
+  "walk.noLink": "Nenhuma página com o percurso completo conhecida ainda"
 }

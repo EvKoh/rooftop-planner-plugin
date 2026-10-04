@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "确认号（可选）",
   "ui.reasonOpt": "原因（可选）",
   "ui.nightSet": "住宿：{status}",
-  "ui.confirmAvailable": "恢复为可用：这一晚的预订将从 TREK 中删除，住宿安排保留。"
+  "ui.confirmAvailable": "恢复为可用：这一晚的预订将从 TREK 中删除，住宿安排保留。",
+  "walk.noLink": "暂无完整路线页面"
 }

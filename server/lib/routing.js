@@ -204,4 +204,11 @@ async function walk(points, opts = {}) {
   return { km: Math.round(d.trip.summary.length * 10) / 10, minutes: Math.round(d.trip.summary.time / 60), points: thin(pts, opts.maxPoints ?? 600) };
 }
 
-module.exports = { walk, route, matrix, legs, legKey, decodePolyline, costingOf, vehicleOpts, VALHALLA };
+/** Ground heights (m) along `points` ([lat,lng] list), from Valhalla's elevation service. */
+async function heights(points, opts = {}) {
+  const d = await post('/height', { shape: points.map((p) => ({ lat: +p[0], lon: +p[1] })), range: false }, opts.timeoutMs ?? 8000);
+  if (!Array.isArray(d.height) || d.height.length !== points.length) throw new Error('Valhalla: no heights');
+  return d.height;
+}
+
+module.exports = { heights, walk, route, matrix, legs, legKey, decodePolyline, costingOf, vehicleOpts, VALHALLA };

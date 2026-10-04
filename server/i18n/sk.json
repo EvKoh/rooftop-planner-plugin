@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Číslo potvrdenia (nepovinné)",
   "ui.reasonOpt": "Dôvod (nepovinné)",
   "ui.nightSet": "Nocľah: {status}",
-  "ui.confirmAvailable": "Späť na voľné: rezervácia tejto noci sa z TREK vymaže. Pobyt zostáva v pláne."
+  "ui.confirmAvailable": "Späť na voľné: rezervácia tejto noci sa z TREK vymaže. Pobyt zostáva v pláne.",
+  "walk.noLink": "Stránka s celou trasou zatiaľ nie je známa"
 }

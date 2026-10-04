@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Confirmation number (optional)",
   "ui.reasonOpt": "Reason (optional)",
   "ui.nightSet": "Night: {status}",
-  "ui.confirmAvailable": "Back to available: this night's booking is deleted from TREK. The stay stays planned."
+  "ui.confirmAvailable": "Back to available: this night's booking is deleted from TREK. The stay stays planned.",
+  "walk.noLink": "No page with the full track is known yet"
 }

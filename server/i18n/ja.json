@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "確認番号（任意）",
   "ui.reasonOpt": "理由（任意）",
   "ui.nightSet": "宿泊: {status}",
-  "ui.confirmAvailable": "空きに戻す: この夜の予約は TREK から削除されます。滞在は予定に残ります。"
+  "ui.confirmAvailable": "空きに戻す: この夜の予約は TREK から削除されます。滞在は予定に残ります。",
+  "walk.noLink": "全ルートのページはまだ不明です"
 }

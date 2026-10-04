@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Nomor konfirmasi (opsional)",
   "ui.reasonOpt": "Alasan (opsional)",
   "ui.nightSet": "Menginap: {status}",
-  "ui.confirmAvailable": "Kembali tersedia: pemesanan malam ini dihapus dari TREK. Masa inap tetap direncanakan."
+  "ui.confirmAvailable": "Kembali tersedia: pemesanan malam ini dihapus dari TREK. Masa inap tetap direncanakan.",
+  "walk.noLink": "Belum ada halaman jalur lengkap yang diketahui"
 }

@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Təsdiq nömrəsi (istəyə bağlı)",
   "ui.reasonOpt": "Səbəb (istəyə bağlı)",
   "ui.nightSet": "Gecələmə: {status}",
-  "ui.confirmAvailable": "Yenidən boş: bu gecənin bronu TREK-dən silinir. Qalma planda qalır."
+  "ui.confirmAvailable": "Yenidən boş: bu gecənin bronu TREK-dən silinir. Qalma planda qalır.",
+  "walk.noLink": "Tam marşrut səhifəsi hələ məlum deyil"
 }

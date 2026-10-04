@@ -67,7 +67,7 @@ const ACCESS_FIELDS = ['access_before', 'access_after', 'booking_required', 'boo
 const BOOKING_NOTE_MAX = 120;
 // A hike's walk: the car park it starts from (a TREK place of the trip), the points it passes
 // (a loop's refuges, a pass...) and whether it comes back to the car park. walks.js draws it.
-const WALK_FIELDS = ['access_parking_place_id', 'walk_via', 'walk_loop'];
+const WALK_FIELDS = ['access_parking_place_id', 'walk_via', 'walk_loop', 'hike_url'];
 const WALK_VIA_MAX = 8;
 const TOLL_MAX = 10000;
 const MIGRATION = 'CREATE TABLE IF NOT EXISTS place_info_index (trip_id INTEGER NOT NULL, place_id INTEGER NOT NULL, PRIMARY KEY (trip_id, place_id))';
@@ -100,6 +100,7 @@ const blank = () => ({
   access_parking_place_id: null,
   walk_via: null,
   walk_loop: null,
+  hike_url: null,
   amenities: Object.fromEntries(Object.keys(AMENITIES).map((k) => [k, 'unknown'])),
   source: null,
   checked: null,
@@ -221,19 +222,20 @@ function merge(stored, patch) {
 }
 
 /**
- * The tool's `walk` object ({ parking_place_id, via, loop }) as record fields (WALK_FIELDS);
- * null clears the three. Keys left out stay as they are.
+ * The tool's `walk` object ({ parking_place_id, via, loop, url }) as record fields
+ * (WALK_FIELDS); null clears them all. Keys left out stay as they are.
  */
 function expandWalk(patch) {
   if (!patch || !('walk' in patch)) return patch;
   const { walk, ...rest } = patch;
-  if (walk == null) return { ...rest, access_parking_place_id: null, walk_via: null, walk_loop: null };
+  if (walk == null) return { ...rest, ...Object.fromEntries(WALK_FIELDS.map((k) => [k, null])) };
   if (typeof walk !== 'object' || Array.isArray(walk)) throw new InfoError('walk must be an object { parking_place_id, via, loop }, or null to clear');
-  const unknown = Object.keys(walk).filter((k) => !['parking_place_id', 'via', 'loop'].includes(k));
-  if (unknown.length) throw new InfoError(`walk takes parking_place_id, via and loop, not ${unknown.join(', ')}`);
+  const unknown = Object.keys(walk).filter((k) => !['parking_place_id', 'via', 'loop', 'url'].includes(k));
+  if (unknown.length) throw new InfoError(`walk takes parking_place_id, via, loop and url, not ${unknown.join(', ')}`);
   if ('parking_place_id' in walk) rest.access_parking_place_id = walk.parking_place_id;
   if ('via' in walk) rest.walk_via = walk.via;
   if ('loop' in walk) rest.walk_loop = walk.loop;
+  if ('url' in walk) rest.hike_url = walk.url;
   return rest;
 }
 
@@ -258,6 +260,11 @@ function mergeWalk(out, p) {
         return [Math.round(lat * 1e5) / 1e5, Math.round(lng * 1e5) / 1e5];
       });
     }
+  }
+  if ('hike_url' in p) {
+    const u = p.hike_url == null ? '' : String(p.hike_url).trim();
+    if (u && (!/^https?:\/\/[^\s/]+\.[^\s]+$/i.test(u) || u.length > 500)) throw new InfoError('walk.url must be the http:// or https:// address of the page with the full hike (500 characters at most)');
+    out.hike_url = u || null;
   }
   if ('walk_loop' in p) {
     const v = p.walk_loop;

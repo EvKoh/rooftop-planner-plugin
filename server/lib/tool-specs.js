@@ -146,7 +146,7 @@ const TOOL_SPECS = [
             booking_note: { type: 'string', maxLength: BOOKING_NOTE_MAX, nullable: true, description: 'Short booking detail, e.g. "30-min slots, book 2 days ahead".' },
             toll_amount: { type: 'number', minimum: 0, maximum: TOLL_MAX, nullable: true, description: 'Toll or access ticket per vehicle (mountain toll road, park entry); added to that day\'s budget.' },
             toll_currency: { type: 'string', pattern: '^[A-Z]{3}$', nullable: true, description: '3-letter ISO code of the toll; default: the place\'s or trip\'s currency.' },
-            walk: { type: 'object', nullable: true, description: 'A hike: { parking_place_id: its car park (place id; null = guessed from the plan), via: [[lat, lng], ...] points passed in order, loop: true to come back to the car park }. The map draws the walk dotted from the car park.' },
+            walk: { type: 'object', nullable: true, description: 'A hike: { parking_place_id: its car park (place id; null = guessed from the plan), via: [[lat, lng], ...] points passed in order, loop: true to come back to the car park, url: the page with the full track (Outdooractive, Komoot...) }. Drawn dotted from the car park.' },
             max_height_m: { type: 'number', minimum: 1, maximum: 6, nullable: true },
             max_length_m: { type: 'number', minimum: 2, maximum: 25, nullable: true },
             max_weight_t: { type: 'number', minimum: 0.5, maximum: 60, nullable: true },

@@ -924,7 +924,7 @@
                 "walk": {
                   "type": "object",
                   "nullable": true,
-                  "description": "A hike: { parking_place_id: its car park (place id; null = guessed from the plan), via: [[lat, lng], ...] points passed in order, loop: true to come back to the car park }. The map draws the walk dotted from the car park."
+                  "description": "A hike: { parking_place_id: its car park (place id; null = guessed from the plan), via: [[lat, lng], ...] points passed in order, loop: true to come back to the car park, url: the page with the full track (Outdooractive, Komoot...) }. Drawn dotted from the car park."
                 },
                 "max_height_m": {
                   "type": "number",

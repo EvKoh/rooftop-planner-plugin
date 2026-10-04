@@ -299,5 +299,6 @@
   "ui.confirmationOpt": "Kinnitusnumber (valikuline)",
   "ui.reasonOpt": "Põhjus (valikuline)",
   "ui.nightSet": "Öömaja: {status}",
-  "ui.confirmAvailable": "Tagasi vabaks: selle öö broneering kustutatakse TREKist. Peatus jääb plaani."
+  "ui.confirmAvailable": "Tagasi vabaks: selle öö broneering kustutatakse TREKist. Peatus jääb plaani.",
+  "walk.noLink": "Täieliku rajaga lehte pole veel teada"
 }
