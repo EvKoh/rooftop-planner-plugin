@@ -382,5 +382,7 @@
   "sh.v.dogNo": "Qadağandır",
   "sh.k.hike": "Yürüyüş",
   "sh.k.night": "Gecələmə",
-  "sh.k.activity": "Ziyarət"
+  "sh.k.activity": "Ziyarət",
+  "night_cancelled": "“{name}” gecəsi ləğv edilib, amma hələ plandadır: başqa yer tapın və ya gecəni çıxarın",
+  "s.night_cancelled": "gecə ləğv edilib: qalacaq yer yoxdur"
 }

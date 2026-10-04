@@ -385,7 +385,15 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
     if (acc && words.length && !words.some((w) => norm(acc.name).includes(w))) add('fix', bookings, 'resa_mismatch', { title: x.title, name: acc.name }, { reservationId: x.id });
     // TREK confirms the booking it creates with an accommodation: a "confirmed" status with
     // no confirmation number is the usual sign nobody actually booked.
-    if (x.status === 'confirmed' && !x.confirmation_number) add('blocking', bookings, 'resa_confirmed', { title: x.title }, { reservationId: x.id });
+    // Only a hint now: the user sets a night booked from the place view or TREK's form, and a
+    // farm on a donation has no confirmation number to give.
+    if (x.status === 'confirmed' && !x.confirmation_number && !BOOKED_NOTE.test(norm(`${x.notes || ''} ${x.title || ''}`))) add('verify', bookings, 'resa_confirmed', { title: x.title }, { reservationId: x.id });
+    // A night whose booking was cancelled and that is still in the plan has nowhere to sleep.
+    if (x.status === 'cancelled' && acc) {
+      const nd = model.days.find((d) => d.id === acc.startDayId);
+      const othersOk = (model.reservations || []).some((y) => y !== x && y.accommodation_id === x.accommodation_id && y.status !== 'cancelled');
+      if (!othersOk) add('fix', nd ? dayLabel(nd) : bookings, 'night_cancelled', { name: acc.name }, { reservationId: x.id, accommodationId: acc.id, ...(nd ? { dayId: nd.id, dayNumber: nd.n } : {}) });
+    }
   }
   const budgetScope = t(L, 'scope.budget');
   if (Array.isArray(model.costs)) {

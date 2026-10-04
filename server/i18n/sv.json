@@ -382,5 +382,7 @@
   "sh.v.dogNo": "Inte tillåten",
   "sh.k.hike": "Vandring",
   "sh.k.night": "Övernattning",
-  "sh.k.activity": "Besök"
+  "sh.k.activity": "Besök",
+  "night_cancelled": "Natten på ”{name}” är avbokad men står kvar i planen: hitta ett annat boende eller ta bort natten",
+  "s.night_cancelled": "natt avbokad: inget boende"
 }

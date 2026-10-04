@@ -382,5 +382,7 @@
   "sh.v.dogNo": "Keelatud",
   "sh.k.hike": "Matk",
   "sh.k.night": "Öömaja",
-  "sh.k.activity": "Külastus"
+  "sh.k.activity": "Külastus",
+  "night_cancelled": "Öö kohas „{name}” on tühistatud, kuid on endiselt plaanis: leia muu majutus või eemalda öö",
+  "s.night_cancelled": "öö tühistatud: majutus puudub"
 }

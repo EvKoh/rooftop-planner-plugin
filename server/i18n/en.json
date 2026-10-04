@@ -382,5 +382,7 @@
   "sh.v.dogNo": "Not allowed",
   "sh.k.hike": "Hike",
   "sh.k.night": "Night",
-  "sh.k.activity": "Visit"
+  "sh.k.activity": "Visit",
+  "night_cancelled": "The night at “{name}” is cancelled and still in the plan: find another place to sleep, or take the night out",
+  "s.night_cancelled": "night cancelled: nowhere to sleep"
 }

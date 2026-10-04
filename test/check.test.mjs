@@ -33,7 +33,7 @@ describe('check_trip on the fictional trip', () => {
     expect(has(r, 'fix', 'water_fix', 3)).toBe(true);
     expect(has(r, 'blocking', 'min_nights', 3)).toBe(true);
     expect(has(r, 'fix', 'no_trace', 3)).toBe(true);
-    expect(has(r, 'blocking', 'resa_confirmed')).toBe(true);
+    expect(has(r, 'verify', 'resa_confirmed')).toBe(true); // a hint: the user may have booked without a number
     expect(has(r, 'fix', 'resa_mismatch')).toBe(true);
     expect(has(r, 'fix', 'stale_budget')).toBe(true);
     expect(has(r, 'fix', 'budget_total')).toBe(true);
@@ -46,7 +46,16 @@ describe('check_trip on the fictional trip', () => {
     expect(late.placeId).toBe(13);
     // sorted: blocking first
     expect(r.findings[0].level).toBe('blocking');
-    expect(r.counts.blocking).toBeGreaterThanOrEqual(5);
+    expect(r.counts.blocking).toBeGreaterThanOrEqual(4);
+  });
+
+  it('flags a night whose only booking is cancelled, and stays quiet once another booking holds it', async () => {
+    const trip = build();
+    trip.reservations[1].status = 'cancelled';
+    const r = await run({ trip });
+    expect(has(r, 'fix', 'night_cancelled', 2)).toBe(true);
+    trip.reservations.push({ ...trip.reservations[1], id: 503, status: 'pending' });
+    expect(has(await run({ trip }), 'fix', 'night_cancelled')).toBe(false);
   });
 
   it('stays quiet on what the fixed trip corrects (it proved above that it detects them)', async () => {

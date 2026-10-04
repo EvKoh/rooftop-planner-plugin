@@ -382,5 +382,7 @@
   "sh.v.dogNo": "Niedozwolony",
   "sh.k.hike": "Wędrówka",
   "sh.k.night": "Nocleg",
-  "sh.k.activity": "Zwiedzanie"
+  "sh.k.activity": "Zwiedzanie",
+  "night_cancelled": "Nocleg w „{name}” jest anulowany, a wciąż jest w planie: znajdź inne miejsce albo usuń noc",
+  "s.night_cancelled": "noc anulowana: brak noclegu"
 }

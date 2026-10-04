@@ -382,5 +382,7 @@
   "sh.v.dogNo": "Nepovolen",
   "sh.k.hike": "Túra",
   "sh.k.night": "Nocleh",
-  "sh.k.activity": "Návštěva"
+  "sh.k.activity": "Návštěva",
+  "night_cancelled": "Noc v „{name}“ je zrušená, ale stále v plánu: najděte jiné ubytování, nebo noc odeberte",
+  "s.night_cancelled": "noc zrušena: bez ubytování"
 }

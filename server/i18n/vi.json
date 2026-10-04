@@ -382,5 +382,7 @@
   "sh.v.dogNo": "Không được phép",
   "sh.k.hike": "Đi bộ đường dài",
   "sh.k.night": "Nghỉ đêm",
-  "sh.k.activity": "Tham quan"
+  "sh.k.activity": "Tham quan",
+  "night_cancelled": "Đêm tại “{name}” đã hủy nhưng vẫn trong lịch trình: hãy tìm chỗ ngủ khác hoặc bỏ đêm đó",
+  "s.night_cancelled": "đêm đã hủy: không có chỗ ngủ"
 }
