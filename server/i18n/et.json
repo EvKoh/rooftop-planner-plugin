@@ -286,5 +286,18 @@
   "walk.layer": "Matkad: jalgrajad",
   "walk.from": "Jalgsi kohast {parking}",
   "walk.stats": "{km} km · {time} jalgsi",
-  "walk.access": "Parkla: {hike}"
+  "walk.access": "Parkla: {hike}",
+  "ui.nightTitle": "Öömaja",
+  "ui.nightOf": "Milline öö",
+  "ui.dayOption": "Päev {n} · {date}",
+  "ui.dayOnly": "Päev {n}",
+  "ui.nightsN": "{n} ööd",
+  "ui.state.spotted": "Vaba",
+  "ui.state.contacted": "Arutlusel",
+  "ui.state.booked": "Broneeritud",
+  "ui.state.dropped": "Tühistatud",
+  "ui.confirmationOpt": "Kinnitusnumber (valikuline)",
+  "ui.reasonOpt": "Põhjus (valikuline)",
+  "ui.nightSet": "Öömaja: {status}",
+  "ui.confirmAvailable": "Tagasi vabaks: selle öö broneering kustutatakse TREKist. Peatus jääb plaani."
 }

@@ -286,5 +286,18 @@
   "walk.layer": "Vandringar: gångvägar",
   "walk.from": "Till fots från {parking}",
   "walk.stats": "{km} km · {time} till fots",
-  "walk.access": "Parkering för: {hike}"
+  "walk.access": "Parkering för: {hike}",
+  "ui.nightTitle": "Övernattning",
+  "ui.nightOf": "Vilken natt",
+  "ui.dayOption": "Dag {n} · {date}",
+  "ui.dayOnly": "Dag {n}",
+  "ui.nightsN": "{n} nätter",
+  "ui.state.spotted": "Tillgänglig",
+  "ui.state.contacted": "Under diskussion",
+  "ui.state.booked": "Bokad",
+  "ui.state.dropped": "Avbokad",
+  "ui.confirmationOpt": "Bekräftelsenummer (valfritt)",
+  "ui.reasonOpt": "Anledning (valfritt)",
+  "ui.nightSet": "Övernattning: {status}",
+  "ui.confirmAvailable": "Tillbaka till tillgänglig: nattens bokning raderas från TREK. Vistelsen förblir planerad."
 }

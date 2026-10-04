@@ -286,5 +286,18 @@
   "walk.layer": "Походи: пішохідні маршрути",
   "walk.from": "Пішки від {parking}",
   "walk.stats": "{km} км · {time} пішки",
-  "walk.access": "Парковка для: {hike}"
+  "walk.access": "Парковка для: {hike}",
+  "ui.nightTitle": "Ночівля",
+  "ui.nightOf": "Яка ніч",
+  "ui.dayOption": "День {n} · {date}",
+  "ui.dayOnly": "День {n}",
+  "ui.nightsN": "Ночей: {n}",
+  "ui.state.spotted": "Вільно",
+  "ui.state.contacted": "Обговорюється",
+  "ui.state.booked": "Заброньовано",
+  "ui.state.dropped": "Скасовано",
+  "ui.confirmationOpt": "Номер підтвердження (необов'язково)",
+  "ui.reasonOpt": "Причина (необов'язково)",
+  "ui.nightSet": "Ночівля: {status}",
+  "ui.confirmAvailable": "Знову вільно: бронювання цієї ночі видаляється з TREK. Зупинка лишається в плані."
 }

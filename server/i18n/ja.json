@@ -286,5 +286,18 @@
   "walk.layer": "ハイキング：徒歩ルート",
   "walk.from": "{parking} から徒歩",
   "walk.stats": "{km} km · 徒歩 {time}",
-  "walk.access": "駐車場：{hike}"
+  "walk.access": "駐車場：{hike}",
+  "ui.nightTitle": "宿泊",
+  "ui.nightOf": "どの夜",
+  "ui.dayOption": "{n}日目 · {date}",
+  "ui.dayOnly": "{n}日目",
+  "ui.nightsN": "{n}泊",
+  "ui.state.spotted": "空き",
+  "ui.state.contacted": "相談中",
+  "ui.state.booked": "予約済み",
+  "ui.state.dropped": "キャンセル",
+  "ui.confirmationOpt": "確認番号（任意）",
+  "ui.reasonOpt": "理由（任意）",
+  "ui.nightSet": "宿泊: {status}",
+  "ui.confirmAvailable": "空きに戻す: この夜の予約は TREK から削除されます。滞在は予定に残ります。"
 }

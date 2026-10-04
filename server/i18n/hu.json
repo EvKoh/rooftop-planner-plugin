@@ -286,5 +286,18 @@
   "walk.layer": "Túrák: gyalogutak",
   "walk.from": "Gyalog innen: {parking}",
   "walk.stats": "{km} km · {time} gyalog",
-  "walk.access": "Parkoló ehhez: {hike}"
+  "walk.access": "Parkoló ehhez: {hike}",
+  "ui.nightTitle": "Szállás",
+  "ui.nightOf": "Melyik éjszaka",
+  "ui.dayOption": "{n}. nap · {date}",
+  "ui.dayOnly": "{n}. nap",
+  "ui.nightsN": "{n} éjszaka",
+  "ui.state.spotted": "Szabad",
+  "ui.state.contacted": "Egyeztetés alatt",
+  "ui.state.booked": "Lefoglalva",
+  "ui.state.dropped": "Lemondva",
+  "ui.confirmationOpt": "Visszaigazolási szám (nem kötelező)",
+  "ui.reasonOpt": "Indok (nem kötelező)",
+  "ui.nightSet": "Szállás: {status}",
+  "ui.confirmAvailable": "Vissza szabadra: az éjszaka foglalása törlődik a TREK-ből. A tartózkodás tervben marad."
 }

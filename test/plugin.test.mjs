@@ -295,6 +295,58 @@ describe('hooks, route and lifecycle', () => {
     expect((await post('/amenities/save', {})).status).toBe(400);
   });
 
+  it('night routes: the evenings of a place, then its state set from the place panel, colours from design.js', async () => {
+    const trip = build();
+    const h = makeHost({ trip });
+    const drv = h.run(plugin);
+    const post = async (path, body) => { const r = await drv.route({ method: 'POST', path }, { body }); return { status: r.status, body: JSON.parse(r.body) }; };
+    const r = await post('/night', { tripId: 1, placeId: 16 });
+    expect(r.status).toBe(200);
+    expect(r.body.states.map((s) => [s.status, s.color])).toEqual([['spotted', '#2563eb'], ['contacted', '#f59e0b'], ['booked', '#16a34a'], ['dropped', '#dc2626']]);
+    expect(r.body.states.every((s) => s.svg.startsWith('<'))).toBe(true);
+    // every evening but the last, the planned stay named, this place's booking on its own evening
+    expect(r.body.nights.map((n) => [n.day, n.status, n.planned && n.planned.mine])).toEqual([[1, null, false], [2, 'contacted', true], [3, null, false]]);
+    expect(r.body.dayId).toBe(102);
+    // in discussion → booked with its number → cancelled with a reason → available (booking deleted, stay kept)
+    const booked = await post('/night/set', { tripId: 1, placeId: 16, dayId: 102, status: 'booked', confirmation: ' EX-9 ' });
+    expect(booked.status).toBe(200);
+    expect(trip.reservations.find((x) => x.id === 502)).toMatchObject({ status: 'confirmed', confirmation_number: 'EX-9' });
+    expect(booked.body.nights[1]).toMatchObject({ status: 'booked', confirmation: 'EX-9' });
+    await post('/night/set', { tripId: 1, placeId: 16, dayId: 102, status: 'dropped', reason: 'no tents' });
+    expect(trip.reservations.find((x) => x.id === 502)).toMatchObject({ status: 'cancelled', notes: 'Dropped: no tents' });
+    const update = vi.spyOn(h.ctx.reservations, 'update');
+    const cleared = await post('/night/set', { tripId: 1, placeId: 16, dayId: 102, status: 'spotted' });
+    expect(update).toHaveBeenLastCalledWith(1, 502, { accommodation_id: null });
+    expect(cleared.body.result).toMatchObject({ action: 'deleted', reservationId: 502 });
+    expect(trip.reservations.some((x) => x.id === 502)).toBe(false);
+    expect(trip.accommodations.some((a) => a.id === 2)).toBe(true); // the stay stays planned
+    const writes = h.calls.filter((c) => /^reservations\.(update|delete)$/.test(c.method)).slice(-2);
+    expect(writes.map((c) => c.method)).toEqual(['reservations.update', 'reservations.delete']); // unlinked first, or TREK deletes the stay too
+    expect(cleared.body.nights[1]).toMatchObject({ status: 'spotted', reservationId: null });
+    // the planned stay's evening: a new booking, tied to it
+    const contacted = await post('/night/set', { tripId: 1, placeId: 18, dayId: 103, status: 'contacted' });
+    expect(trip.reservations.find((x) => x.id === contacted.body.result.reservationId)).toMatchObject({ place_id: 18, accommodation_id: 3, status: 'pending' });
+    // refused
+    expect((await post('/night/set', { tripId: 1, placeId: 16, dayId: 102, status: 'maybe' })).status).toBe(400);
+    expect((await post('/night/set', { tripId: 1, placeId: 16, status: 'booked' })).status).toBe(400);
+    expect((await post('/night/set', { tripId: 1, placeId: 16, dayId: 999, status: 'booked' })).status).toBe(400);
+    expect((await post('/night/set', { tripId: 1, placeId: 999, dayId: 102, status: 'booked' })).status).toBe(404);
+    expect((await post('/night', { tripId: 1 })).status).toBe(400);
+    expect((await post('/night', { tripId: 9, placeId: 16 })).status).toBe(403);
+  });
+
+  it('a later night of a stay folds into the stay, and a booking set on it updates the stay\'s own', async () => {
+    const trip = build();
+    trip.accommodations[0].end_day_id = 103; // camping: nights 1 and 2
+    trip.accommodations.splice(1, 1);
+    const h = makeHost({ trip });
+    const drv = h.run(plugin);
+    const nights = JSON.parse((await drv.route({ method: 'POST', path: '/night' }, { body: { tripId: 1, placeId: 13 } })).body).nights;
+    expect(nights.map((n) => [n.day, n.nights, n.status])).toEqual([[1, 2, 'booked'], [3, 1, null]]);
+    const r = JSON.parse((await drv.route({ method: 'POST', path: '/night/set' }, { body: { tripId: 1, placeId: 13, dayId: 102, status: 'contacted' } })).body);
+    expect(r.result).toMatchObject({ action: 'updated', reservationId: 501 });
+  });
+
   it('the widget follows the user language setting over the frame language, and "auto" follows the frame', async () => {
     const fr = makeHost({ userSettings: { language: 'fr' } }).run(plugin);
     expect(JSON.parse((await fr.route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13, locale: 'de' } })).body).language).toBe('fr');

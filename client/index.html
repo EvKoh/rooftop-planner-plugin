@@ -27,6 +27,15 @@
     input, select { font-size: 16px; min-height: 44px; box-sizing: border-box; width: 100%; }
     .actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .actions button { min-height: 44px; }
+    /* The night's four states: the colour is the state's (design.js), the same as the map's. */
+    .states { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; }
+    .state { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 6px 10px;
+      border: 2px solid var(--c); border-radius: 10px; background: transparent; color: var(--text-primary); font: inherit; font-size: 14px; cursor: pointer; }
+    .state svg { width: 18px; height: 18px; flex: none; stroke: var(--c); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .state[aria-pressed="true"] { background: var(--c); color: #fff; font-weight: 700; }
+    .state[aria-pressed="true"] svg { stroke: #fff; }
+    .state:disabled { opacity: .6; cursor: default; }
+    .night { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
     [hidden] { display: none !important; }
   </style>
 </head>
@@ -35,7 +44,7 @@
   <script>
     // All text comes from POST /amenities (server/i18n), in the frame's language unless the
     // user chose one in the plugin settings: no string is written here.
-    var st = { tripId: null, placeId: null, locale: 'en', data: null, open: false, tried: {}, filling: false };
+    var st = { tripId: null, placeId: null, locale: 'en', mode: 'view', data: null, open: false, tried: {}, filling: false, night: null, dayId: null, pending: null, busy: false };
     var S = function (k) { return (st.data && st.data.strings[k]) || ''; };
 
     function h(tag, attrs, kids) {
@@ -180,6 +189,77 @@
       return form;
     }
 
+    // The night's state, set from here: which evening, then one of the four states.
+    // "Booked" and "Cancelled" ask for their optional number or reason before saving.
+    function dayLabel(r) {
+      var date = r.date ? new Intl.DateTimeFormat(st.locale, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(r.date + 'T12:00:00Z')) : null;
+      var t = date ? S('ui.dayOption').replace('{n}', String(r.day)).replace('{date}', date) : S('ui.dayOnly').replace('{n}', String(r.day));
+      if (r.nights > 1) t += ' · ' + S('ui.nightsN').replace('{n}', String(r.nights));
+      if (r.planned && !r.planned.mine) t += ' — ' + r.planned.name;
+      return t;
+    }
+    function icon(svg) {
+      var el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      el.setAttribute('viewBox', '0 0 24 24'); el.setAttribute('aria-hidden', 'true');
+      el.innerHTML = svg || '';
+      return el;
+    }
+    function nightSection() {
+      var n = st.night;
+      if (!n || !n.nights.length) return null;
+      var row = n.nights.find(function (r) { return r.dayId === st.dayId; }) || n.nights[0];
+      var current = row.status || 'spotted';
+      var pick = h('select', { class: 'trek-select', name: 'night_day', 'aria-label': S('ui.nightOf') }, n.nights.map(function (r) {
+        var o = h('option', { value: String(r.dayId), text: dayLabel(r) }); if (r.dayId === row.dayId) o.selected = true; return o;
+      }));
+      pick.addEventListener('change', function () { st.dayId = Number(pick.value); st.pending = null; render(); });
+      var buttons = h('div', { class: 'states', role: 'group', 'aria-label': S('ui.nightTitle') }, n.states.map(function (s) {
+        var b = h('button', { class: 'state', type: 'button', style: '--c:' + s.color, 'aria-pressed': String(s.status === current || s.status === st.pending), disabled: st.busy ? 'disabled' : null,
+          on: { click: function () { chooseState(row, s.status); } } }, [icon(s.svg)]);
+        b.appendChild(document.createTextNode(S('ui.state.' + s.status)));
+        return b;
+      }));
+      var kids = [h('div', { class: 'sub', text: S('ui.nightTitle') }), field(S('ui.nightOf'), pick), buttons];
+      if (st.pending) {
+        var key = st.pending === 'booked' ? 'confirmation' : 'reason';
+        var input = textInput(key, st.pending === 'booked' ? row.confirmation : null, 'text', { maxlength: st.pending === 'booked' ? '100' : '200', autocomplete: 'off' });
+        kids.push(field(S(st.pending === 'booked' ? 'ui.confirmationOpt' : 'ui.reasonOpt'), input));
+        kids.push(h('div', { class: 'actions' }, [
+          h('button', { class: 'trek-btn trek-btn--primary', type: 'button', disabled: st.busy ? 'disabled' : null, text: S('ui.save'), on: { click: function () { var b = {}; b[key] = input.value; setNight(row, st.pending, b); } } }),
+          h('button', { class: 'trek-btn trek-btn--ghost', type: 'button', text: S('ui.close'), on: { click: function () { st.pending = null; render(); } } }),
+        ]));
+      }
+      return h('div', { class: 'night' }, kids);
+    }
+    async function chooseState(row, status) {
+      if (status === 'booked' || status === 'dropped') { st.pending = status; render(); return; }
+      st.pending = null;
+      if (status === (row.status || 'spotted')) { render(); return; }
+      if (status === 'spotted' && row.reservationId && !(await trek.confirm({ message: S('ui.confirmAvailable'), danger: true }))) return;
+      setNight(row, status, {});
+    }
+    async function setNight(row, status, extra) {
+      st.busy = true; render();
+      try {
+        var r = await trek.invoke('/night/set', { method: 'POST', body: Object.assign({ tripId: Number(st.tripId), placeId: Number(st.placeId), dayId: row.dayId, status: status }, extra) });
+        st.night = { states: st.night.states, nights: r.nights };
+        st.dayId = r.dayId;
+        st.pending = null;
+        trek.notify('success', S('ui.nightSet').replace('{status}', S('ui.state.' + status)));
+        // TREK broadcasts the booking: its map and lists follow on their own.
+        loadAmenities();
+      } catch (e) { trek.notify('error', e.message); }
+      st.busy = false; render();
+    }
+    async function loadNight() {
+      try {
+        var r = await trek.invoke('/night', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId) } });
+        st.night = r;
+        if (!st.dayId || !r.nights.some(function (x) { return x.dayId === st.dayId; })) st.dayId = r.dayId;
+        render();
+      } catch (e) { st.night = null; }
+    }
+
     function render() {
       var app = document.getElementById('app');
       var d = st.data;
@@ -192,14 +272,19 @@
         ])
       );
       summary(d).forEach(function (n) { app.appendChild(n); });
+      if (d.night || d.nightStatus) { var ns = nightSection(); if (ns) app.appendChild(ns); }
       app.appendChild(h('div', { class: 'actions' }, [
         h('button', { class: 'trek-btn trek-btn--ghost', type: 'button', disabled: st.filling ? 'disabled' : null, text: st.filling ? S('ui.filling') : S('ui.fillTrip'), on: { click: fillTrip } }),
       ]));
       if (st.open) app.appendChild(editor(d));
     }
 
-    async function load() {
+    function load() {
       if (!st.tripId || !st.placeId) return;
+      loadAmenities();
+      loadNight();
+    }
+    async function loadAmenities() {
       try {
         st.data = await trek.invoke('/amenities', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId), locale: st.locale } });
         render();
@@ -207,7 +292,7 @@
         if (!st.data.recorded && !st.tried[st.placeId]) {
           st.tried[st.placeId] = true;
           var r = await trek.invoke('/amenities/fill', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId) } });
-          if (r && r.filled) load();
+          if (r && r.filled) loadAmenities();
         }
       } catch (e) {
         document.getElementById('app').replaceChildren(h('p', { class: 'muted', text: '⚠ ' + e.message }));
@@ -265,14 +350,18 @@
       } catch (e) { trek.notify('error', e.message); }
     }
 
+    // In TREK's place edit form (mode "edit") the widget opens straight on its editor.
     trek.onContext(function (ctx) {
-      var changed = ctx.placeId !== st.placeId || ctx.tripId !== st.tripId || (ctx.locale || 'en') !== st.locale;
-      st.tripId = ctx.tripId; st.placeId = ctx.placeId; st.locale = ctx.locale || navigator.language || 'en';
-      if (changed) { st.open = false; load(); }
+      var mode = ctx.mode === 'edit' ? 'edit' : 'view';
+      var changed = ctx.placeId !== st.placeId || ctx.tripId !== st.tripId || (ctx.locale || 'en') !== st.locale || mode !== st.mode;
+      if (ctx.placeId !== st.placeId) { st.dayId = null; st.pending = null; }
+      st.tripId = ctx.tripId; st.placeId = ctx.placeId; st.locale = ctx.locale || navigator.language || 'en'; st.mode = mode;
+      if (changed) { st.open = mode === 'edit'; load(); }
     });
     // A place edited elsewhere (price in TREK's own form): refetch, debounced.
     var timer = null;
-    trek.onEvent(function () { clearTimeout(timer); timer = setTimeout(load, 800); });
+    // Not while the user is typing in the editor or a night's number/reason: a redraw would drop it.
+    trek.onEvent(function () { clearTimeout(timer); timer = setTimeout(function () { if (!st.open && !st.pending && !st.busy) load(); }, 800); });
   </script>
 </body>
 </html>

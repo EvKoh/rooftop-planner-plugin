@@ -286,5 +286,18 @@
   "walk.layer": "Yürüşlər: piyada marşrutlar",
   "walk.from": "{parking} dayanacağından piyada",
   "walk.stats": "{km} km · {time} piyada",
-  "walk.access": "Dayanacaq: {hike}"
+  "walk.access": "Dayanacaq: {hike}",
+  "ui.nightTitle": "Gecələmə",
+  "ui.nightOf": "Hansı gecə",
+  "ui.dayOption": "Gün {n} · {date}",
+  "ui.dayOnly": "Gün {n}",
+  "ui.nightsN": "{n} gecə",
+  "ui.state.spotted": "Boş",
+  "ui.state.contacted": "Danışıqda",
+  "ui.state.booked": "Bron edilib",
+  "ui.state.dropped": "Ləğv edilib",
+  "ui.confirmationOpt": "Təsdiq nömrəsi (istəyə bağlı)",
+  "ui.reasonOpt": "Səbəb (istəyə bağlı)",
+  "ui.nightSet": "Gecələmə: {status}",
+  "ui.confirmAvailable": "Yenidən boş: bu gecənin bronu TREK-dən silinir. Qalma planda qalır."
 }

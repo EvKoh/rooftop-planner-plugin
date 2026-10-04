@@ -238,7 +238,11 @@ reconnect the connector.
 - **Place panel** — a widget at the foot of the place view shows the night's status, the host's
   contact (e-mail, phone and website as links, last exchange) and the amenities; it edits the
   amenities and the contact, and has a *Fill the trip's amenities* button. Opening a place with
-  nothing recorded looks it up once.
+  nothing recorded looks it up once. It sets the night's state too: pick the evening, then
+  *Available* (blue: the booking is deleted, the stay stays planned), *In discussion* (amber),
+  *Booked* (green, with an optional confirmation number) or *Cancelled* (red, with an optional
+  reason); TREK's map follows at once. Where TREK mounts place-detail widgets in its own place
+  edit form (`mode: 'edit'` in the frame context), the widget opens there on its editor.
 - **Settings** — TREK's native forms: per user (vehicle, dimensions, dog, target and ceiling price,
   sunset margin, language…) and per instance (park4night on or off, default language).
 

@@ -286,5 +286,18 @@
   "walk.layer": "Excursions: rutes a peu",
   "walk.from": "A peu des de {parking}",
   "walk.stats": "{km} km · {time} a peu",
-  "walk.access": "Aparcament per a: {hike}"
+  "walk.access": "Aparcament per a: {hike}",
+  "ui.nightTitle": "Nit",
+  "ui.nightOf": "Quina nit",
+  "ui.dayOption": "Dia {n} · {date}",
+  "ui.dayOnly": "Dia {n}",
+  "ui.nightsN": "{n} nits",
+  "ui.state.spotted": "Disponible",
+  "ui.state.contacted": "En conversa",
+  "ui.state.booked": "Reservada",
+  "ui.state.dropped": "Cancel·lada",
+  "ui.confirmationOpt": "Número de confirmació (opcional)",
+  "ui.reasonOpt": "Motiu (opcional)",
+  "ui.nightSet": "Nit: {status}",
+  "ui.confirmAvailable": "De nou disponible: la reserva d'aquesta nit s'elimina de TREK. L'estada continua planificada."
 }

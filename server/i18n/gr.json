@@ -286,5 +286,18 @@
   "walk.layer": "Πεζοπορίες: διαδρομές με τα πόδια",
   "walk.from": "Με τα πόδια από {parking}",
   "walk.stats": "{km} km · {time} με τα πόδια",
-  "walk.access": "Πάρκινγκ για: {hike}"
+  "walk.access": "Πάρκινγκ για: {hike}",
+  "ui.nightTitle": "Διανυκτέρευση",
+  "ui.nightOf": "Ποια νύχτα",
+  "ui.dayOption": "Ημέρα {n} · {date}",
+  "ui.dayOnly": "Ημέρα {n}",
+  "ui.nightsN": "{n} νύχτες",
+  "ui.state.spotted": "Διαθέσιμη",
+  "ui.state.contacted": "Σε συζήτηση",
+  "ui.state.booked": "Κρατημένη",
+  "ui.state.dropped": "Ακυρωμένη",
+  "ui.confirmationOpt": "Αριθμός επιβεβαίωσης (προαιρετικό)",
+  "ui.reasonOpt": "Λόγος (προαιρετικό)",
+  "ui.nightSet": "Διανυκτέρευση: {status}",
+  "ui.confirmAvailable": "Ξανά διαθέσιμη: η κράτηση αυτής της νύχτας διαγράφεται από το TREK. Η διαμονή παραμένει στο πρόγραμμα."
 }

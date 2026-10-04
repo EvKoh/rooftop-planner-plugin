@@ -286,5 +286,18 @@
   "walk.layer": "Đi bộ đường dài: lộ trình đi bộ",
   "walk.from": "Đi bộ từ {parking}",
   "walk.stats": "{km} km · {time} đi bộ",
-  "walk.access": "Bãi đỗ xe cho: {hike}"
+  "walk.access": "Bãi đỗ xe cho: {hike}",
+  "ui.nightTitle": "Nghỉ đêm",
+  "ui.nightOf": "Đêm nào",
+  "ui.dayOption": "Ngày {n} · {date}",
+  "ui.dayOnly": "Ngày {n}",
+  "ui.nightsN": "{n} đêm",
+  "ui.state.spotted": "Còn trống",
+  "ui.state.contacted": "Đang trao đổi",
+  "ui.state.booked": "Đã đặt",
+  "ui.state.dropped": "Đã hủy",
+  "ui.confirmationOpt": "Mã xác nhận (không bắt buộc)",
+  "ui.reasonOpt": "Lý do (không bắt buộc)",
+  "ui.nightSet": "Nghỉ đêm: {status}",
+  "ui.confirmAvailable": "Trở lại còn trống: đặt chỗ của đêm này bị xóa khỏi TREK. Kỳ lưu trú vẫn nằm trong kế hoạch."
 }

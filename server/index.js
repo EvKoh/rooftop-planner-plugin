@@ -2,7 +2,8 @@
 //
 // What it plugs into (TREK's own surfaces only; the plugin has a single screen):
 //   • widget, slot "place-detail" → the place's amenities, price details, host contacts and
-//                                   night status, at the foot of the place panel (client/index.html)
+//                                   night status (set from there too), at the foot of the place
+//                                   panel and in its edit form (client/index.html)
 //   • mcpToolProvider  → 7 MCP tools `vanlife_*` (advertised as plugin_vanlife_vanlife_*)
 //   • warningProvider  → the planner's warnings banner (cache-only, 5 s budget)
 //   • routeProvider    → two route profiles in the planner's route toggle
@@ -31,6 +32,7 @@ const contacts = require('./lib/contacts');
 const { gentle } = require('./lib/gentle');
 const { bundle, lang } = require('./lib/i18n');
 const { isNightCategory } = require('./lib/classify');
+const { NIGHT_STATES } = require('./lib/design');
 
 const json = (status, body) => ({ status, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const ids = (b) => {
@@ -207,6 +209,54 @@ module.exports = definePlugin({
           return json(200, await amenityFill.fill(ctx, tripId, opts));
         } catch (e) {
           return json(403, { error: String((e && e.message) || e) });
+        }
+      },
+    },
+    {
+      // The place panel's night controls: the evenings the place can be set for, its
+      // booking on each, the four states with their colour and icon (design.js).
+      method: 'POST',
+      path: '/night',
+      auth: true,
+      async handler(req, raw) {
+        const ctx = gentle(raw);
+        const at = ids(req.body);
+        if (!at) return json(400, { error: 'tripId and placeId required' });
+        try {
+          if (!(await placeOf(ctx, at.tripId, at.placeId))) return json(404, { error: 'place not in this trip' });
+          const model = await loadTrip(ctx, at.tripId, null);
+          return json(200, { states: NIGHT_STATES, ...nightStatus.placeNights(model, at.placeId) });
+        } catch (e) {
+          return json(403, { error: String((e && e.message) || e) });
+        }
+      },
+    },
+    {
+      // Set a night's state as the user declares it in TREK: available (the booking is
+      // deleted, the stay stays planned), in discussion, booked, cancelled.
+      method: 'POST',
+      path: '/night/set',
+      auth: true,
+      async handler(req, raw) {
+        const ctx = gentle(raw);
+        const at = ids(req.body);
+        const b = req.body || {};
+        const dayId = Number(b.dayId);
+        if (!at || !Number.isInteger(dayId) || dayId < 1) return json(400, { error: 'tripId, placeId and dayId required' });
+        if (!nightStatus.STATUSES.includes(b.status)) return json(400, { error: `status must be one of ${nightStatus.STATUSES.join(', ')}` });
+        try {
+          if (!(await placeOf(ctx, at.tripId, at.placeId))) return json(404, { error: 'place not in this trip' });
+          const model = await loadTrip(ctx, at.tripId, null);
+          const text = (v, n) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : undefined);
+          const result = await nightStatus.set(ctx, model, {
+            placeId: at.placeId, dayId, status: b.status, clear: true,
+            confirmation: b.status === 'booked' ? text(b.confirmation, 100) : undefined,
+            reason: b.status === 'dropped' ? text(b.reason, 200) : undefined,
+          });
+          const fresh = await loadTrip(ctx, at.tripId, null);
+          return json(200, { result, ...nightStatus.placeNights(fresh, at.placeId), dayId });
+        } catch (e) {
+          return json(e instanceof nightStatus.NightError ? 400 : 403, { error: String((e && e.message) || e) });
         }
       },
     },
