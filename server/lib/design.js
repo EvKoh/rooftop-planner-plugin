@@ -2,10 +2,11 @@
 // THE design catalogue of the plugin: every colour and every pictogram it shows, in one place.
 // Nothing else in the plugin picks a tone or an icon; it asks this module.
 //
-//   Colour = state.  green  planned / booked
+//   Colour = state.  green  confirmed (a booked night) or planned (an activity in the plan)
+//                    blue   a night in the plan but not asked for yet (TREK's default tone)
 //                    amber  in discussion, or a point to watch (timed access, booking, warning)
-//                    red    dropped, or something that rules the place out
-//                    neutral information (price, amenity, visit time)
+//                    red    cancelled / dropped, or something that rules the place out
+//                    neutral information on chips (price, amenity, visit time)
 //   Pictogram = kind. A night by the ground it is spent on (tent, farm, home, hut, motorhome
 //                    area, hotel), an activity by what it is (hike, lake, viewpoint, village…).
 //
@@ -55,12 +56,18 @@ const CHIP = {
 };
 
 /** Pictogram of a night, by the ground it is spent on (classify.nightKind). */
-const NIGHT_PICTOGRAM = { campsite: 'Tent', farm: 'Leaf', private: 'Home', hut: 'Mountain', aire: 'Car', parking: 'Car', hotel: 'BedDouble', unknown: 'BedDouble' };
-const HOTEL = /hotel|b&b|bed and breakfast|chambre d.?hote|gasthof|pension|albergo|hostal|hostel|en dur|apartment|appartement|lodge|motel/;
+const NIGHT_PICTOGRAM = { campsite: 'Tent', farm: 'Leaf', private: 'Home', cabin: 'Home', hut: 'Mountain', aire: 'Car', parking: 'Car', hotel: 'BedDouble', unknown: 'BedDouble' };
+const HOTEL = /hotel|b&b|bed and breakfast|chambre d.?hote|gasthof|pension|albergo|hostal|hostel|auberge|en dur|apartment|appartement|ferienwohnung|lodge|motel|guesthouse|guest house|ryokan/;
+const CABIN = /chalet|cabin|cabane|bungalow|glamping|yourte|yurt|tiny house|mobil-?home|hutte en bois|baita privata/;
 
 /** Pictogram of an activity, most specific first (English, French, Italian, German, Spanish). */
 const ACTIVITY_PICTOGRAM = [
   ['Flag', /depart|retour|start|finish|home base|domicile|abfahrt|partenza|salida/],
+  ['Plane', /aeroport|airport|flughafen|aeroporto|aeropuerto/],
+  ['Train', /\bgare\b|train|bahnhof|stazione|estacion|railway/],
+  ['Bus', /\bbus\b|navette|shuttle|autobus|pullman/],
+  ['Ship', /bateau|boat|ferry|fahre|faehre|traghetto|ferri|canoe|kayak|rafting|paddle|barca|croisiere|cruise/],
+  ['Bike', /velo|bike|cycl|vtt|radtour|fahrrad|bici|mountain ?bike/],
   ['Mountain', /randonn|hike|hiking|trek(king)?\b|trail|wander|escursion|sentier|senderis|via ferrata|sommet|summit|gipfel|cima\b/],
   ['Mountain', /remontee|telepherique|telecabine|telesiege|cable car|gondola|chairlift|seilbahn|sessellift|funivia|seggiovia|teleferico/],
   ['Utensils', /refuge|rifugio|hutte|huette|\bhut\b|baita|\balm\b|restaurant|ristorante|trattoria|pizzeria|bistro|brasserie|gasthaus|osteria|taverna/],
@@ -75,7 +82,16 @@ const ACTIVITY_PICTOGRAM = [
   ['Car', /carburant|fuel|petrol|gas station|station[- ]service|tankstelle|distributore|benzin|gasolinera|parking|parcheggio|parkplatz|peage|toll|maut|pedaggio/],
   ['Cross', /sante|health|veterinaire|\bvet\b|pharmacie|pharmacy|apotheke|farmacia|hopital|hospital|medecin|doctor/],
   ['Waves', /\beau\b|water|wasser|acqua|agua|vidange|dump station|\bwc\b|toilet|douche|shower/],
-  ['Ticket', /activite|activity|event|evenement|festival|concert|spectacle|show|aktivit|attivita|actividad/],
+  ['Theater', /theatre|theater|cinema|kino|teatro|opera/],
+  ['Music', /concert|musique|music|konzert|concerto|festival/],
+  ['Wine', /\bvin\b|wine|wein|vino|winery|cantina|bodega|degustation|tasting|domaine viticole/],
+  ['Beer', /biere|beer|\bbier\b|birra|brewery|brauerei|birrificio/],
+  ['Waves', /piscine|swimming|baignade|schwimm|piscina|thermal|therme|terme|spa\b/],
+  ['Dumbbell', /sport|escalade|climbing|kletter|arrampicata|escalada|ski\b|luge|rodel|golf/],
+  ['Compass', /office de tourisme|tourist (info|office)|touristinfo|tourismusburo|ufficio turistico|oficina de turismo/],
+  ['Library', /bibliotheque|library|bibliothek|biblioteca/],
+  ['Heart', /\bzoo\b|animal|tierpark|wildpark|parco faunistico|safari|ferme pedagogique/],
+  ['Ticket', /activite|activity|event|evenement|spectacle|show|aktivit|attivita|actividad|parc d.?attraction|theme park|freizeitpark/],
 ];
 
 /** The icons a map marker may carry: TREK draws these and nothing else. */
@@ -87,6 +103,7 @@ function pictogramFor(place, { night = false } = {}) {
   const name = norm(place.name);
   if (night) {
     if (HOTEL.test(cat) || HOTEL.test(name)) return NIGHT_PICTOGRAM.hotel;
+    if (CABIN.test(cat) || CABIN.test(name)) return NIGHT_PICTOGRAM.cabin;
     return NIGHT_PICTOGRAM[nightKind(place.categoryName, place.name)] || NIGHT_PICTOGRAM.unknown;
   }
   for (const text of [cat, name]) {

@@ -89,14 +89,17 @@ camping on public ground.
   where a municipal rule forbids it); impossible times; a shopping detour over the limit; nights in a row without water; a
   place that refuses the vehicle, the dog, or the vehicle's height, length or weight.
 - **Map overview** — every planned stop of every day as a small dot on the trip map, whatever day
-  is selected: green means planned (a visit, or a booked night), amber a night in discussion, red a
-  dropped one; a place with no dot is not in the plan.
+  is selected, each with the pictogram of its kind: green means confirmed or planned, blue a night not
+  asked for yet, amber a night in discussion, red a cancelled one; a place with no dot is not in the
+  plan.
   A tap gives the days and the times. Off with the *map overview* setting.
 - **One look everywhere** — every colour and pictogram the plugin shows comes from one catalogue
-  (`server/lib/design.js`). Colour is the state: green planned or booked, amber in discussion or a
-  point to watch, red dropped or ruled out. The pictogram is the kind of place: a tent, a farm, a
-  home, a hut, a motorhome area or a bed for a night; a mountain, a lake, a viewpoint, a village,
-  a market, groceries, a café or a fuel stop for an activity.
+  (`server/lib/design.js`). Colour is the state: green confirmed (a booked night) or planned (an
+  activity), blue a night planned but not asked for yet, amber in discussion or a point to watch,
+  red cancelled or ruled out. The pictogram is the kind of place: tent, farm, home or cabin, hut,
+  motorhome area or bed for a night; mountain (hike, lift), lake or pool, forest, viewpoint, church,
+  village or museum, market, groceries, restaurant or hut, café, wine, beer, theatre, concert, bike,
+  boat, train, bus, plane, sport, tourist office, zoo, fuel or parking for an activity.
 - **Nights** — candidates between the evening's last visit and the next morning's first stop, from
   OpenStreetMap and, if the instance enables it, park4night; ranked by legality, price and real
   detour.

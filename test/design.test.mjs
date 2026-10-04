@@ -25,7 +25,8 @@ describe('design catalogue', () => {
     expect(d.markerStyle(camp, { night: true, status: 'booked' })).toEqual({ tone: 'success', icon: 'Tent' });
     expect(d.markerStyle(camp, { night: true, status: 'contacted' }).tone).toBe('warn');
     expect(d.markerStyle(camp, { night: true, status: 'dropped' }).tone).toBe('danger');
-    expect(d.markerStyle(camp, { night: true }).tone).toBe('default');
+    expect(d.markerStyle(camp, { night: true }).tone).toBe('default'); // planned, not asked yet: blue
+    expect(d.markerStyle(camp, { night: true, status: 'spotted' }).tone).toBe('default');
   });
 
   it('draws a pictogram per kind of place, from the category first, in several languages', () => {
@@ -45,5 +46,12 @@ describe('design catalogue', () => {
     expect(act('Visita', 'Museo del Prado')).toBe('Landmark');
     expect(act('', 'Rifugio Example')).toBe('Utensils');
     expect(act('', 'Somewhere')).toBe('MapPin');
+    expect(night('Night', 'Chalet des Pins')).toBe('Home');
+    expect(night('Unterkunft', 'Gasthof zur Post')).toBe('BedDouble');
+    for (const [name, icon] of [['Location vélo', 'Bike'], ['Kayak sur le lac', 'Ship'], ['Gare de Brunico', 'Train'], ['Navette Tre Cime', 'Bus'],
+      ['Aéroport', 'Plane'], ['Cinéma', 'Theater'], ['Concert', 'Music'], ['Dégustation de vin', 'Wine'], ['Brauerei', 'Beer'],
+      ['Piscine municipale', 'Waves'], ['Escalade', 'Dumbbell'], ['Office de tourisme', 'Compass'], ['Zoo', 'Heart']]) {
+      expect([name, act('', name)]).toEqual([name, icon]);
+    }
   });
 });
