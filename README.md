@@ -222,7 +222,7 @@ reconnect the connector.
   places list, and the map's hover card
   once an admin lets the plugin in (Admin → Default user settings → *Plugin info on places*).
 
-  <img src="./docs/hover-card.png" alt="Hover card of a booked farm night: green bed marker, Booked chip, price per night and one chip per amenity" width="254">
+  <img src="./docs/hover-card.png" alt="Hover card of a booked farm night: green marker, Booked chip, price per night and one chip per amenity" width="254"> <img src="./docs/hover-card-discussion.png" alt="Hover card of a campsite in discussion: amber tent marker, In discussion chip, price and amenities" width="299">
 - **Place panel** — a widget at the foot of the place view shows the night's status, the host's
   contact (e-mail, phone and website as links, last exchange) and the amenities; it edits the
   amenities and the contact, and has a *Fill the trip's amenities* button. Opening a place with
