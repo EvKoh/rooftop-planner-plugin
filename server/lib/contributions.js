@@ -7,7 +7,8 @@
 // plugin keeps); amenities come from the place's plugin data. The host caps each value at
 // 256 characters and strips emoji, so icons are lucide names and the text uses plain words
 // and the symbols ✗ ↕ ↔, which survive. Editing happens in the place widget, so no button
-// is added here.
+// is added here. Timed access (arrive before / after a set hour), a required booking and an
+// access toll each get a small chip, only when recorded.
 const placeInfo = require('./place-info');
 const nightStatus = require('./night-status');
 const { t, num, locale } = require('./i18n');
@@ -83,6 +84,10 @@ async function placeColumns(ctx, tripId, settings) {
     // A free stop (lunch break, viewpoint) is not a night: no "0,00 €/night" on it.
     if (price && !(+p.price === 0 && !rec)) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-price', label: t(L, 'col.price'), value: price.slice(0, 256), icon: 'Euro' });
     if (!rec) continue;
+    // Timed access, booking, toll: one small chip each, only when recorded.
+    for (const c of placeInfo.accessChips(rec, L, p.currency || 'EUR')) {
+      out.push({ kind: 'column', entityId: p.id, id: `vanlife-${c.key}`, label: c.label, value: c.value.slice(0, 256), icon: c.icon, tone: c.tone });
+    }
     // Time on site of a visit: "3 h 30 min" (the host strips emoji: a lucide icon instead).
     const visit = placeInfo.visitText(rec);
     if (visit) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-visit', label: t(L, 'col.visit'), value: visit, icon: 'Timer', tone: 'default' });

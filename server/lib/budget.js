@@ -1,7 +1,8 @@
 'use strict';
 // Trip budget the way it is decided: each night (price × nights), fuel per day from the
 // day's road kilometres, tolls from the budget lines that name them, and a comparison of
-// options in money (night price + fuel of the extra kilometres). Nothing is estimated in
+// options in money (night price + fuel of the extra kilometres), and the access tolls and
+// tickets recorded on the day's places (toll_amount, per vehicle). Nothing is estimated in
 // silence: an unknown price stays unknown and is listed.
 const { polylineKm, norm } = require('./util');
 const routing = require('./routing');
@@ -54,6 +55,25 @@ async function tripBudget(ctx, model, o, { settings, deadline, network = true })
   const tolls = costs ? costs.filter((b) => TOLL.test(norm(`${b.name} ${b.category || ''}`))).map((b) => ({ name: b.name, amount: +b.total_price || 0 })) : null;
   const motorwayDays = model.days.filter((d) => highwayAllowed(settings, d.index, model.days.length)).map((d) => d.n);
 
+  // Access tolls and tickets recorded on the places of each day (once per place and day); one
+  // a budget line already names is not counted twice, one in another currency not summed.
+  const accessTolls = [];
+  for (const d of model.days) {
+    const seen = new Set();
+    for (const a of d.assignments) {
+      const info = (model.poolById.get(a.place.id) || {}).info;
+      if (!info || info.toll_amount == null || seen.has(a.place.id)) continue;
+      seen.add(a.place.id);
+      const currency = info.toll_currency || model.currency;
+      const key = norm(a.place.name);
+      const inBudget = !!costs && costs.some((b) => TOLL.test(norm(`${b.name} ${b.category || ''}`)) && key.length >= 3 && norm(b.name).includes(key));
+      accessTolls.push({ day: d.n, date: d.date, placeId: a.place.id, name: a.place.name, amount: info.toll_amount, currency, inBudget, counted: !inBudget && currency === model.currency });
+    }
+  }
+  const accessTollTotal = r2(accessTolls.filter((x) => x.counted).reduce((s, x) => s + x.amount, 0));
+  const accessTollDays = [...new Set(accessTolls.map((x) => x.day))].map((day) => ({ day, total: r2(accessTolls.filter((x) => x.day === day && x.counted).reduce((s, x) => s + x.amount, 0)) }));
+  const otherCurrency = accessTolls.filter((x) => x.currency !== model.currency);
+
   const nightsTotal = r2(nights.reduce((s, n) => s + (n.total || 0), 0));
   const fuelTotal = r2(fuel.reduce((s, f) => s + f.cost, 0));
   const tollTotal = tolls ? r2(tolls.reduce((s, x) => s + x.amount, 0)) : null;
@@ -73,6 +93,9 @@ async function tripBudget(ctx, model, o, { settings, deadline, network = true })
       const exists = costs.some((b) => FUEL.test(norm(b.name)) && new RegExp(`\\b${f.day}\\b`).test(b.name));
       if (!exists) coreCalls.push({ tool: 'create_budget_item', args: { tripId: model.tripId, name: `Fuel day ${f.day} (${f.km} km)`, category: 'Transport', total_price: f.cost } });
     }
+    for (const x of accessTolls.filter((y) => !y.inBudget)) {
+      coreCalls.push({ tool: 'create_budget_item', args: { tripId: model.tripId, name: `Toll day ${x.day} — ${x.name}${x.currency !== model.currency ? ` (${x.amount} ${x.currency})` : ''}`, category: 'Transport', total_price: x.amount } });
+    }
   }
 
   return {
@@ -80,7 +103,8 @@ async function tripBudget(ctx, model, o, { settings, deadline, network = true })
     nights, nightsTotal, unknownNightPrices: unknown,
     fuel, fuelTotal, fuelPerKm: Math.round(perKm * 1000) / 1000,
     tolls, tollTotal, motorwayDays,
-    total: r2(nightsTotal + fuelTotal + (tollTotal || 0)),
+    accessTolls, accessTollTotal, accessTollDays,
+    total: r2(nightsTotal + fuelTotal + (tollTotal || 0) + accessTollTotal),
     budgetLines: costs ? costs.length : null,
     options,
     coreCalls,
@@ -88,6 +112,7 @@ async function tripBudget(ctx, model, o, { settings, deadline, network = true })
     note: [
       unknown.length ? `Unknown night prices (not counted): ${unknown.join(', ')}.` : null,
       tolls && !tolls.length && motorwayDays.length ? `Motorway days ${motorwayDays.join(', ')} have no toll line in the budget: look up the toll for the exact route.` : null,
+      otherCurrency.length ? `Access tolls in another currency, not in the total: ${otherCurrency.map((x) => `${x.name} ${x.amount} ${x.currency}`).join(', ')}.` : null,
       costs ? null : 'Budget lines not readable (Costs addon off or permission missing): tolls not counted.',
     ].filter(Boolean).join(' ') || null,
   };

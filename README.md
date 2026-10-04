@@ -108,6 +108,29 @@ campsites.
   on request), built from what is still unknown about the place. The plugin never sends it: the
   assistant shows the exact text and waits for your go.
 
+### Timed access, booking, toll
+
+Some places can only be reached at certain hours, or not without a ticket: a mountain toll road
+closed to cars after 09:00, a valley road open to cars only in the evening, a car park with
+time slots to book. Each place can record, in the widget or with `vanlife_place` `set` (`null`
+clears a field):
+
+| Field | Meaning |
+|---|---|
+| `access_before` | `"HH:MM"`: arrive before this time, the road is closed after it. |
+| `access_after` | `"HH:MM"`: cars allowed only after this time. With both fields, `access_before` earlier than `access_after` means closed in between; later means open in between. |
+| `booking_required`, `booking_url`, `booking_note` | A booking is required (slot, car park, road permit), where to make it, and a short note (120 characters at most). |
+| `toll_amount`, `toll_currency` | Toll or ticket per vehicle, and its 3-letter currency (default: the trip's). |
+
+Example, a mountain toll road: `{"access_before": "09:00", "booking_required": true,
+"booking_url": "https://toll-road.example.com", "toll_amount": 30, "toll_currency": "EUR"}`.
+The trip check then says, from the arrival time of the stop (its own time, or the time the day's
+drives give): an arrival after `access_before` is *blocking*, an arrival before `access_after`
+is *to fix*, a booking with none recorded in TREK's bookings or the stop's notes is *to verify*,
+with the link. `vanlife_day` `schedule` moves the proposed departure so every access is met.
+The toll is added to that day's budget in `vanlife_plan_trip`. Each recorded field shows as a
+small chip on the place: *Before 9:00 AM*, *Booking*, *Toll €30.00*.
+
 ## MCP tools
 
 Advertised to assistants as `plugin_vanlife_<name>`; the MCP client needs the opt-in
@@ -119,7 +142,7 @@ Advertised to assistants as `plugin_vanlife_<name>`; the MCP client needs the op
 | `vanlife_check_trip` | Read-only check of a trip for the user's vehicle, including nights with no contact and hosts who have not answered for over 3 days. |
 | `vanlife_find_nights` | Night candidates for one evening (OpenStreetMap, park4night when enabled), with the contacts OpenStreetMap knows. |
 | `vanlife_day` | One tool, three actions: `routes` (road route of each day), `schedule` (times of one day from real drive times), `supplies` (groceries, fuel and water along a day's route). |
-| `vanlife_place` | Everything about a place: list by filter, read, `set` (amenities, price details, contacts), `log` an exchange, `clear` / `clear_fields`, `fill` from open sources. |
+| `vanlife_place` | Everything about a place: list by filter, read, `set` (amenities, price details, timed access, booking, toll, contacts), `log` an exchange, `clear` / `clear_fields`, `fill` from open sources. |
 | `vanlife_night` | `list` where each night stands; `set` a night as spotted, contacted, booked or dropped (a TREK booking pending, confirmed or cancelled). |
 | `vanlife_host_message` | Drafts the information request to a host (English, then French); sends nothing. |
 

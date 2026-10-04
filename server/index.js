@@ -118,7 +118,7 @@ module.exports = definePlugin({
           const site = place.website && !contacts.notOwnSite(place.website) ? place.website : null;
           return json(200, {
             language: L,
-            strings: bundle(L, ['ui.', 'am', 'opt.', 'per.', 'fee', 'st.', 'ch.']),
+            strings: bundle(L, ['ui.', 'am', 'opt.', 'per.', 'fee', 'st.', 'ch.', 'chip.']),
             vehicle: settings.vehicle,
             price: place.price == null ? null : +place.price,
             currency: place.currency || null,
@@ -128,6 +128,8 @@ module.exports = definePlugin({
             priceText: placeInfo.priceText(place.price == null ? null : +place.price, place.currency || 'EUR', info, L, { night }),
             units: placeInfo.PER,
             visitText: placeInfo.visitText(info),
+            // Timed access, booking, toll: the planner's chips, as text.
+            access: placeInfo.accessChips(info, L, place.currency || 'EUR').map((c) => ({ key: c.key, value: c.value, tone: c.tone })),
             recorded: !!info,
             summary: placeInfo.amenitiesText(info, L),
             refused: placeInfo.refuses(info, settings),

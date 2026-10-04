@@ -86,6 +86,12 @@
       else kids.push(h('div', { class: 'muted', text: S('ui.none') }));
       if (extra.length) kids.push(h('div', { class: 'muted', text: extra.join(' · ') }));
       if (d.visitText) kids.push(h('div', { class: 'line' }, [h('span', { text: S('ui.visit') + ' : ' + d.visitText })]));
+      // Timed access, booking, toll: the planner's chips, then the booking link and note.
+      if (d.access && d.access.length) kids.push(h('div', { class: 'line' }, d.access.map(function (a) { return h('span', { class: a.tone === 'warn' ? 'trek-chip trek-chip--warning' : 'trek-chip', text: a.value }); })));
+      var bk = [];
+      if (d.info.booking_url && /^https?:\/\//i.test(d.info.booking_url)) bk.push(h('a', { href: d.info.booking_url, target: '_blank', rel: 'noopener noreferrer', text: S('ui.book') }));
+      if (d.info.booking_note) bk.push(h('span', { class: 'muted', text: d.info.booking_note }));
+      if (bk.length) kids.push(h('div', { class: 'contact' }, bk));
       if (d.info.visit_source) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.visit_source) }));
       if (d.info.source) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.source) + (d.info.checked ? ' · ' + new Intl.DateTimeFormat(st.locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(d.info.checked + 'T12:00:00Z')) : '') }));
       return kids.concat(contactLinks(d));
@@ -137,6 +143,16 @@
           field(S('ui.visitMin'), minutes('visit_min_minutes', d.info.visit_min_minutes)),
           field(S('ui.visitMax'), minutes('visit_max_minutes', d.info.visit_max_minutes)),
         ]),
+        h('div', { class: 'sub', text: S('ui.access') }),
+        h('div', { class: 'grid' }, [
+          field(S('ui.accessBefore'), textInput('access_before', d.info.access_before, 'time')),
+          field(S('ui.accessAfter'), textInput('access_after', d.info.access_after, 'time')),
+          field(S('ui.bookingRequired'), select('booking_required', ['unknown', 'yes', 'no'], d.info.booking_required === true ? 'yes' : d.info.booking_required === false ? 'no' : 'unknown', function (o) { return S('opt.' + o); })),
+          field(S('ui.bookingUrl'), textInput('booking_url', d.info.booking_url, 'url', { autocomplete: 'off', inputmode: 'url', maxlength: '500' })),
+          field(S('ui.tollAmount'), number('toll_amount', d.info.toll_amount)),
+          field(S('ui.tollCurrency'), textInput('toll_currency', d.info.toll_currency, 'text', { maxlength: '3', autocapitalize: 'characters', placeholder: d.currency || 'EUR' })),
+        ]),
+        field(S('ui.bookingNote'), textInput('booking_note', d.info.booking_note, 'text', { maxlength: '120', placeholder: S('ui.bookingNoteHint') })),
         h('div', { class: 'grid' }, [
           field(S('ui.maxHeight'), number('max_height_m', d.info.max_height_m)),
           field(S('ui.maxLength'), number('max_length_m', d.info.max_length_m)),
@@ -206,11 +222,15 @@
       });
       if (contacts.languages) contacts.languages = contacts.languages.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
       set.contacts = contacts;
-      ['price_amount', 'dog_fee', 'max_height_m', 'max_length_m', 'max_weight_t', 'visit_min_minutes', 'visit_max_minutes'].forEach(function (k) { set[k] = set[k] === '' ? null : Number(set[k]); });
+      ['price_amount', 'dog_fee', 'max_height_m', 'max_length_m', 'max_weight_t', 'visit_min_minutes', 'visit_max_minutes', 'toll_amount'].forEach(function (k) { set[k] = set[k] === '' ? null : Number(set[k]); });
       set.currency = String(set.currency || 'EUR').toUpperCase();
       // An empty unit or note means "not said".
       set.per = set.per ? set.per : null;
       set.price_note = String(set.price_note || '').trim() || null;
+      // Access: an empty time, link, note or currency means "not said"; booking is yes / no / unknown.
+      ['access_before', 'access_after', 'booking_url', 'booking_note', 'toll_currency'].forEach(function (k) { set[k] = String(set[k] || '').trim() || null; });
+      if (set.toll_currency) set.toll_currency = set.toll_currency.toUpperCase();
+      set.booking_required = set.booking_required === 'yes' ? true : set.booking_required === 'no' ? false : null;
       try {
         await trek.invoke('/amenities/save', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId), set: set } });
         trek.notify('success', S('ui.saved'));

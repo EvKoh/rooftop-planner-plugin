@@ -15,7 +15,7 @@ const DAY = { type: 'integer', minimum: 1, maximum: 400, description: 'Day numbe
 const HHMM = { type: 'string', pattern: '^[0-2]?[0-9]:[0-5][0-9]$', description: 'Local time, HH:MM.' };
 const LAT = { type: 'number', minimum: -90, maximum: 90 };
 const LNG = { type: 'number', minimum: -180, maximum: 180 };
-const { AMENITIES, PER, PRICE_NOTE_MAX } = require('./place-info');
+const { AMENITIES, PER, PRICE_NOTE_MAX, BOOKING_NOTE_MAX, TOLL_MAX } = require('./place-info');
 // One yes/no/unknown property per amenity (dog also takes "fee"), in place-info's order.
 const AMENITY_PROPS = Object.fromEntries(Object.entries(AMENITIES).map(([k, v]) => [k, { type: 'string', enum: v }]));
 
@@ -23,7 +23,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_plan_trip',
     title: 'Plan or re-plan a vanlife road trip (all-in-one)',
-    description: `All-in-one planner for a road trip with a rooftop tent, a campervan or a motorhome (the user's setting). With tripId: full check, challenges each night (cheaper legal night nearby), day routes, schedules from real drive times (arrive the configured margin before sunset), budget total (nights, fuel, tolls), overloaded days from visit durations, possible savings; returns a report, an ordered action list and the core TREK calls to make (reorder_day_assignments, update_assignment_time, create_budget_item). When "continuation" is returned, call again with it until it is null. apply=false (default) only proposes; apply=true also writes the day route places. Without tripId, pass "request" (destination, dates, wishes) for the steps to create the trip. Research what is marked "toVerify" on official sites first; vanlife_host_message drafts a question to a host. ${SAFETY}`,
+    description: `All-in-one planner for a road trip with a rooftop tent, a campervan or a motorhome (the user's setting). With tripId: full check, challenges each night (cheaper legal night nearby), day routes, schedules from real drive times (arrive the configured margin before sunset), budget total (nights, fuel, tolls incl. places' access tolls), overloaded days from visit durations, possible savings; returns a report, an ordered action list and the core TREK calls to make (reorder_day_assignments, update_assignment_time, create_budget_item). When "continuation" is returned, call again with it until it is null. apply=false (default) only proposes; apply=true also writes the day route places. Without tripId, pass "request" (destination, dates, wishes) for the steps to create the trip. Research what is marked "toVerify" on official sites first; vanlife_host_message drafts a question to a host. ${SAFETY}`,
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -49,7 +49,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_check_trip',
     title: 'Check a vanlife trip for problems',
-    description: `Read-only check of a trip, day by day, for the user's vehicle. Levels: blocking (arrival after sunset minus the margin; stop outside its hours; check-in window or minimum stay missed; a night the vehicle may not use: motorhome area or car park for a rooftop tent, tents or dogs refused, size limit; booking confirmed with no number), fix (impossible times, overlaps, route place missing/not first/not joined, long shopping detour, nights without water in a row, stale lines; overloaded day: visit durations + drive > usable day; more than one big activity or two small ones a day), verify (no host contact, host silent over 3 days, farm zone, van night outside a site, closure in the notes, after sunset, price above the ceiling or unknown, visit duration unknown, cheaper legal night within 20 min with its net saving, back to the same camp against tomorrow's direction), info (sunset margins). Fix what is certain; ask the user about choices. Never book, pay or message a host for the user.`,
+    description: `Read-only check of a trip, by day for the user's vehicle. Levels: blocking (arrival after sunset minus margin; stop outside its hours; arrival after a place's access_before; check-in window or minimum stay missed; a night the vehicle may not use: motorhome area or car park for a rooftop tent, tent or dog refused, size limit; booking confirmed with no number), fix (impossible times, overlaps, arrival before access_after or in closed hours; route place missing/not first/not joined; long shopping detour; dry nights in a row; stale lines; overloaded day; over one big or two small activities a day), verify (booking required, none recorded, with link; no host contact or host silent 3 days; farm zone; van night off-site; closure in the notes; after sunset; price above the ceiling or unknown; visit duration unknown; cheaper legal night within 20 min; back to the same camp against the next day's route), info (sunset margins). Fix what is certain; ask the user about choices. Never book, pay or message a host for them.`,
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -87,7 +87,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_day',
     title: 'One day of the trip: routes, schedule or supplies',
-    description: 'Work on the days of a trip; pick "action". "routes": road route of each day with Valhalla for the vehicle (height; length and weight for a motorhome; no tolls except on the motorway days set by the user): km, drive time and legs per day; apply=false (default) proposes, apply=true recreates each day\'s route place in TREK (the old one is deleted) and returns the core reorder_day_assignments calls; resume with startAt when "continuation" is returned. "schedule": start and end of every stop of one day (dayNumber) from real drive times, opening hours in the notes, arrival at the night against sunset minus the margin; returns the core update_assignment_time calls; read-only. "supplies": supermarkets, fuel and drinking water along one day\'s route (dayNumber), distance off the route, hours on that date and whether open at the pass time; read-only. Re-run vanlife_check_trip after a change.',
+    description: 'Work on the days of a trip; pick "action". "routes": road route of each day with Valhalla for the vehicle (height; length and weight for a motorhome; no tolls except on the motorway days set by the user): km, drive time and legs per day; apply=false (default) proposes, apply=true recreates each day\'s route place in TREK (the old one is deleted) and returns the core reorder_day_assignments calls; resume with startAt when "continuation" is returned. "schedule": start and end of every stop of one day (dayNumber) from real drive times, opening hours in the notes, arrival at the night against sunset minus the margin; with no departure given, moves it to meet places\' access_before/access_after (else a conflict); returns the core update_assignment_time calls; read-only. "supplies": supermarkets, fuel and drinking water along one day\'s route (dayNumber), distance off the route, hours on that date and whether open at the pass time; read-only. Re-run vanlife_check_trip after a change.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -116,7 +116,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_place',
     title: 'Everything about a place: amenities, price, contacts, exchanges',
-    description: `Keep what TREK has no field for on a place: amenities, price details, visit duration, the host's contacts and exchanges. Without placeId: list places by "filter" within "scope" (default: planned nights, i.e. with a lodging; counts of all scopes returned). With placeId: read one; "set" records fields (price on TREK's own price, its unit "per" — never night for a museum, lake or car park — and "price_note" for a free formula; visit minutes; amenities yes/no/unknown; contacts: null erases a field); "log" adds one exchange; "clear" removes the record, "clear_fields" only the named fields; "fill" fills empty amenities and contacts from the place's notes and TREK fields, OpenStreetMap and park4night, and a visit duration the notes state, citing each source (platform pages are never a website). A website or phone is copied into TREK's empty fields. Record only what a cited source states; never estimate. Never book, pay or message a host unvalidated.`,
+    description: `Keep what TREK has no field for on a place: amenities, price details, visit duration, timed access, the host's contacts and exchanges. Without placeId: list places by "filter" within "scope" (default: planned nights; counts per scope). With placeId: read one; "set" records fields (price on TREK's own price, unit "per" — never night for a museum, lake or car park — and "price_note", a free formula; visit minutes; access_before/access_after "HH:MM", booking_required (+ booking_url, booking_note), toll_amount per vehicle (+ toll_currency); amenities yes/no/unknown; null erases a field); "log" adds an exchange; "clear" removes the record, "clear_fields" named fields; "fill" fills empty amenities, contacts and a stated visit duration from the place's notes and TREK fields, OpenStreetMap and park4night, citing each source (a platform page is never a website). A website or phone is copied into TREK's empty fields. Record only what a cited source states. Never book, pay or message a host unvalidated.`,
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -137,6 +137,13 @@ const TOOL_SPECS = [
             dog_fee: { type: 'number', minimum: 0, maximum: 1000, nullable: true },
             visit_min_minutes: { type: 'integer', minimum: 5, maximum: 1440, nullable: true, description: 'Least time on site of a visit (museum, lake, hike), in minutes; the check sums it into the day. null erases.' },
             visit_max_minutes: { type: 'integer', minimum: 5, maximum: 1440, nullable: true, description: 'Most time on site, optional.' },
+            access_before: { ...HHMM, nullable: true, description: 'Timed access: arrive before this local time, the road (toll road, pass, valley) is closed to cars after it. null erases.' },
+            access_after: { ...HHMM, nullable: true, description: 'Timed access: cars allowed only after this local time. With access_before earlier than it, the road is closed in between (arrive before OR after); with access_before later, open in between. null erases.' },
+            booking_required: { type: 'boolean', nullable: true, description: 'true = a booking is required to get in (time slot, car park, road permit); null = not known.' },
+            booking_url: { type: 'string', maxLength: 500, nullable: true, description: 'http(s) address where the booking is made.' },
+            booking_note: { type: 'string', maxLength: BOOKING_NOTE_MAX, nullable: true, description: 'Short booking detail, e.g. "30-min slots, book 2 days ahead".' },
+            toll_amount: { type: 'number', minimum: 0, maximum: TOLL_MAX, nullable: true, description: 'Toll or access ticket per vehicle (mountain toll road, park entry); added to that day\'s budget.' },
+            toll_currency: { type: 'string', pattern: '^[A-Z]{3}$', nullable: true, description: '3-letter ISO code of the toll; default: the place\'s or trip\'s currency.' },
             max_height_m: { type: 'number', minimum: 1, maximum: 6, nullable: true },
             max_length_m: { type: 'number', minimum: 2, maximum: 25, nullable: true },
             max_weight_t: { type: 'number', minimum: 0.5, maximum: 60, nullable: true },
@@ -173,7 +180,7 @@ const TOOL_SPECS = [
           },
         },
         clear: { type: 'boolean', default: false, description: 'Remove the whole record of the place.' },
-        clear_fields: { type: 'array', maxItems: 40, uniqueItems: true, items: { type: 'string', maxLength: 40 }, description: 'Clear only these: an amenity key, dog_fee, max_height_m, visit_min_minutes, per, price_note, source, checked, a contact field (email, phone...), or amenities / contacts / log.' },
+        clear_fields: { type: 'array', maxItems: 40, uniqueItems: true, items: { type: 'string', maxLength: 40 }, description: 'Clear only these: an amenity key, dog_fee, max_height_m, visit_min_minutes, per, price_note, source, checked, access_before, access_after, booking_required, booking_url, booking_note, toll_amount, toll_currency, a contact field (email, phone...), or amenities / contacts / log.' },
         fill: { type: 'boolean', default: false, description: 'Fill empty amenities and contacts: the place given by placeId, or the next 20 places of the trip; call again while "remaining" is above 0. Never overwrites a recorded value.' },
       },
     },

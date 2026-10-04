@@ -80,4 +80,14 @@ function num(n, l, digits = 2) {
   return new Intl.NumberFormat(locale(l), { maximumFractionDigits: digits }).format(+n);
 }
 
-module.exports = { MESSAGES, CODES, LOCALES, t, has, dayName, lang, bundle, locale, money, num };
+/** 550 minutes → "9 h 10" in French, "9:10 AM" in English: a clock time as the language writes it. */
+function clock(min, l) {
+  if (min == null || !Number.isFinite(+min)) return null;
+  const m = ((Math.round(min) % 1440) + 1440) % 1440;
+  const h = Math.floor(m / 60);
+  const mm = String(m % 60).padStart(2, '0');
+  if (lang(l) === 'fr') return `${h} h ${mm}`;
+  return new Intl.DateTimeFormat(locale(l), { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(new Date(Date.UTC(2000, 0, 1, h, m % 60)));
+}
+
+module.exports = { MESSAGES, CODES, LOCALES, t, has, dayName, lang, bundle, locale, money, num, clock };

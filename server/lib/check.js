@@ -4,7 +4,8 @@
 // in one batch (cache, then a Valhalla matrix), then evaluate the rules day by day.
 // It never writes anything. Levels: blocking > fix > verify > info.
 const { hhmm, hm, distKm, norm } = require('./util');
-const { t, dayName, money, num } = require('./i18n');
+const { t, dayName, money, num, clock } = require('./i18n');
+const placeInfo = require('./place-info');
 const { sunset } = require('./sun');
 const { isShopping, isHike, isTrace, isNightCategory, parkingFromNotes } = require('./classify');
 const rules = require('./rules');
@@ -92,6 +93,35 @@ function dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L,
     add('fix', J, 'day_overloaded', {
       need: fmtDur(needMin), window: fmtDur(windowMin), from: hhmm(from), to: hhmm(to), visits: fmtDur(visitMin), drive: fmtDur(drive), list: biggest.join(', ') || '—',
     }, { ...ids, needMinutes: needMin, windowMinutes: windowMin, visitMinutes: visitMin, driveMinutes: drive });
+  }
+}
+
+// Words in a stop's notes saying the slot, car park or road is booked.
+const BOOKED_NOTE = /\b(booked|reserved|reservation|confirmation|confirmed|ticket|reserve|prenotat|gebucht|reserviert|buchung)/;
+
+/** Is a booking of this place recorded: a TREK booking confirmed or with a number, or words in the stop's notes? */
+function bookingNoted(model, placeId, notes) {
+  const res = (model.reservations || []).some((r) => {
+    const id = r.accommodation_place_id ?? r.place_id ?? null;
+    return id != null && Number(id) === Number(placeId) && r.status !== 'cancelled' && (r.status === 'confirmed' || !!r.confirmation_number);
+  });
+  return res || BOOKED_NOTE.test(norm(notes));
+}
+
+/**
+ * Timed access of a place reached at `arr` (minutes): a road closed after a set hour
+ * (blocking), open only after one or closed in between (fix), a booking required with none
+ * recorded (verify, with the link).
+ */
+function accessFindings({ model, info, name, arr, notes, placeId, add, J, extra, L }) {
+  if (!info) return;
+  const v = placeInfo.accessVerdict(info, arr);
+  if (v) {
+    const params = { name, arr: clock(arr, L), before: clock(v.before, L), after: clock(v.after, L), late: v.late, wait: v.wait };
+    add(v.key === 'access_late' ? 'blocking' : 'fix', J, v.key, params, { ...extra, arrival: hhmm(arr), lateMinutes: v.late ?? null, waitMinutes: v.wait ?? null });
+  }
+  if (info.booking_required === true && !bookingNoted(model, placeId, notes)) {
+    add('verify', J, 'access_booking', { name, note: info.booking_note ? ` (${info.booking_note})` : '', link: info.booking_url ? ` (${info.booking_url})` : '' }, { ...extra, bookingUrl: info.booking_url || null });
   }
 }
 
@@ -229,13 +259,20 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       const start = p.time;
       const end = p.end;
       const extra = { ...ids, placeId: p.id };
+      const leg = legIdx[i];
+      const legMin = prec && prec.end != null && leg && leg.drive != null ? M(leg.drive) : null;
+      // The night's own access is judged with the night below.
+      if (!isTonight) {
+        const info = (model.poolById.get(p.id) || {}).info || null;
+        const arr = start ?? (legMin != null ? prec.end + legMin : null);
+        accessFindings({ model, info, name: p.name, arr, notes: s.notes, placeId: p.id, add, J, extra, L });
+      }
       if (start == null) {
         if (!isTonight) add('fix', J, 'no_time', { name: p.name }, extra);
         prec = { name: p.name, end: null };
         return;
       }
       if (end != null && end < start) add('fix', J, 'ends_before_start', { name: p.name, start: hhmm(start), end: hhmm(end) }, extra);
-      const leg = legIdx[i];
       if (prec && prec.end != null && leg && leg.drive != null) {
         const m = M(leg.drive);
         if (m != null && prec.end + m > start + 5) {
@@ -278,6 +315,8 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       const written = rules.writtenArrival(nuit.notes);
       if (arr != null && written != null && Math.abs(written - arr) > 5) add('fix', J, 'checkin_mismatch', { name: nuit.name, checkin: hhmm(written), arr: hhmm(arr) }, extra);
       else if (arr != null && cs != null && arr <= limit) add('info', J, 'night_margin', { name: nuit.name, arr: hhmm(arr), sunset: hhmm(cs), margin: fmtDur(cs - arr) }, extra);
+
+      accessFindings({ model, info: nuit.info, name: nuit.name, arr, notes: a ? a.notes : '', placeId: nuit.placeId, add, J, extra, L });
 
       const legal = rules.nightLegality({ categoryName: nuit.categoryName, placeName: nuit.name, lat: nuit.lat, lng: nuit.lng, text: nuit.text, vehicle: settings.vehicle });
       if (legal) add(legal.level, J, legal.key, { name: nuit.name, ...zoneText(L, legal.params) }, extra);
@@ -367,4 +406,4 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
   return { ok: counts.blocking === 0, counts, findings, pendingRoutes: pending };
 }
 
-module.exports = { checkTrip, dayPlan, carPos, campOf, isVisit, LEVELS, nameKey };
+module.exports = { checkTrip, dayPlan, carPos, campOf, isVisit, bookingNoted, LEVELS, nameKey };

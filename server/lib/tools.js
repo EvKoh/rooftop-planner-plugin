@@ -83,6 +83,9 @@ function placeView(model, p, info, settings, { full = false } = {}) {
     nightTotal: night ? placeInfo.nightTotal(p.price, info, settings) : null,
     amenities: placeInfo.amenitiesText(info, L),
     visit: placeInfo.visitText(info),
+    // Timed access, booking and toll: "Before 09:00 · Booking · Toll €40.00", or null.
+    access: placeInfo.accessText(info, L, (p.raw && p.raw.currency) || model.currency),
+    bookingUrl: (info && info.booking_url) || null,
     contacts: { ...rec.contacts, ...(full ? {} : { notes: undefined, languages: undefined }) },
     // TREK's own website field, unless it is a platform page (park4night, Google Maps...).
     trekFields: { website: site && !contacts.notOwnSite(site) ? site : null, phone: (p.raw && p.raw.phone) || null },
