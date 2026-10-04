@@ -119,8 +119,8 @@ async function walkGeometry(ctx, walks, { network = false, deadline = null, conc
   const keys = [...new Set(walks.map((w) => w.key).filter(Boolean))];
   let out = new Map();
   try { out = await cache.getMany(ctx, keys); } catch { out = new Map(); }
-  // A route cached before heights were kept (no `up`) is computed again once.
-  const missing = keys.filter((k) => !out.has(k) || out.get(k).up === undefined);
+  // A route cached by an older way of counting the climb is computed again once.
+  const missing = keys.filter((k) => !out.has(k) || out.get(k).climbRule !== CLIMB_RULE);
   if (!network || !missing.length) return out;
   const fresh = [];
   const byKey = new Map(walks.map((w) => [w.key, w]));
@@ -134,7 +134,7 @@ async function walkGeometry(ctx, walks, { network = false, deadline = null, conc
       const rest = deadline ? deadline.left() : 12000;
       if (rest > 1200) {
         try {
-          Object.assign(r, climb(await routing.heights(r.points, { timeoutMs: Math.min(6000, rest - 600) })));
+          Object.assign(r, climb(await routing.heights(r.points, { timeoutMs: Math.min(6000, rest - 600) })), { climbRule: CLIMB_RULE });
         } catch (e) {
           ctx.log?.warn?.('valhalla heights failed', { error: String(e && e.message) });
         }
@@ -149,10 +149,13 @@ async function walkGeometry(ctx, walks, { network = false, deadline = null, conc
   return out;
 }
 
-// Height changes under this are terrain-model noise, not climbing.
-const CLIMB_STEP_M = 5;
+// Heights come in whole metres, sampled along the route: every step counts. A threshold
+// (tried 2-5 m) lost up to a quarter of the climb on loops whose official figure is known.
+const CLIMB_STEP_M = 1;
+// Bumped when the climb is counted differently, so cached walks are measured again.
+const CLIMB_RULE = 2;
 
-/** Metres climbed and descended along a list of heights, noise below CLIMB_STEP_M ignored. */
+/** Metres climbed and descended along a list of heights. */
 function climb(h) {
   let up = 0;
   let down = 0;
