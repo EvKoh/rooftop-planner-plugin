@@ -198,6 +198,7 @@
   "st.contacted": "Danışıqda",
   "st.booked": "Bron edilib",
   "st.dropped": "İmtina edilib",
+  "overview.night": "Gecə — {status}",
   "st.chip.booked": "Bron edilib ✓",
   "st.chip.contacted": "Danışıqda",
   "st.chip.dropped": "İmtina edilib",

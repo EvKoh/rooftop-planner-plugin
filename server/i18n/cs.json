@@ -198,6 +198,7 @@
   "st.contacted": "V jednání",
   "st.booked": "Rezervováno",
   "st.dropped": "Zamítnuto",
+  "overview.night": "Noc — {status}",
   "st.chip.booked": "Rezervováno ✓",
   "st.chip.contacted": "V jednání",
   "st.chip.dropped": "Zamítnuto",

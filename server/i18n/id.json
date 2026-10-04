@@ -198,6 +198,7 @@
   "st.contacted": "Dalam pembicaraan",
   "st.booked": "Dipesan",
   "st.dropped": "Dibatalkan",
+  "overview.night": "Malam — {status}",
   "st.chip.booked": "Dipesan ✓",
   "st.chip.contacted": "Dalam pembicaraan",
   "st.chip.dropped": "Dibatalkan",

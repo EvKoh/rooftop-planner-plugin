@@ -198,6 +198,7 @@
   "st.contacted": "In overleg",
   "st.booked": "Geboekt",
   "st.dropped": "Afgevallen",
+  "overview.night": "Nacht — {status}",
   "st.chip.booked": "Geboekt ✓",
   "st.chip.contacted": "In overleg",
   "st.chip.dropped": "Afgevallen",

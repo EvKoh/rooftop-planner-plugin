@@ -198,6 +198,7 @@
   "st.contacted": "W rozmowach",
   "st.booked": "Zarezerwowany",
   "st.dropped": "Odrzucony",
+  "overview.night": "Nocleg — {status}",
   "st.chip.booked": "Zarezerwowano ✓",
   "st.chip.contacted": "W rozmowach",
   "st.chip.dropped": "Odrzucono",

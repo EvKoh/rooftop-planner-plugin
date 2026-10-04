@@ -198,6 +198,7 @@
   "st.contacted": "Under diskussion",
   "st.booked": "Bokad",
   "st.dropped": "Struken",
+  "overview.night": "Natt — {status}",
   "st.chip.booked": "Bokad ✓",
   "st.chip.contacted": "Under diskussion",
   "st.chip.dropped": "Struken",

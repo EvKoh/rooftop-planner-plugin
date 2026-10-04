@@ -198,6 +198,7 @@
   "st.contacted": "Görüşülüyor",
   "st.booked": "Rezerve edildi",
   "st.dropped": "Elendi",
+  "overview.night": "Gece — {status}",
   "st.chip.booked": "Rezerve ✓",
   "st.chip.contacted": "Görüşülüyor",
   "st.chip.dropped": "Elendi",

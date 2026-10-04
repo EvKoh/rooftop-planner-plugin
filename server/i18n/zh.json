@@ -198,6 +198,7 @@
   "st.contacted": "洽谈中",
   "st.booked": "已预订",
   "st.dropped": "已放弃",
+  "overview.night": "过夜 — {status}",
   "st.chip.booked": "已预订 ✓",
   "st.chip.contacted": "洽谈中",
   "st.chip.dropped": "已放弃",

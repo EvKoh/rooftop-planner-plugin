@@ -198,6 +198,7 @@
   "st.contacted": "Egyeztetés alatt",
   "st.booked": "Lefoglalva",
   "st.dropped": "Elvetve",
+  "overview.night": "Éjszaka — {status}",
   "st.chip.booked": "Lefoglalva ✓",
   "st.chip.contacted": "Egyeztetés alatt",
   "st.chip.dropped": "Elvetve",
