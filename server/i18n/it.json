@@ -198,6 +198,7 @@
   "st.contacted": "In trattativa",
   "st.booked": "Prenotata",
   "st.dropped": "Scartata",
+  "overview.night": "Notte — {status}",
   "st.chip.booked": "Prenotato ✓",
   "st.chip.contacted": "In trattativa",
   "st.chip.dropped": "Scartato",

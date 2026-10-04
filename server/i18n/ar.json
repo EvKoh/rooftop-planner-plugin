@@ -198,6 +198,7 @@
   "st.contacted": "قيد النقاش",
   "st.booked": "محجوز",
   "st.dropped": "مستبعد",
+  "overview.night": "المبيت — {status}",
   "st.chip.booked": "محجوز ✓",
   "st.chip.contacted": "قيد النقاش",
   "st.chip.dropped": "مستبعد",

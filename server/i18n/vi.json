@@ -198,6 +198,7 @@
   "st.contacted": "Đang trao đổi",
   "st.booked": "Đã đặt",
   "st.dropped": "Đã loại",
+  "overview.night": "Đêm — {status}",
   "st.chip.booked": "Đã đặt ✓",
   "st.chip.contacted": "Đang trao đổi",
   "st.chip.dropped": "Đã loại",

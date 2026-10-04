@@ -42,6 +42,8 @@ async function placeOf(ctx, tripId, placeId) {
   return places.find((p) => p.id === placeId) || null;
 }
 
+const { overviewMarkers } = require('./lib/overview-markers');
+
 module.exports = definePlugin({
   async onLoad(ctx) {
     await cache.migrate(ctx);
@@ -60,6 +62,16 @@ module.exports = definePlugin({
         const ctx = gentle(raw);
         const settings = await readSettings(ctx);
         return warnings(ctx, await loadTrip(ctx, tripId, settings), settings);
+      },
+    },
+
+    mapMarkerProvider: {
+      // Every planned stop of the trip, whatever day is selected (overview-markers.js).
+      async getMarkers(tripId, raw) {
+        const ctx = gentle(raw);
+        const settings = await readSettings(ctx);
+        if (!settings.map_overview) return [];
+        return overviewMarkers(await loadTrip(ctx, tripId, settings), settings);
       },
     },
 

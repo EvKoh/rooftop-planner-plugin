@@ -198,6 +198,7 @@
   "st.contacted": "In Klärung",
   "st.booked": "Gebucht",
   "st.dropped": "Verworfen",
+  "overview.night": "Nacht — {status}",
   "st.chip.booked": "Gebucht ✓",
   "st.chip.contacted": "In Klärung",
   "st.chip.dropped": "Verworfen",

@@ -198,6 +198,7 @@
   "st.contacted": "Обговорюється",
   "st.booked": "Заброньовано",
   "st.dropped": "Відхилено",
+  "overview.night": "Ночівля — {status}",
   "st.chip.booked": "Заброньовано ✓",
   "st.chip.contacted": "Обговорюється",
   "st.chip.dropped": "Відхилено",

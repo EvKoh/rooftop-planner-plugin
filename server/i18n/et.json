@@ -198,6 +198,7 @@
   "st.contacted": "Arutlusel",
   "st.booked": "Broneeritud",
   "st.dropped": "Loobutud",
+  "overview.night": "Öö — {status}",
   "st.chip.booked": "Broneeritud ✓",
   "st.chip.contacted": "Arutlusel",
   "st.chip.dropped": "Loobutud",

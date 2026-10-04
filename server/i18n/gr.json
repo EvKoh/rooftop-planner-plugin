@@ -198,6 +198,7 @@
   "st.contacted": "Σε συζήτηση",
   "st.booked": "Κλεισμένη",
   "st.dropped": "Απορριφθείσα",
+  "overview.night": "Διανυκτέρευση — {status}",
   "st.chip.booked": "Κλεισμένο ✓",
   "st.chip.contacted": "Σε συζήτηση",
   "st.chip.dropped": "Απορρίφθηκε",

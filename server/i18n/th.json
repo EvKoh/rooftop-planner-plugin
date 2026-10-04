@@ -198,6 +198,7 @@
   "st.contacted": "กำลังคุย",
   "st.booked": "จองแล้ว",
   "st.dropped": "ตัดออก",
+  "overview.night": "ค้างคืน — {status}",
   "st.chip.booked": "จองแล้ว ✓",
   "st.chip.contacted": "กำลังคุย",
   "st.chip.dropped": "ตัดออก",

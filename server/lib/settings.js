@@ -33,6 +33,7 @@ const DEFAULTS = Object.freeze({
   // A visit this long or longer is a big activity: one a day, or at most two small ones.
   big_activity_minutes: 150,
   drive_time_factor: 1,
+  map_overview: true,
   timezone: 'Europe/Paris',
   language: 'auto',
 });
@@ -57,7 +58,7 @@ async function readSettings(ctx, keys) {
     try { v = await ctx.settings.get(k); } catch { v = undefined; }
     if (v === undefined || v === null || v === '') return;
     if (NUMBERS.includes(k)) { const n = toNum(v); if (n != null && n >= 0) out[k] = n; return; }
-    if (k === 'dog') { out[k] = v === true || v === 'true' || v === 1 || v === '1'; return; }
+    if (k === 'dog' || k === 'map_overview') { out[k] = v === true || v === 'true' || v === 1 || v === '1'; return; }
     out[k] = String(v);
   }));
   if (!VEHICLES.includes(out.vehicle)) out.vehicle = DEFAULTS.vehicle;

@@ -198,6 +198,7 @@
   "st.contacted": "En discussion",
   "st.booked": "Réservée",
   "st.dropped": "Écartée",
+  "overview.night": "Nuit — {status}",
   "st.chip.booked": "Réservé ✓",
   "st.chip.contacted": "En discussion",
   "st.chip.dropped": "Écarté",

@@ -198,6 +198,7 @@
   "st.contacted": "문의 중",
   "st.booked": "예약됨",
   "st.dropped": "제외됨",
+  "overview.night": "숙박 — {status}",
   "st.chip.booked": "예약됨 ✓",
   "st.chip.contacted": "문의 중",
   "st.chip.dropped": "제외됨",

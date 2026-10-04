@@ -86,6 +86,9 @@ camping on public ground.
   (South Tyrol: allowed on private ground with the owner's consent, except in protected areas or
   where a municipal rule forbids it); impossible times; a shopping detour over the limit; nights in a row without water; a
   place that refuses the vehicle, the dog, or the vehicle's height, length or weight.
+- **Map overview** — every planned stop of every day as a small dot on the trip map, whatever day
+  is selected: nights green when booked, amber in discussion, red when dropped; visits in indigo.
+  A tap gives the days and the times. Off with the *map overview* setting.
 - **Nights** — candidates between the evening's last visit and the next morning's first stop, from
   OpenStreetMap and, if the instance enables it, park4night; ranked by legality, price and real
   detour.
@@ -209,6 +212,7 @@ reconnect the connector.
 | `hook:trip-warning-provider` | The warnings banner (cache only, no network). |
 | `hook:route-provider` | The two route profiles. |
 | `hook:table-contributor` | The night status, price and amenities chips on each place. |
+| `hook:map-marker-provider` | The trip overview on the map: a small dot for every planned stop of every day (nights coloured by booking state). Off with the *map overview* setting. |
 | `http:outbound:valhalla1.openstreetmap.de` | Drive times and road geometry. |
 | `http:outbound:overpass-api.de` | Campsites, shops, fuel, water and campsite amenities from OpenStreetMap. |
 | `http:outbound:park4night.com` | park4night search and amenities, only if the instance enables it. |

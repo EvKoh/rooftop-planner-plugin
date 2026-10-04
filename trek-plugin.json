@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -33,6 +33,7 @@
     "hook:trip-warning-provider",
     "hook:route-provider",
     "hook:table-contributor",
+    "hook:map-marker-provider",
     "http:outbound:valhalla1.openstreetmap.de",
     "http:outbound:overpass-api.de",
     "http:outbound:park4night.com"
@@ -199,6 +200,13 @@
       "scope": "user",
       "input_type": "number",
       "default": 1
+    },
+    {
+      "key": "map_overview",
+      "label": "Show every planned stop of the trip on the map (small dots: green booked night, amber in discussion, red dropped, indigo visit)",
+      "scope": "user",
+      "input_type": "checkbox",
+      "default": true
     },
     {
       "key": "timezone",

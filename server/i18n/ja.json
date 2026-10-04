@@ -198,6 +198,7 @@
   "st.contacted": "問い合わせ中",
   "st.booked": "予約済み",
   "st.dropped": "見送り",
+  "overview.night": "宿泊 — {status}",
   "st.chip.booked": "予約済み ✓",
   "st.chip.contacted": "問い合わせ中",
   "st.chip.dropped": "見送り",
