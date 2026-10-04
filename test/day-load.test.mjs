@@ -40,6 +40,12 @@ describe('visit duration read from a text', () => {
     }
     expect(parseVisit('visit 2 min')).toBeNull(); // under 5 min: not a visit
     expect(parseVisit('walk 8h-21h')).toBeNull(); // a span of hours, not a duration
+    // opening hours written as a span are not a visit
+    expect(parseVisit('Ouvert 7 j/7 de 8h30 a 20h30. Magasin declare')).toBeNull();
+    expect(parseVisit('Open daily from 9:00 to 17:00')).toBeNull();
+    expect(parseVisit('Geöffnet von 10:00 bis 16:00')).toBeNull();
+    expect(parseVisit('de 7 h à 19 h')).toBeNull(); // 12 h on site: opening hours
+    expect(parseVisit('Visite guidée de 11 h 45 à 15 h 05')).toMatchObject({ min: 200 });
   });
 
   it('takes the recorded duration first, then the stop\'s times that day, then TREK\'s field', () => {
