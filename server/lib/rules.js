@@ -1,4 +1,5 @@
 'use strict';
+const { LOCALES } = require('./i18n');
 // The travel rules, as pure functions over text and numbers (no TREK, no network), so each
 // one is unit-tested on its own. Ported from a planning checker used on a real trip and
 // kept because each rule caught a real mistake:
@@ -12,13 +13,35 @@ const { norm, hm } = require('./util');
 const { nightKind } = require('./classify');
 const { zoneAt } = require('./zones');
 
-// Weekday names, accent-stripped, Sunday first: French, Italian, German, English.
-const WEEKDAYS = [
+// Weekday names, accent-stripped, Sunday first: the four languages hosts write most in
+// Europe, plus every language TREK ships, from the runtime's own calendar data, so a note
+// written anywhere in the world is read.
+const BASE_WEEKDAYS = [
   ['dimanche', 'domenica', 'sonntag', 'sunday'], ['lundi', 'lunedi', 'montag', 'monday'],
   ['mardi', 'martedi', 'dienstag', 'tuesday'], ['mercredi', 'mercoledi', 'mittwoch', 'wednesday'],
   ['jeudi', 'giovedi', 'donnerstag', 'thursday'], ['vendredi', 'venerdi', 'freitag', 'friday'],
   ['samedi', 'sabato', 'samstag', 'saturday'],
 ];
+const WEEKDAYS = BASE_WEEKDAYS.map((names, wd) => {
+  const out = new Set(names);
+  for (const loc of Object.values(LOCALES)) {
+    try {
+      // 2026-10-04 is a Sunday: + wd days gives that weekday.
+      const d = new Date(Date.UTC(2026, 9, 4 + wd, 12));
+      const name = norm(new Intl.DateTimeFormat(loc, { weekday: 'long', timeZone: 'UTC' }).format(d)).trim();
+      if (name.length >= 2) out.add(name);
+    } catch { /* a runtime without that locale keeps the base names */ }
+  }
+  return [...out];
+});
+// "Closed", accent-stripped, in the languages hosts write in.
+const CLOSED = ['ferme', 'fermee', 'closed', 'chiuso', 'geschlossen', 'cerrado', 'fechado', 'gesloten', 'zamkniete', 'zamkniety',
+  'zavreno', 'zatvorene', 'stangt', 'tancat', 'zarva', 'kapali', 'suljettu', 'lukk', 'закрыто', 'зачинено', 'κλειστο', 'مغلق',
+  '定休', '休業', '休息', '휴무', 'dong cua', 'tutup', 'ปิด'];
+const esc = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const B = '(?<![\\p{L}\\p{N}])'; // word edges that also hold for non-Latin scripts
+const E = '(?![\\p{L}\\p{N}])';
+const CLOSED_RE = `(?:${CLOSED.map(esc).join('|')})`;
 const NEIGHBOUR = /(restaurant|bar|cafe|baita|rifugio|refuge|hotel|chalet|bistro|pizzeria|trattoria)/;
 const quote = (tn, i, before = 60, after = 40) => tn.slice(Math.max(0, i - before), i + after).replace(/\s+/g, ' ').trim();
 
@@ -32,8 +55,10 @@ function closures(text, wd, from, to, { placeName = '', isNight = false } = {}) 
   const out = [];
   const tn = norm(text);
   for (const day of WEEKDAYS[wd]) {
-    // "fermé le lundi", "closed on Monday", "chiuso il lunedì", "Montag Ruhetag", "lundi : fermé".
-    const re = new RegExp(`(ferme|closed|chiuso|geschlossen)\\s+(le |les |on |il |la |am |the )?${day}\\b|\\b${day}s?\\s*[:–-]?\\s*(ferme|closed|chiuso|geschlossen)|\\b${day}( und \\w+)? ruhetag`);
+    // "fermé le lundi", "closed on Monday", "cerrado los lunes", "Montag Ruhetag", "lundi : fermé",
+    // "понедельник — закрыто".
+    const d = esc(day);
+    const re = new RegExp(`${CLOSED_RE}\\s+(?:\\p{L}{1,4}\\s+)?${d}s?${E}|${B}${d}s?\\s*[:–—-]?\\s*${CLOSED_RE}|${B}${d}( und \\p{L}+)? ruhetag`, 'u');
     const i = tn.search(re);
     if (i >= 0) {
       const neighbour = new RegExp(`${NEIGHBOUR.source}\\b[^.;]*$`).test(tn.slice(Math.max(0, i - 70), i)) && !NEIGHBOUR.test(norm(placeName));
@@ -109,6 +134,9 @@ function nightLegality({ categoryName, placeName, lat, lng, text = '', vehicle =
       return { key: 'night_farm_zone', level: 'info', params: { ...zp, rule: 'farm' }, kind, zone: zone.id };
     }
     if (kind === 'private' || kind === 'hut') return { key: 'night_private', level: 'verify', params: {}, kind };
+    // The strict rule everywhere: a tent opens on a campsite, a farm or private ground with the
+    // owner's consent, never on public ground. A night the plugin cannot place is checked.
+    if (kind === 'unknown') return { key: 'night_ground_unknown', level: 'verify', params: {}, kind };
     return null;
   }
   if (kind === 'campsite' || kind === 'farm' || kind === 'aire') return null;

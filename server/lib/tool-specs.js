@@ -212,7 +212,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_host_message',
     title: 'Draft the information request to a night\'s host',
-    description: 'Drafts the message asking the host of a night what is still unknown: rooftop tent (or van) accepted, dog and its supplement, open on the date, estimated arrival time, price, water and electricity when useful. Uses the dates of the night and the crew from the settings (travellers, dog, vehicle). Text in English, then a line of dashes, then French (option language_extra adds Italian or German). Returns the recipient (known contact and preferred channel), a subject, the text and the list of questions. It is a request for information, not a booking. It SENDS NOTHING: show the user the exact text and wait for their explicit validation before it is sent; never send, book or pay on their behalf. After the user sends it, record it with vanlife_place log and vanlife_night status "contacted".',
+    description: 'Drafts the message asking the host of a night what is still unknown: rooftop tent (or van) accepted, dog and its supplement, open on the date, estimated arrival time, price, water and electricity when useful. Uses the dates of the night and the crew from the settings (travellers, dog, vehicle). Text in English, then a line of dashes, then the language of the user (option language_extra adds the language of the host). Returns the recipient (known contact and preferred channel), a subject, the text and the list of questions. It is a request for information, not a booking. It SENDS NOTHING: show the user the exact text and wait for their explicit validation before it is sent; never send, book or pay on their behalf. After the user sends it, record it with vanlife_place log and vanlife_night status "contacted".',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -224,7 +224,7 @@ const TOOL_SPECS = [
         nights: { type: 'integer', minimum: 1, maximum: 30, description: 'Number of nights (default: the planned ones, else 1).' },
         arrival: { ...HHMM, description: 'Estimated arrival (default: the planned time of the night in the day).' },
         extra_questions: { type: 'array', maxItems: 5, items: { type: 'string', maxLength: 200 }, description: 'Further questions, in English.' },
-        language_extra: { type: 'string', enum: ['it', 'de'], description: 'Add the local language after the French.' },
+        language_extra: { type: 'string', enum: ['ar', 'az', 'br', 'ca', 'cs', 'de', 'en', 'es', 'et', 'fr', 'gr', 'hu', 'id', 'it', 'ja', 'ko', 'nl', 'pl', 'ru', 'sk', 'sv', 'th', 'tr', 'uk', 'vi', 'zh', 'zh-TW'], description: 'Add the host\'s language after the user\'s (TREK language code).' },
         signature: { type: 'string', maxLength: 80, description: 'Name to sign with, if the user gives one.' },
       },
     },

@@ -350,8 +350,8 @@ describe('vanlife_host_message', () => {
   beforeEach(() => vi.stubGlobal('fetch', stubFetch()));
   afterEach(() => vi.unstubAllGlobals());
 
-  it('drafts English, a line of dashes, then French, from what the record leaves open', async () => {
-    const h = makeHost();
+  it('drafts English, a line of dashes, then the user\'s language, from what the record leaves open', async () => {
+    const h = makeHost({ userSettings: { language: 'fr', timezone: 'Europe/Rome' } });
     const r = await call(h, 'vanlife_host_message', { tripId: 1, placeId: 13 });
     const [en, fr] = r.text.split(`\n\n${hm.SEPARATOR}\n\n`);
     expect(r.text.split(hm.SEPARATOR)).toHaveLength(2);
@@ -378,7 +378,7 @@ describe('vanlife_host_message', () => {
     const rec = pi.merge(null, { rooftop_tent: 'yes', dog: 'fee', water: 'yes', contacts: { email: 'farm@example.com', whatsapp: '+39 000 000 0018', preferred_channel: 'whatsapp', contact_name: 'Example Host', languages: ['it', 'de'] } });
     const trip = build();
     trip.places.find((p) => p.id === 18).price = null;
-    const h = makeHost({ trip, queryResults: { [pi.COPY_SQL]: [{ place_id: 18, rec: JSON.stringify(rec) }] } });
+    const h = makeHost({ trip, userSettings: { language: 'fr', timezone: 'Europe/Rome' }, queryResults: { [pi.COPY_SQL]: [{ place_id: 18, rec: JSON.stringify(rec) }] } });
     const r = await call(h, 'vanlife_host_message', { tripId: 1, placeId: 18, language_extra: 'de', nights: 2, arrival: '17:00', extra_questions: ['Can we buy eggs?'], signature: 'The travellers' });
     expect(r.to).toEqual({ channel: 'whatsapp', address: '+390000000018', name: 'Example Host' });
     expect(r.otherChannels).toEqual([{ channel: 'email', address: 'farm@example.com' }]);
@@ -397,7 +397,7 @@ describe('vanlife_host_message', () => {
   });
 
   it('asks a van\'s questions for a van, and needs a dated night', async () => {
-    const h = makeHost({ userSettings: { vehicle: 'motorhome', dog: false, travellers: 1, vehicle_length_m: 7.4, vehicle_height_m: 3.1 } });
+    const h = makeHost({ userSettings: { language: 'fr', vehicle: 'motorhome', dog: false, travellers: 1, vehicle_length_m: 7.4, vehicle_height_m: 3.1 } });
     const r = await call(h, 'vanlife_host_message', { tripId: 1, placeId: 19, dayNumber: 2 });
     expect(r.questions.map((q) => q.key)).toEqual(['van', 'open', 'arrival_hours', 'price_confirm', 'water', 'electricity']);
     expect(r.text).toContain('Can we stay overnight in our motorhome (7.4 m × 3.1 m)?');
@@ -410,6 +410,16 @@ describe('vanlife_host_message', () => {
     trip.places.find((p) => p.id === 19).phone = '+39 000 000 0019';
     const p = await call(makeHost({ trip }), 'vanlife_host_message', { tripId: 1, placeId: 19, dayNumber: 2 });
     expect(p.to).toMatchObject({ channel: 'phone', address: '+39 000 000 0019' });
+  });
+
+  it('writes to an English-speaking traveller\'s host in English alone, wherever the trip is', async () => {
+    const r = await call(makeHost(), 'vanlife_host_message', { tripId: 1, placeId: 13 });
+    expect(r.text.split(hm.SEPARATOR)).toHaveLength(1);
+    expect(r.languages_used).toEqual(['en']);
+    expect(r.subject).toBe('Information request — 12/10/2026');
+    // a host language with a template is added after English
+    const de = await call(makeHost(), 'vanlife_host_message', { tripId: 1, placeId: 13, language_extra: 'de' });
+    expect(de.languages_used).toEqual(['en', 'de']);
   });
 });
 

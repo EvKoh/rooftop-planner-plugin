@@ -34,7 +34,8 @@ const DEFAULTS = Object.freeze({
   big_activity_minutes: 150,
   drive_time_factor: 1,
   map_overview: true,
-  timezone: 'Europe/Paris',
+  // The server's own zone until the user sets the trip's: no continent is assumed.
+  timezone: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; } })(),
   language: 'auto',
 });
 
