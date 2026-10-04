@@ -125,7 +125,7 @@ const TOOL_SPECS = [
       properties: {
         tripId: TRIP,
         placeId: { type: 'integer', minimum: 1, description: 'TREK place id. Omit to list places.' },
-        kind: { type: 'string', enum: KINDS, description: 'With placeId: give the place its kind in plain words (night: campsite, farm, aire, private, hut, wild, hotel, cabin; activity: hike, lake, viewpoint, village, market, groceries, restaurant, fuel…). The plugin moves it to the trip category for that kind, so its pictogram on the map follows; its colour comes from its booking (vanlife_night).' },
+        kind: { type: 'string', maxLength: 32, description: `With placeId: give the place its kind in plain words, one of: ${KINDS.join(', ')}. The plugin moves it to the trip category for that kind, so its pictogram on the map follows; its colour comes from its booking (vanlife_night).` },
         filter: { type: 'string', enum: ['nights', 'missing_contacts', 'missing_amenities', 'all'], default: 'nights', description: 'List (no placeId): nights = the nights of the scope; missing_contacts = those with no e-mail or phone; missing_amenities = those with a key amenity unknown; all = every place (scope ignored).' },
         scope: { type: 'string', enum: ['planned', 'candidates', 'all_nights'], default: 'planned', description: 'Which nights the list covers: planned = places with a lodging in the trip (default); candidates = night-category places with no lodging; all_nights = both.' },
         set: {
@@ -203,7 +203,7 @@ const TOOL_SPECS = [
         dayNumber: { ...DAY, description: 'set: the day whose evening the night starts.' },
         dayId: { type: 'integer', minimum: 1, description: 'set: TREK day id, instead of dayNumber.' },
         status: { type: 'string', enum: ['spotted', 'contacted', 'booked', 'dropped'], description: 'set: the new status.' },
-        kind: { type: 'string', enum: KINDS, description: 'set: also give the place its kind in plain words (e.g. "farm" for an agricamping, "campsite", "aire", "hotel", "wild"): the plugin moves it to the trip category for that kind, so its pictogram and colour follow. "A farm we booked" = kind farm + status booked.' },
+        kind: { type: 'string', maxLength: 32, description: 'set: also give the place its kind in plain words (e.g. "farm" for an agricamping, "campsite", "aire", "hotel", "wild"; the full list is in vanlife_place): the plugin moves it to the trip category for that kind, so its pictogram and colour follow. "A farm we booked" = kind farm + status booked.' },
         confirmation: { type: 'string', maxLength: 100, description: 'set booked: the host\'s confirmation number or reference.' },
         reason: { type: 'string', maxLength: 200, description: 'set dropped: why, in a few words (full, no tents, too expensive...).' },
         notes: { type: 'string', maxLength: 500, description: 'set: notes written on the booking.' },
