@@ -10,7 +10,7 @@ describe('trip overview on the map', () => {
     const markers = await h.run(plugin).hook('mapMarkerProvider', 'getMarkers', 1);
     const byName = (re) => markers.find((m) => re.test(m.label));
     // stops of day 1, day 2 and day 3, whatever day is selected; no route line
-    expect(byName(/Braies/)).toMatchObject({ tone: 'default' });
+    expect(byName(/Braies/)).toMatchObject({ tone: 'success' }); // a planned visit is green
     expect(byName(/Visitor Centre/)).toBeTruthy();
     expect(byName(/Lago di Carezza/)).toBeTruthy();
     expect(markers.some((m) => /^.* · Route day/.test(m.label))).toBe(false);

@@ -14,22 +14,7 @@ const nightStatus = require('./night-status');
 const { t, num, locale } = require('./i18n');
 const { isNightCategory } = require('./classify');
 
-// Night status chip: TREK's tones are default | success | warn | danger. A spotted place
-// (no booking) gets no chip.
-const STATUS_CHIP = {
-  booked: { tone: 'success', icon: 'BedDouble' },
-  contacted: { tone: 'warn', icon: 'Clock' },
-  dropped: { tone: 'danger', icon: 'XCircle' },
-};
-
-// Lucide icon per amenity (names known to lucide-react 0.344, the SDK's snapshot).
-const ICONS = {
-  dog: 'Dog', water: 'Droplet', electricity: 'Zap', toilets: 'Bath', shower: 'ShowerHead',
-  dump_station: 'Droplets', wifi: 'Wifi', bins: 'Trash2', laundry: 'WashingMachine', pool: 'Waves',
-  shop: 'ShoppingCart', bakery: 'Croissant', restaurant: 'Sandwich', bar: 'Beer', mobile_data: 'Signal',
-  playground: 'Baby', bbq: 'Flame', gas: 'Cylinder', lpg: 'Fuel', vehicle_wash: 'CarFront',
-  winter: 'Snowflake', rooftop_tent: 'Tent',
-};
+const { NIGHT_STATUS, AMENITY_ICONS, CHIP, TONE } = require('./design');
 
 const cap = (s, L) => s.charAt(0).toLocaleUpperCase(locale(L)) + s.slice(1);
 
@@ -79,10 +64,10 @@ async function placeColumns(ctx, tripId, settings) {
     const rec = info.get(p.id) || null;
     // First, so the host's cap of 20 columns per place never drops it.
     const st = status.get(p.id);
-    if (STATUS_CHIP[st]) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-night', label: t(L, 'col.night'), value: t(L, `st.chip.${st}`), ...STATUS_CHIP[st] });
+    if (NIGHT_STATUS[st]) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-night', label: t(L, 'col.night'), value: t(L, `st.chip.${st}`), ...NIGHT_STATUS[st] });
     const price = placeInfo.priceText(p.price == null ? null : +p.price, p.currency || 'EUR', rec, L, { night: isNight(p) });
     // A free stop (lunch break, viewpoint) is not a night: no "0,00 €/night" on it.
-    if (price && !(+p.price === 0 && !rec)) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-price', label: t(L, 'col.price'), value: price.slice(0, 256), icon: 'Euro' });
+    if (price && !(+p.price === 0 && !rec)) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-price', label: t(L, 'col.price'), value: price.slice(0, 256), ...CHIP.price });
     if (!rec) continue;
     // Timed access, booking, toll: one small chip each, only when recorded.
     for (const c of placeInfo.accessChips(rec, L, p.currency || 'EUR')) {
@@ -90,15 +75,15 @@ async function placeColumns(ctx, tripId, settings) {
     }
     // Time on site of a visit: "3 h 30 min" (the host strips emoji: a lucide icon instead).
     const visit = placeInfo.visitText(rec);
-    if (visit) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-visit', label: t(L, 'col.visit'), value: visit, icon: 'Timer', tone: 'default' });
+    if (visit) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-visit', label: t(L, 'col.visit'), value: visit, ...CHIP.visit });
     for (const c of amenityChips(rec, L)) {
-      out.push({ kind: 'column', entityId: p.id, id: `vanlife-am-${c.key}`, label: c.label, value: c.value.slice(0, 256), icon: ICONS[c.key], tone: 'default' });
+      out.push({ kind: 'column', entityId: p.id, id: `vanlife-am-${c.key}`, label: c.label, value: c.value.slice(0, 256), icon: AMENITY_ICONS[c.key], tone: TONE.info });
     }
     // What is missing shows only when it rules the place out for this vehicle or party.
     const missing = placeInfo.refuses(rec, settings) && missingText(rec, L);
-    if (missing) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-am-no', label: t(L, 'col.amenities'), value: missing.slice(0, 256), icon: 'Ban', tone: 'danger' });
+    if (missing) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-am-no', label: t(L, 'col.amenities'), value: missing.slice(0, 256), ...CHIP.missing });
   }
   return out;
 }
 
-module.exports = { placeColumns, amenityChips, missingText, ICONS, STATUS_CHIP };
+module.exports = { placeColumns, amenityChips, missingText };
