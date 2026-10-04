@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "mis. slot waktu, parkir atau izin jalan",
   "ui.tollAmount": "Tol atau tiket per kendaraan",
   "ui.tollCurrency": "Mata uang tol",
-  "ui.book": "Pesan"
+  "ui.book": "Pesan",
+  "walk.layer": "Pendakian: rute jalan kaki",
+  "walk.from": "Jalan kaki dari {parking}",
+  "walk.stats": "{km} km · {time} jalan kaki",
+  "walk.access": "Parkir untuk: {hike}"
 }

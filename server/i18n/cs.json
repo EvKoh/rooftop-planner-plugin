@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "např. časový slot, parkoviště nebo povolení k vjezdu",
   "ui.tollAmount": "Mýto nebo vstupenka za vozidlo",
   "ui.tollCurrency": "Měna mýta",
-  "ui.book": "Rezervovat"
+  "ui.book": "Rezervovat",
+  "walk.layer": "Túry: pěší trasy",
+  "walk.from": "Pěšky z {parking}",
+  "walk.stats": "{km} km · {time} pěšky",
+  "walk.access": "Parkoviště pro: {hike}"
 }

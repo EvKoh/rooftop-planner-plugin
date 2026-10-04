@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "例：時間枠、駐車場、通行許可",
   "ui.tollAmount": "車両1台あたりの通行料・チケット",
   "ui.tollCurrency": "通行料の通貨",
-  "ui.book": "予約する"
+  "ui.book": "予約する",
+  "walk.layer": "ハイキング：徒歩ルート",
+  "walk.from": "{parking} から徒歩",
+  "walk.stats": "{km} km · 徒歩 {time}",
+  "walk.access": "駐車場：{hike}"
 }

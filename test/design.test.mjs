@@ -9,7 +9,7 @@ const TREK_MARKER_ICONS = ['MapPin', 'Building2', 'BedDouble', 'UtensilsCrossed'
   'Car', 'Plane', 'Ship', 'Bike', 'Activity', 'Dumbbell', 'Mountain', 'Tent', 'Anchor', 'Coffee', 'Beer', 'Wine', 'Utensils',
   'Camera', 'Music', 'Theater', 'Ticket', 'TreePine', 'Waves', 'Leaf', 'Flower2', 'Sun', 'Globe', 'Compass', 'Flag',
   'Navigation', 'Map', 'Church', 'Library', 'Store', 'Home', 'Cross', 'Heart', 'Star', 'CreditCard', 'Wifi', 'Luggage',
-  'Backpack', 'Zap'];
+  'Backpack', 'Zap', 'Footprints', 'ParkingSquare'];
 const TONES = ['default', 'success', 'warn', 'danger'];
 
 describe('design catalogue', () => {
@@ -21,7 +21,7 @@ describe('design catalogue', () => {
 
   it('colours by state only: green booked, amber in discussion, red cancelled, blue otherwise', () => {
     const camp = { name: 'Camping X', categoryName: 'Night – Campsite' };
-    expect(d.markerStyle({ name: 'Lake walk', categoryName: 'Hike' })).toEqual({ tone: 'default', icon: 'Mountain' }); // planned is not booked
+    expect(d.markerStyle({ name: 'Lake walk', categoryName: 'Hike' })).toEqual({ tone: 'default', icon: 'Footprints', glyph: d.GLYPHS.hiker }); // planned is not booked
     expect(d.markerStyle(camp, { night: true, status: 'booked' })).toMatchObject({ tone: 'success', icon: 'Tent', glyph: d.GLYPHS.tent });
     expect(d.markerStyle(camp, { night: true, status: 'contacted' }).tone).toBe('warn');
     expect(d.markerStyle(camp, { night: true, status: 'dropped' }).tone).toBe('danger');
@@ -52,7 +52,9 @@ describe('design catalogue', () => {
     expect(night('Nuitée – Chez l’habitant')).toBe('Home');
     expect(night('Night', 'Hotel Bellevue')).toBe('BedDouble');
     expect(night('Nuitée – Aire')).toBe('Car');
-    expect(act('Voir – Randonnée')).toBe('Mountain');
+    expect(act('Voir – Randonnée')).toBe('Footprints');
+    expect(act('Route – Parking')).toBe('ParkingSquare');
+    expect(act('Départ / retour', 'Example Town')).toBe('Home');
     expect(act('Voir – Lac / nature')).toBe('Waves');
     expect(act('Voir – Point de vue')).toBe('Camera');
     expect(act('Manger – Marché / producteur')).toBe('Store');
@@ -71,6 +73,29 @@ describe('design catalogue', () => {
   });
 });
 
+describe('hikes and car parks', () => {
+  it('draws a hike as a hiker, never a camera, even a viewpoint reached on foot', () => {
+    expect(d.activityKind({ categoryName: 'Voir – Point de vue', name: 'Belvedere Example à pied' })).toBe('hike');
+    expect(d.activityKind({ categoryName: 'See – Viewpoint', name: 'Hike to the Example ridge' })).toBe('hike');
+    expect(d.activityKind({ categoryName: 'Voir – Point de vue', name: 'Belvedere Example' })).toBe('viewpoint');
+    expect(d.markerStyle({ categoryName: 'Voir – Point de vue', name: 'Example chairs on foot' })).toEqual({ tone: 'default', icon: 'Footprints', glyph: d.GLYPHS.hiker });
+  });
+
+  it('draws a car park as a P and only as a P, even when its name mentions a walk', () => {
+    const style = d.markerStyle({ categoryName: 'Route – Parking', name: 'Example car park — summit on foot' });
+    expect(style).toEqual({ tone: 'default', icon: 'ParkingSquare', glyph: d.GLYPHS.parking });
+    expect(d.pictogramFor({ categoryName: 'Route – Carburant', name: 'Fuel Example' })).toBe('Car');
+    // no other kind uses the P
+    for (const [kind, icon] of d.ACTIVITY_PICTOGRAM) if (kind !== 'parking') expect(icon).not.toBe('ParkingSquare');
+    // a night in a car park shows the vehicle slept in, not the P
+    expect(d.markerStyle({ categoryName: 'Nuitée – geoSpot', name: 'Spot' }, { night: true }).glyph).toEqual(d.GLYPHS['rooftop-tent']);
+  });
+
+  it('keeps the dotted line for the walking route alone', () => {
+    expect(d.WALK_LINE.dash).toBe('dot');
+  });
+});
+
 describe('a place given a kind in plain words', () => {
   it('finds the trip category for each kind from the instance\'s own names', () => {
     const cats = [
@@ -84,6 +109,6 @@ describe('a place given a kind in plain words', () => {
     expect(d.categoryForKind(cats, 'lake').id).toBe(5);
     expect(d.categoryForKind(cats, 'market').id).toBe(6);
     expect(d.categoryForKind(cats, 'zoo')).toBeNull();
-    expect(d.KINDS).toEqual(expect.arrayContaining(['farm', 'campsite', 'aire', 'hotel', 'wild', 'hike', 'lake', 'groceries']));
+    expect(d.KINDS).toEqual(expect.arrayContaining(['farm', 'campsite', 'aire', 'hotel', 'wild', 'hike', 'lake', 'groceries', 'parking']));
   });
 });

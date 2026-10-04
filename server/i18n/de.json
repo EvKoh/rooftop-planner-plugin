@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "z. B. Zeitfenster, Parkplatz oder Straßengenehmigung",
   "ui.tollAmount": "Maut oder Ticket pro Fahrzeug",
   "ui.tollCurrency": "Währung der Maut",
-  "ui.book": "Reservieren"
+  "ui.book": "Reservieren",
+  "walk.layer": "Wanderungen: Fußwege",
+  "walk.from": "Zu Fuß ab {parking}",
+  "walk.stats": "{km} km · {time} zu Fuß",
+  "walk.access": "Parkplatz für: {hike}"
 }

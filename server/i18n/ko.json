@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "예: 시간대, 주차장 또는 도로 허가",
   "ui.tollAmount": "차량당 통행료 또는 입장권",
   "ui.tollCurrency": "통행료 통화",
-  "ui.book": "예약"
+  "ui.book": "예약",
+  "walk.layer": "하이킹: 도보 경로",
+  "walk.from": "{parking}에서 도보",
+  "walk.stats": "{km} km · 도보 {time}",
+  "walk.access": "주차장: {hike}"
 }

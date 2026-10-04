@@ -89,10 +89,10 @@ camping on public ground.
   where a municipal rule forbids it); impossible times; a shopping detour over the limit; nights in a row without water; a
   place that refuses the vehicle, the dog, or the vehicle's height, length or weight.
 - **Map overview** — every planned stop of every day as a small dot on the trip map, whatever day
-  is selected, each with the pictogram of its kind: green means confirmed or planned, blue a night not
-  asked for yet, amber a night in discussion, red a cancelled one; a place with no dot is not in the
-  plan.
-  A tap gives the days and the times. Off with the *map overview* setting.
+  is selected, each with the pictogram of its kind (a walker for a hike, a "P" for a car park):
+  green booked, amber in discussion, red cancelled, blue otherwise; a place with no dot is not in
+  the plan. Each hike's walking route is drawn dotted from its car park. A tap gives the days, the
+  times, and for a hike the car park it starts from. Off with the *map overview* setting.
 - **One look everywhere** — every colour and pictogram the plugin shows comes from one catalogue,
   `server/lib/design.js`. On the map, the **colour says the state** (disc and border), the
   **pictogram says the kind** of place. See *Map legend* below.
@@ -154,21 +154,44 @@ The colour of a marker is its state, and nothing else:
 | <img src="./docs/icons/state-cancelled.svg" width="32" alt="red"> | **Cancelled** | the night was dropped |
 | <img src="./docs/icons/state-available.svg" width="32" alt="blue"> | **Available** | planned or not, but neither booked, in discussion nor cancelled — an activity is always blue |
 
-The pictogram is the kind of place. The plugin draws its own for the ways to sleep that TREK's
-icon set lacks (`assets/icons/*.svg`, built into the markers by `npm run build-glyphs`):
+Two signs have one meaning each, and nothing else ever uses them:
 
-| | | | | | |
-|---|---|---|---|---|---|
-| <img src="./docs/icons/motorhome.svg" width="40" alt="motorhome"> | <img src="./docs/icons/rooftop-tent.svg" width="40" alt="rooftop tent"> | <img src="./docs/icons/campervan.svg" width="40" alt="campervan"> | <img src="./docs/icons/car.svg" width="40" alt="car"> | <img src="./docs/icons/tent.svg" width="40" alt="tent"> | <img src="./docs/icons/sleeping-bag.svg" width="40" alt="sleeping bag"> |
-| Motorhome area | Rooftop tent | Campervan | Car | Campsite / tent | Bivouac |
+| | Rule |
+|---|---|
+| <img src="./docs/icons/parking.svg" width="32" alt="P"> | **"P" = parking.** A car park is always and only the "P", and the "P" never means anything else. A night spent in a car park shows the vehicle slept in, not a P. |
+| <img src="./docs/icons/walk-dotted.svg" width="96" alt="dotted line"> | **Dotted line = the walking route of a hike, from its car park.** The plugin draws nothing else dotted or dashed. |
+| <img src="./docs/icons/day-route-grey.svg" width="32" alt="grey"> | **Grey = a day's drive route** (the "day route" places): it carries no state, and grey is used for nothing else. |
 
-A night in a car park or a wild spot shows the traveller's own vehicle (rooftop tent, campervan or
-motorhome, from the settings). Other kinds use TREK's icons: a leaf for a farm (agricamping), a
-home for a private host or a cabin, a mountain for a hut, a bed for a hotel; for activities a
-mountain (hike, lift), waves (lake, beach, pool), a tree (nature), a camera (viewpoint), a church,
-a landmark (village, museum), a store (market), a bag (groceries), cutlery (restaurant, hut), a cup
-(café), wine, beer, theatre, music, a bike, a boat, a train, a bus, a plane, a dumbbell (sport), a
-compass (tourist office), a heart (zoo), a car (fuel, parking) and a flag (departure and return).
+The pictogram is the kind of place. The plugin draws its own where TREK's icon set lacks one
+(`assets/icons/*.svg`, built into the markers by `npm run build-glyphs`):
+
+| | | | | | | | |
+|---|---|---|---|---|---|---|---|
+| <img src="./docs/icons/hiker.svg" width="40" alt="hiker"> | <img src="./docs/icons/parking.svg" width="40" alt="P"> | <img src="./docs/icons/motorhome.svg" width="40" alt="motorhome"> | <img src="./docs/icons/rooftop-tent.svg" width="40" alt="rooftop tent"> | <img src="./docs/icons/campervan.svg" width="40" alt="campervan"> | <img src="./docs/icons/car.svg" width="40" alt="car"> | <img src="./docs/icons/tent.svg" width="40" alt="tent"> | <img src="./docs/icons/sleeping-bag.svg" width="40" alt="sleeping bag"> |
+| Hike | Car park | Motorhome area | Rooftop tent | Campervan | Car | Campsite / tent | Bivouac |
+
+A hike is a walker, never a camera: a viewpoint, a lake or a village whose name says it is
+reached on foot (*"… on foot"*, *"… à pied"*) is a hike too. A night in a car park or a wild spot
+shows the traveller's own vehicle (rooftop tent, campervan or motorhome, from the settings). Other
+kinds use TREK's icons: a leaf for a farm (agricamping), a home for a private host or a cabin, a
+mountain for a hut, a bed for a hotel; for activities a mountain (lift), waves (lake, beach, pool),
+a tree (nature), a camera (viewpoint), a church, a landmark (village, museum), a store (market), a
+bag (groceries), cutlery (restaurant, hut), a cup (café), wine, beer, theatre, music, a bike, a
+boat, a train, a bus, a plane, a dumbbell (sport), a compass (tourist office), a heart (zoo), a car
+(fuel) and a home (departure and return).
+
+### Hikes and their car park
+
+Each hike is tied to the car park that gives access to it, and its walking route is drawn dotted
+from that car park, through the points it passes, to the hike (and back, for a loop), on footpaths
+([Valhalla](https://valhalla1.openstreetmap.de) pedestrian routing, cached for 30 days). The car
+park is, in this order: the one set on the hike (`vanlife_place` `set.access_parking_place_id`);
+a car park planned right before or after the hike that day; the nearest one planned that day
+within 3 km, or any day within 2 km; a *"Start: … 46.1234, 11.5678"* line in the hike's notes.
+A hike that is not planned shows as soon as it is tied to a planned car park. The hike's card on
+the map says which car park it starts from and how long the walk is; the car park's card names
+the hike. `vanlife_place` `filter: "hikes"` lists every hike with its car park and walk;
+`set.walk_via` (points `[lat, lng]`) and `set.walk_loop` shape the route.
 
 From an assistant, one sentence sets both: *"the farm on day 2, we booked it"* is
 `vanlife_night` with `kind: "farm"` and `status: "booked"` — the place moves to the trip's farm
@@ -253,8 +276,9 @@ reconnect the connector.
 | `hook:trip-warning-provider` | The warnings banner (cache only, no network). |
 | `hook:route-provider` | The two route profiles. |
 | `hook:table-contributor` | The night status, price and amenities chips on each place. |
+| `hook:map-layer-provider` | The walking route of each hike, drawn dotted on the trip map from the car park that gives access to it. Off with the *map overview* setting. |
 | `hook:map-marker-provider` | The trip overview on the map: a small dot for every planned stop of every day (green planned, amber in discussion, red dropped). Off with the *map overview* setting. |
-| `http:outbound:valhalla1.openstreetmap.de` | Drive times and road geometry. |
+| `http:outbound:valhalla1.openstreetmap.de` | Drive times and road geometry; walking routes of the hikes. |
 | `http:outbound:overpass-api.de` | Campsites, shops, fuel, water and campsite amenities from OpenStreetMap. |
 | `http:outbound:park4night.com` | park4night search and amenities, only if the instance enables it. |
 

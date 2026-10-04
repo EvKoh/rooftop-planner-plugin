@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "ör. zaman aralığı, otopark veya yol izni",
   "ui.tollAmount": "Araç başına geçiş ücreti veya bilet",
   "ui.tollCurrency": "Geçiş ücreti para birimi",
-  "ui.book": "Rezervasyon yap"
+  "ui.book": "Rezervasyon yap",
+  "walk.layer": "Yürüyüşler: yürüyüş rotaları",
+  "walk.from": "{parking} otoparkından yürüyerek",
+  "walk.stats": "{km} km · {time} yürüyüş",
+  "walk.access": "Otopark: {hike}"
 }

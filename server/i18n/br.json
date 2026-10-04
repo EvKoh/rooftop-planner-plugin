@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "ex.: horário, estacionamento ou licença de estrada",
   "ui.tollAmount": "Pedágio ou ingresso por veículo",
   "ui.tollCurrency": "Moeda do pedágio",
-  "ui.book": "Reservar"
+  "ui.book": "Reservar",
+  "walk.layer": "Trilhas: percursos a pé",
+  "walk.from": "A pé desde {parking}",
+  "walk.stats": "{km} km · {time} a pé",
+  "walk.access": "Estacionamento para: {hike}"
 }

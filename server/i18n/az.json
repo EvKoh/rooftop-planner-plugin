@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "məs. vaxt aralığı, dayanacaq və ya yol icazəsi",
   "ui.tollAmount": "Hər nəqliyyat üçün yol haqqı və ya bilet",
   "ui.tollCurrency": "Yol haqqının valyutası",
-  "ui.book": "Bron et"
+  "ui.book": "Bron et",
+  "walk.layer": "Yürüşlər: piyada marşrutlar",
+  "walk.from": "{parking} dayanacağından piyada",
+  "walk.stats": "{km} km · {time} piyada",
+  "walk.access": "Dayanacaq: {hike}"
 }

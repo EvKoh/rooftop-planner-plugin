@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "e.g. time slot, car park or road permit",
   "ui.tollAmount": "Toll or ticket per vehicle",
   "ui.tollCurrency": "Toll currency",
-  "ui.book": "Book"
+  "ui.book": "Book",
+  "walk.layer": "Hikes: walking routes",
+  "walk.from": "On foot from {parking}",
+  "walk.stats": "{km} km · {time} on foot",
+  "walk.access": "Car park for: {hike}"
 }

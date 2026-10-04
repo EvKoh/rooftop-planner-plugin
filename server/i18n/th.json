@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "เช่น ช่วงเวลา ที่จอดรถ หรือใบอนุญาตใช้ถนน",
   "ui.tollAmount": "ค่าผ่านทางหรือตั๋วต่อคัน",
   "ui.tollCurrency": "สกุลเงินค่าผ่านทาง",
-  "ui.book": "จอง"
+  "ui.book": "จอง",
+  "walk.layer": "เดินป่า: เส้นทางเดินเท้า",
+  "walk.from": "เดินจาก {parking}",
+  "walk.stats": "{km} กม. · เดิน {time}",
+  "walk.access": "ที่จอดรถสำหรับ: {hike}"
 }

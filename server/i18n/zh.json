@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "例：时段、停车场或道路许可",
   "ui.tollAmount": "每车通行费或门票",
   "ui.tollCurrency": "通行费币种",
-  "ui.book": "预订"
+  "ui.book": "预订",
+  "walk.layer": "徒步：步行路线",
+  "walk.from": "从 {parking} 步行",
+  "walk.stats": "{km} 公里 · 步行 {time}",
+  "walk.access": "停车场：{hike}"
 }

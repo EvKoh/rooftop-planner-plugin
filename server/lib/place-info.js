@@ -65,6 +65,10 @@ const VISIT = { visit_min_minutes: [5, 1440], visit_max_minutes: [5, 1440] };
 // (arrive before OR after), after < before a road open in between (arrive after AND before).
 const ACCESS_FIELDS = ['access_before', 'access_after', 'booking_required', 'booking_url', 'booking_note', 'toll_amount', 'toll_currency'];
 const BOOKING_NOTE_MAX = 120;
+// A hike's walk: the car park it starts from (a TREK place of the trip), the points it passes
+// (a loop's refuges, a pass...) and whether it comes back to the car park. walks.js draws it.
+const WALK_FIELDS = ['access_parking_place_id', 'walk_via', 'walk_loop'];
+const WALK_VIA_MAX = 8;
 const TOLL_MAX = 10000;
 const MIGRATION = 'CREATE TABLE IF NOT EXISTS place_info_index (trip_id INTEGER NOT NULL, place_id INTEGER NOT NULL, PRIMARY KEY (trip_id, place_id))';
 const COPY_MIGRATION = 'CREATE TABLE IF NOT EXISTS place_info_copy (place_id INTEGER PRIMARY KEY, trip_id INTEGER NOT NULL, rec TEXT NOT NULL)';
@@ -93,6 +97,9 @@ const blank = () => ({
   booking_note: null,
   toll_amount: null,
   toll_currency: null,
+  access_parking_place_id: null,
+  walk_via: null,
+  walk_loop: null,
   amenities: Object.fromEntries(Object.keys(AMENITIES).map((k) => [k, 'unknown'])),
   source: null,
   checked: null,
@@ -197,6 +204,7 @@ function merge(stored, patch) {
   if ('visit_source' in p) out.visit_source = p.visit_source == null || p.visit_source === '' ? null : String(p.visit_source).slice(0, 200);
   if (out.visit_min_minutes == null && out.visit_max_minutes == null) out.visit_source = null;
   mergeAccess(out, p);
+  mergeWalk(out, p);
   for (const [k, allowed] of Object.entries(AMENITIES)) {
     if (!(k in p)) continue;
     if (!allowed.includes(p[k])) throw new InfoError(`${k} must be one of ${allowed.join(', ')}`);
@@ -210,6 +218,35 @@ function merge(stored, patch) {
   if (out.dog_fee != null && out.amenities.dog === 'unknown') out.amenities.dog = 'fee';
   mergeContacts(out, stored, p);
   return out;
+}
+
+/** The walk fields of a patch (WALK_FIELDS), validated onto `out`. */
+function mergeWalk(out, p) {
+  if ('access_parking_place_id' in p) {
+    const v = p.access_parking_place_id;
+    if (v === null || v === '') out.access_parking_place_id = null;
+    else if (!Number.isInteger(Number(v)) || Number(v) < 1) throw new InfoError('access_parking_place_id must be the id of a car park place of the trip, or null to go back to the guess');
+    else out.access_parking_place_id = Number(v);
+  }
+  if ('walk_via' in p) {
+    const v = p.walk_via;
+    if (v == null || (Array.isArray(v) && !v.length)) out.walk_via = null;
+    else {
+      const bad = () => new InfoError(`walk_via must be a list of at most ${WALK_VIA_MAX} points [lat, lng], or null to clear`);
+      if (!Array.isArray(v) || v.length > WALK_VIA_MAX) throw bad();
+      out.walk_via = v.map((pt) => {
+        const lat = toNum(Array.isArray(pt) ? pt[0] : pt && pt.lat);
+        const lng = toNum(Array.isArray(pt) ? pt[1] : pt && pt.lng);
+        if (lat == null || lng == null || lat < -90 || lat > 90 || lng < -180 || lng > 180) throw bad();
+        return [Math.round(lat * 1e5) / 1e5, Math.round(lng * 1e5) / 1e5];
+      });
+    }
+  }
+  if ('walk_loop' in p) {
+    const v = p.walk_loop;
+    if (v !== null && v !== '' && typeof v !== 'boolean') throw new InfoError('walk_loop must be true (the walk comes back to the car park), false, or null');
+    out.walk_loop = typeof v === 'boolean' ? v : null;
+  }
 }
 
 /**
@@ -254,12 +291,12 @@ function clearPatch(fields) {
     const k = String(f).replace(/^contacts\./, '');
     if (k in AMENITIES) patch[k] = 'unknown';
     else if (NUMBER_FIELDS.includes(k)) patch[k] = null;
-    else if (k === 'per' || k === 'price_note' || k === 'source' || k === 'checked' || ACCESS_FIELDS.includes(k)) patch[k] = null;
+    else if (k === 'per' || k === 'price_note' || k === 'source' || k === 'checked' || ACCESS_FIELDS.includes(k) || WALK_FIELDS.includes(k)) patch[k] = null;
     else if (k === 'amenities') for (const a of Object.keys(AMENITIES)) patch[a] = 'unknown';
     else if (k === 'contacts') for (const c of contacts.FIELDS) contactPatch[c] = null;
     else if (k === 'log') patch.log = null;
     else if (contacts.FIELDS.includes(k)) contactPatch[k] = null;
-    else throw new InfoError(`cannot clear "${f}": name an amenity (${Object.keys(AMENITIES).slice(0, 4).join(', ')}...), ${NUMBER_FIELDS.join(', ')}, per, price_note, source, checked, ${ACCESS_FIELDS.join(', ')}, a contact field (${contacts.FIELDS.join(', ')}), or amenities / contacts / log`);
+    else throw new InfoError(`cannot clear "${f}": name an amenity (${Object.keys(AMENITIES).slice(0, 4).join(', ')}...), ${NUMBER_FIELDS.join(', ')}, per, price_note, source, checked, ${ACCESS_FIELDS.join(', ')}, ${WALK_FIELDS.join(', ')}, a contact field (${contacts.FIELDS.join(', ')}), or amenities / contacts / log`);
   }
   if (Object.keys(contactPatch).length) patch.contacts = contactPatch;
   return patch;
@@ -507,4 +544,4 @@ async function getAll(ctx, tripId, placeIds) {
   return out;
 }
 
-module.exports = { ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

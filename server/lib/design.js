@@ -13,6 +13,12 @@
 //   to sleep. A marker sends the glyph, plus the closest TREK icon as a fallback.
 //   Pictogram = kind. A night by the ground it is spent on (tent, farm, home, hut, motorhome
 //                    area, hotel), an activity by what it is (hike, lake, viewpoint, village…).
+//   Two rules with no exception (the user's, 04/10/2026):
+//     "P" = PARKING. A car park is always and only the "P" pictogram, and "P" never means
+//          anything else (a night spent in a car park shows the vehicle slept in, not a P).
+//     Dotted line = the WALKING ROUTE of a hike, from its access car park. A dotted line on
+//          the map always and only means that; nothing else the plugin draws is dotted or dashed.
+//   A hike is a hiker, never a camera: a viewpoint whose name says it is reached on foot is a hike.
 //
 // Tones are TREK's palette (default | success | warn | danger); icons are lucide names.
 // Map markers can only draw TREK's own icon set (MARKER_ICONS); chips take any lucide name.
@@ -25,6 +31,10 @@ const GLYPHS = require('./glyphs.json');
 const VEHICLE_GLYPH = { rooftop_tent: 'rooftop-tent', campervan: 'campervan', motorhome: 'motorhome', car: 'car' };
 /** Glyphs by kind of night, with the TREK icon used where a host cannot draw glyphs. */
 const NIGHT_GLYPH = { campsite: ['tent', 'Tent'], aire: ['motorhome', 'Car'], bivouac: ['sleeping-bag', 'Tent'] };
+/** Glyphs of the two activity kinds the rules above pin down, with their TREK icon fallback. */
+const ACTIVITY_GLYPH = { hike: ['hiker', 'Footprints'], parking: ['parking', 'ParkingSquare'] };
+/** The only dotted line the plugin draws: a hike's walking route (map layer, see walks.js). */
+const WALK_LINE = { dash: 'dot', width: 4, opacity: 0.9 };
 const BIVOUAC = /bivouac|bivacco|biwak|vivac|duvet|sleeping bag|schlafsack|sacco a pelo|saco de dormir|a la belle etoile/;
 
 /** State → tone. */
@@ -73,13 +83,14 @@ const CABIN = /chalet|cabin|cabane|bungalow|glamping|yourte|yurt|tiny house|mobi
 
 /** Kind, pictogram and pattern of an activity, most specific first (English, French, Italian, German, Spanish). */
 const ACTIVITY_PICTOGRAM = [
-  ['start', 'Flag', /depart|retour|start|finish|home base|domicile|abfahrt|partenza|salida/],
+  ['start', 'Home', /depart|retour|start|finish|home base|domicile|abfahrt|partenza|salida/],
   ['plane', 'Plane', /aeroport|airport|flughafen|aeroporto|aeropuerto/],
   ['train', 'Train', /\bgare\b|train|bahnhof|stazione|estacion|railway/],
   ['bus', 'Bus', /\bbus\b|navette|shuttle|autobus|pullman/],
   ['boat', 'Ship', /bateau|boat|ferry|fahre|faehre|traghetto|ferri|canoe|kayak|rafting|paddle|barca|croisiere|cruise/],
   ['bike', 'Bike', /velo|bike|cycl|vtt|radtour|fahrrad|bici|mountain ?bike/],
-  ['hike', 'Mountain', /randonn|hike|hiking|trek(king)?\b|trail|wander|escursion|sentier|senderis|via ferrata|sommet|summit|gipfel|cima\b/],
+  ['parking', 'ParkingSquare', /\bparking\b|parcheggio|parkplatz|car ?park|parkhaus|aparcamiento|estacionamiento/],
+  ['hike', 'Footprints', /randonn|\brando\b|hike|hiking|trek(king)?\b|trail|wander|escursion|sentier|senderis|via ferrata|sommet|summit|gipfel|cima\b|\ba pied\b|on foot|a piedi|zu fuss|a pie\b/],
   ['lift', 'Mountain', /remontee|telepherique|telecabine|telesiege|cable car|gondola|chairlift|seilbahn|sessellift|funivia|seggiovia|teleferico/],
   ['restaurant', 'Utensils', /refuge|rifugio|hutte|huette|\bhut\b|baita|\balm\b|restaurant|ristorante|trattoria|pizzeria|bistro|brasserie|gasthaus|osteria|taverna/],
   ['lake', 'Waves', /\blac\b|\blake\b|\blago\b|\bsee\b|cascade|waterfall|wasserfall|cascata|plage|beach|strand|spiaggia|playa|riviere|river|fluss|fiume/],
@@ -90,7 +101,7 @@ const ACTIVITY_PICTOGRAM = [
   ['village', 'Landmark', /village|visite|visit|museum|musee|museo|chateau|castle|schloss|castello|castillo|monument|old town|vieille ville|altstadt|centro storico|ruine|ruin/],
   ['groceries', 'ShoppingBag', /courses|supermarket|supermarche|grocer|epicerie|boulangerie|bakery|shop|alimentari|lebensmittel|supermercado|spar\b|lidl|conad|coop/],
   ['cafe', 'Coffee', /cafe|coffee|\bbar\b|pause|break|rast/],
-  ['fuel', 'Car', /carburant|fuel|petrol|gas station|station[- ]service|tankstelle|distributore|benzin|gasolinera|parking|parcheggio|parkplatz|peage|toll|maut|pedaggio/],
+  ['fuel', 'Car', /carburant|fuel|petrol|gas station|station[- ]service|tankstelle|distributore|benzin|gasolinera|peage|toll|maut|pedaggio/],
   ['health', 'Cross', /sante|health|veterinaire|\bvet\b|pharmacie|pharmacy|apotheke|farmacia|hopital|hospital|medecin|doctor/],
   ['water', 'Waves', /\beau\b|water|wasser|acqua|agua|vidange|dump station|\bwc\b|toilet|douche|shower/],
   ['theatre', 'Theater', /theatre|theater|cinema|kino|teatro|opera/],
@@ -108,6 +119,25 @@ const ACTIVITY_PICTOGRAM = [
 /** The icons a map marker may carry: TREK draws these and nothing else. */
 const MARKER_ICONS = new Set([...Object.values(NIGHT_PICTOGRAM), ...ACTIVITY_PICTOGRAM.map(([, icon]) => icon), 'MapPin']);
 
+// Kinds a category may name and still be a hike when the place's own name says it is walked
+// to ("… à pied", "Hike to …"): a viewpoint, a lake, a village or an event reached on foot.
+const WALKABLE = new Set(['viewpoint', 'lake', 'nature', 'village', 'activity', 'church', 'restaurant', 'zoo']);
+const kindOf = (text) => (ACTIVITY_PICTOGRAM.find(([, , re]) => re.test(text)) || [null])[0];
+
+/**
+ * Kind of an activity (not a night): the category first (the user's decision), except that a
+ * walkable category whose place name says it is reached on foot is a hike. null when unknown.
+ */
+function activityKind(place) {
+  const cat = norm(place.categoryName);
+  const name = norm(place.name);
+  const byCat = kindOf(cat);
+  if (byCat && byCat !== 'hike' && WALKABLE.has(byCat) && ACTIVITY_KINDS.hike.test(name)) return 'hike';
+  return byCat || kindOf(name);
+}
+
+const iconOfKind = (kind) => (ACTIVITY_PICTOGRAM.find(([k]) => k === kind) || [])[1];
+
 /** Pictogram of a planned stop: a night by its ground, an activity by what it is (category first). */
 function pictogramFor(place, { night = false } = {}) {
   const cat = norm(place.categoryName);
@@ -117,9 +147,8 @@ function pictogramFor(place, { night = false } = {}) {
     if (CABIN.test(cat) || CABIN.test(name)) return NIGHT_PICTOGRAM.cabin;
     return NIGHT_PICTOGRAM[nightKind(place.categoryName, place.name)] || NIGHT_PICTOGRAM.unknown;
   }
-  for (const text of [cat, name]) {
-    for (const [, icon, re] of ACTIVITY_PICTOGRAM) if (re.test(text)) return icon;
-  }
+  const kind = activityKind(place);
+  if (kind) return iconOfKind(kind);
   if (RE.shop.test(cat)) return 'ShoppingBag';
   return 'MapPin';
 }
@@ -141,7 +170,7 @@ function nightGlyph(place, vehicle) {
  */
 function markerStyle(place, { night = false, status = null, vehicle = 'rooftop_tent' } = {}) {
   const tone = night ? (TONE[status] && status !== 'spotted' ? TONE[status] : TONE.spotted) : TONE.planned;
-  const g = night ? nightGlyph(place, vehicle) : null;
+  const g = night ? nightGlyph(place, vehicle) : ACTIVITY_GLYPH[activityKind(place)] || null;
   if (g && GLYPHS[g[0]]) return { tone, icon: g[1], glyph: GLYPHS[g[0]] };
   return { tone, icon: pictogramFor(place, { night }) };
 }
@@ -164,4 +193,4 @@ function categoryForKind(categories, kind) {
   return list.find((c) => RE.night.test(norm(c.name)) === night) || list[0] || null;
 }
 
-module.exports = { KINDS, NIGHT_KINDS, categoryForKind, TONE, NIGHT_STATUS, AMENITY_ICONS, CHIP, NIGHT_PICTOGRAM, ACTIVITY_PICTOGRAM, MARKER_ICONS, GLYPHS, VEHICLE_GLYPH, pictogramFor, markerStyle };
+module.exports = { KINDS, NIGHT_KINDS, categoryForKind, activityKind, ACTIVITY_GLYPH, WALK_LINE, TONE, NIGHT_STATUS, AMENITY_ICONS, CHIP, NIGHT_PICTOGRAM, ACTIVITY_PICTOGRAM, MARKER_ICONS, GLYPHS, VEHICLE_GLYPH, pictogramFor, markerStyle };

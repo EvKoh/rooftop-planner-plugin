@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "es. fascia oraria, parcheggio o permesso di transito",
   "ui.tollAmount": "Pedaggio o biglietto per veicolo",
   "ui.tollCurrency": "Valuta del pedaggio",
-  "ui.book": "Prenota"
+  "ui.book": "Prenota",
+  "walk.layer": "Escursioni: percorsi a piedi",
+  "walk.from": "A piedi da {parking}",
+  "walk.stats": "{km} km · {time} a piedi",
+  "walk.access": "Parcheggio per: {hike}"
 }
