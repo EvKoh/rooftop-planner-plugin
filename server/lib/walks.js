@@ -196,11 +196,12 @@ async function walkGeometry(ctx, walks, { network = false, deadline = null, conc
   return out;
 }
 
-// Heights come in whole metres, sampled along the route: every step counts. A threshold
-// (tried 2-5 m) lost up to a quarter of the climb on loops whose official figure is known.
-const CLIMB_STEP_M = 1;
+// Heights come in whole metres from a terrain model whose noise, counted metre by metre,
+// added 20 to 80 % to the climb. A 5 m step matches the official figures best: the Tre Cime
+// loop gives 448 m for 392-430 m published, where 1 m gave 525 m and smoothing lost a third.
+const CLIMB_STEP_M = 5;
 // Bumped when the climb is counted differently, so cached walks are measured again.
-const CLIMB_RULE = 2;
+const CLIMB_RULE = 3;
 
 /** Metres climbed and descended along a list of heights. */
 function climb(h) {

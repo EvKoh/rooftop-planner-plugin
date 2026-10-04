@@ -170,7 +170,9 @@ describe('the hike\'s car park in the place tool', () => {
   });
 
   it('counts the climb and times the walk by the hiking rule', () => {
-    expect(walks.climb([1000, 1002, 1001, 1010, 1020, 1015, 1000])).toEqual({ up: 21, down: 21 });
+    // The 1-2 m wobble of the terrain model is not a climb.
+    expect(walks.climb([1000, 1002, 1001, 1010, 1020, 1015, 1000])).toEqual({ up: 20, down: 20 });
+    expect(walks.climb([1000, 1001, 1000, 1002, 1000, 1001])).toEqual({ up: 0, down: 0 });
     // 8.8 km, +550/-550 m: about 4 h, the official time of such a loop
     expect(walks.walkMinutes({ km: 8.8, minutes: 154, up: 550, down: 550 })).toBe(242);
     expect(walks.walkMinutes({ km: 4, minutes: 50, up: null })).toBe(50);
