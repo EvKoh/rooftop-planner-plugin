@@ -204,6 +204,15 @@ describe('the hike\'s car park in the place tool', () => {
     expect(() => pi.merge(null, pi.expandWalk({ walk: { url: 'javascript:alert(1)' } }))).toThrow(/walk.url/);
   });
 
+  it('puts the hike\'s place where it lengthens a long loop least, not always last', () => {
+    const access = { point: [46.635, 11.763] };
+    const hike = { lat: 46.621, lng: 11.7495, categoryName: 'See – Hike' };
+    const info = { walk_shape: 'loop', walk_via: [[46.628, 11.78], [46.62, 11.76], [46.6135, 11.744], [46.6357, 11.7258]] };
+    const pts = walks.walkPoints(hike, access, info);
+    // P → east corner → Adolf Munkel → the hut → south → west → back to P
+    expect(pts.map((p) => p.join(','))).toEqual(['46.635,11.763', '46.628,11.78', '46.62,11.76', '46.621,11.7495', '46.6135,11.744', '46.6357,11.7258', '46.635,11.763']);
+  });
+
   it('merges the points of a walk that coincide', () => {
     const pts = walks.walkPoints({ lat: 46.6, lng: 11.8 }, { point: [46.6, 11.8] }, { walk_via: [[46.61, 11.81]], walk_loop: true });
     expect(pts).toEqual([[46.6, 11.8], [46.61, 11.81], [46.6, 11.8]]);

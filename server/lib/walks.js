@@ -84,10 +84,26 @@ function shapeOf(hike, access, info) {
  */
 function walkPoints(hike, access, info) {
   const start = access ? access.point : pt(hike);
-  const seq = [start, ...((info && info.walk_via) || []), pt(hike)];
+  const via = (info && info.walk_via) || [];
+  const loop = shapeOf(hike, access, info) === 'loop';
+  let seq;
+  if (loop && via.length) {
+    // A loop passes its hike's place somewhere along the way, not necessarily last: the place
+    // goes where it lengthens the ring least, so a long loop keeps its full shape.
+    const ring = [start, ...via, start];
+    let best = ring.length - 1;
+    let cost = Infinity;
+    for (let i = 1; i < ring.length; i++) {
+      const c = distKm(ring[i - 1], pt(hike)) + distKm(pt(hike), ring[i]) - distKm(ring[i - 1], ring[i]);
+      if (c < cost) { cost = c; best = i; }
+    }
+    seq = [...ring.slice(0, best), pt(hike), ...ring.slice(best)];
+  } else {
+    seq = [start, ...via, pt(hike)];
+  }
   const out = [];
   for (const p of seq) if (!out.length || distKm(out[out.length - 1], p) > SAME_POINT_KM) out.push(p);
-  if (shapeOf(hike, access, info) === 'loop' && out.length > 1 && distKm(out[out.length - 1], start) > SAME_POINT_KM) out.push(start);
+  if (loop && out.length > 1 && distKm(out[out.length - 1], start) > SAME_POINT_KM) out.push(start);
   return out.length > 1 ? out : [];
 }
 
