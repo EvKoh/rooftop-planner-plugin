@@ -384,5 +384,10 @@
   "sh.k.night": "Menginap",
   "sh.k.activity": "Kunjungan",
   "night_cancelled": "Malam di “{name}” dibatalkan tetapi masih ada di rencana: cari tempat menginap lain atau hapus malam itu",
-  "s.night_cancelled": "malam dibatalkan: tidak ada penginapan"
+  "s.night_cancelled": "malam dibatalkan: tidak ada penginapan",
+  "chip.closedRange": "Tutup {from}–{until}",
+  "chip.closedFrom": "Tutup mulai {from}",
+  "chip.closedUntil": "Tutup sampai {until}",
+  "place_closed": "“{name}” tutup hari itu (tutup {from}–{until}): pilih tempat lain",
+  "s.place_closed": "tutup hari itu"
 }

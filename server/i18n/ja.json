@@ -384,5 +384,10 @@
   "sh.k.night": "宿泊",
   "sh.k.activity": "見学",
   "night_cancelled": "「{name}」の宿泊はキャンセル済みですが、まだ計画に残っています。別の宿を探すか、その夜を外してください",
-  "s.night_cancelled": "宿泊キャンセル：泊まる場所なし"
+  "s.night_cancelled": "宿泊キャンセル：泊まる場所なし",
+  "chip.closedRange": "休業 {from}–{until}",
+  "chip.closedFrom": "{from}から休業",
+  "chip.closedUntil": "{until}まで休業",
+  "place_closed": "「{name}」はその日休業です（休業 {from}–{until}）。別の場所を選んでください",
+  "s.place_closed": "その日は休業"
 }

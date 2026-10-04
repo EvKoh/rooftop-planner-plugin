@@ -384,5 +384,10 @@
   "sh.k.night": "Nuitée",
   "sh.k.activity": "Visite",
   "night_cancelled": "La nuit à « {name} » est annulée mais toujours au planning : trouver un autre hébergement, ou retirer la nuit",
-  "s.night_cancelled": "nuit annulée : pas d'hébergement"
+  "s.night_cancelled": "nuit annulée : pas d'hébergement",
+  "chip.closedRange": "Fermé du {from} au {until}",
+  "chip.closedFrom": "Fermé dès le {from}",
+  "chip.closedUntil": "Fermé jusqu'au {until}",
+  "place_closed": "« {name} » est fermé ce jour-là (fermé du {from} au {until}) : choisir un autre lieu",
+  "s.place_closed": "fermé ce jour-là"
 }

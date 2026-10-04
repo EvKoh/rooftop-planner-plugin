@@ -384,5 +384,10 @@
   "sh.k.night": "Öömaja",
   "sh.k.activity": "Külastus",
   "night_cancelled": "Öö kohas „{name}” on tühistatud, kuid on endiselt plaanis: leia muu majutus või eemalda öö",
-  "s.night_cancelled": "öö tühistatud: majutus puudub"
+  "s.night_cancelled": "öö tühistatud: majutus puudub",
+  "chip.closedRange": "Suletud {from}–{until}",
+  "chip.closedFrom": "Suletud alates {from}",
+  "chip.closedUntil": "Suletud kuni {until}",
+  "place_closed": "„{name}” on sel päeval suletud (suletud {from}–{until}): vali muu koht",
+  "s.place_closed": "sel päeval suletud"
 }

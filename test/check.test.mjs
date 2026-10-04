@@ -58,6 +58,22 @@ describe('check_trip on the fictional trip', () => {
     expect(has(await run({ trip }), 'fix', 'night_cancelled')).toBe(false);
   });
 
+  it('flags a place closed for the season on the day it is planned, and shows the closure as a chip', async () => {
+    const pi = require('../server/lib/place-info.js');
+    const h = makeHost({ queryResults: { [pi.INDEX_SQL]: [{ place_id: 13 }] } });
+    await h.ctx.meta.set('place', 13, pi.META_KEY, pi.merge(null, { closed_from: '2026-10-01' }));
+    const settings = await readSettings(h.ctx);
+    const model = await loadTrip(h.ctx, 1);
+    const r = await checkTrip(h.ctx, model, { settings, network: true, deadline: deadline(12000) });
+    expect(has(r, 'blocking', 'place_closed', 1)).toBe(true);
+    const rec = pi.merge(null, { closed_from: '2026-10-01', closed_until: '2027-05-28' });
+    expect(pi.accessChips(rec, 'en', 'EUR')[0]).toMatchObject({ key: 'closed', value: 'Closed 10/01–05/28' });
+    expect(pi.closedOn(rec, '2026-10-14')).toBe(true);
+    expect(pi.closedOn(rec, '2027-06-01')).toBe(false);
+    expect(() => pi.merge(null, { closed_from: '2026-10-05', closed_until: '2026-10-01' })).toThrow(/before/);
+    expect(() => pi.merge(null, { closed_from: '30/09' })).toThrow(/YYYY-MM-DD/);
+  });
+
   it('stays quiet on what the fixed trip corrects (it proved above that it detects them)', async () => {
     const r = await run({ fixed: true });
     expect(has(r, 'blocking', 'night_late', 1)).toBe(false);

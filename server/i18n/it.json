@@ -384,5 +384,10 @@
   "sh.k.night": "Notte",
   "sh.k.activity": "Visita",
   "night_cancelled": "La notte a «{name}» è annullata ma ancora nel programma: trovare un altro alloggio o togliere la notte",
-  "s.night_cancelled": "notte annullata: nessun alloggio"
+  "s.night_cancelled": "notte annullata: nessun alloggio",
+  "chip.closedRange": "Chiuso dal {from} al {until}",
+  "chip.closedFrom": "Chiuso dal {from}",
+  "chip.closedUntil": "Chiuso fino al {until}",
+  "place_closed": "«{name}» è chiuso quel giorno (chiuso dal {from} al {until}): scegliere un altro posto",
+  "s.place_closed": "chiuso quel giorno"
 }

@@ -384,5 +384,10 @@
   "sh.k.night": "住宿",
   "sh.k.activity": "參觀",
   "night_cancelled": "「{name}」的住宿已取消但仍在行程中：請另找住處或刪去這一晚",
-  "s.night_cancelled": "住宿已取消：無處過夜"
+  "s.night_cancelled": "住宿已取消：無處過夜",
+  "chip.closedRange": "停業 {from}–{until}",
+  "chip.closedFrom": "{from}起停業",
+  "chip.closedUntil": "停業至{until}",
+  "place_closed": "「{name}」當天停業（停業 {from}–{until}）：請另選地點",
+  "s.place_closed": "當天停業"
 }

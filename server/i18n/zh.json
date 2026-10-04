@@ -384,5 +384,10 @@
   "sh.k.night": "住宿",
   "sh.k.activity": "参观",
   "night_cancelled": "“{name}”的住宿已取消但仍在行程中：请另找住处或删去这一晚",
-  "s.night_cancelled": "住宿已取消：无处过夜"
+  "s.night_cancelled": "住宿已取消：无处过夜",
+  "chip.closedRange": "停业 {from}–{until}",
+  "chip.closedFrom": "{from}起停业",
+  "chip.closedUntil": "停业至{until}",
+  "place_closed": "“{name}”当天停业（停业 {from}–{until}）：请另选地点",
+  "s.place_closed": "当天停业"
 }

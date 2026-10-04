@@ -384,5 +384,10 @@
   "sh.k.night": "Nit",
   "sh.k.activity": "Visita",
   "night_cancelled": "La nit a «{name}» està cancel·lada i encara és al pla: cerca un altre allotjament o treu la nit",
-  "s.night_cancelled": "nit cancel·lada: sense allotjament"
+  "s.night_cancelled": "nit cancel·lada: sense allotjament",
+  "chip.closedRange": "Tancat del {from} al {until}",
+  "chip.closedFrom": "Tancat des del {from}",
+  "chip.closedUntil": "Tancat fins al {until}",
+  "place_closed": "«{name}» és tancat aquell dia (tancat del {from} al {until}): tria un altre lloc",
+  "s.place_closed": "tancat aquell dia"
 }

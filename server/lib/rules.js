@@ -103,6 +103,9 @@ const BANNED = /(no camping|camping (interdit|prohibited|forbidden|not allowed)|
 // "camping forbidden OUTSIDE campsites" states the local law, not a ban at this place
 // (seen on a real campsite's notes: "camping interdit hors camping au Tyrol du Sud").
 const LAW_NOT_BAN = /^[^.;]{0,12}\b(hors|outside|except|sauf|ausser|al di fuori|fuori)\b/;
+// Words saying a motorhome area or car park is privately run (its operator decides who stays).
+const PRIVATE_GROUND = /\b(privee?s?|private|privat\w*|privata|privato|camper ?park|wohnmobilpark)\b/;
+const PUBLIC_GROUND = /\b(communale?|municipal\w*|comunale|gemeinde\w*|public|publique|pubblic\w*|offentlich\w*)\b/;
 /** A quote proving tents/camping are banned at this place, or null. */
 function tentBanned(text, tags = {}) {
   if (tags.tents === 'no') return 'tents=no';
@@ -128,6 +131,11 @@ function nightLegality({ categoryName, placeName, lat, lng, text = '', vehicle =
   const zone = zoneAt(lat, lng);
   const zp = { zoneId: zone ? zone.id : null };
   if (vehicle === 'rooftop_tent') {
+    // A private motorhome park is private ground: its operator may accept a rooftop tent,
+    // so it is a point to confirm. A public (communal) area or car park stays blocking.
+    if ((kind === 'aire' || kind === 'parking') && PRIVATE_GROUND.test(norm(`${placeName || ''} ${text}`)) && !PUBLIC_GROUND.test(norm(`${placeName || ''} ${text}`))) {
+      return { key: 'night_private', level: 'verify', params: {}, kind };
+    }
     if (kind === 'aire' || kind === 'parking') return { key: 'night_aire', level: 'blocking', params: {}, kind };
     const authorised = /autoris|authori[sz]ed|agricampeggio|campingplatz|licen[cs]ed/.test(norm(text));
     if (kind === 'farm' && zone && zone.farm === 'check' && !authorised) {

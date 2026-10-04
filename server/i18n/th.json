@@ -384,5 +384,10 @@
   "sh.k.night": "ที่พัก",
   "sh.k.activity": "การเยี่ยมชม",
   "night_cancelled": "คืนที่ “{name}” ถูกยกเลิกแต่ยังอยู่ในแผน: หาที่พักอื่นหรือนำคืนนั้นออก",
-  "s.night_cancelled": "คืนถูกยกเลิก: ไม่มีที่พัก"
+  "s.night_cancelled": "คืนถูกยกเลิก: ไม่มีที่พัก",
+  "chip.closedRange": "ปิด {from}–{until}",
+  "chip.closedFrom": "ปิดตั้งแต่ {from}",
+  "chip.closedUntil": "ปิดถึง {until}",
+  "place_closed": "“{name}” ปิดในวันนั้น (ปิด {from}–{until}): เลือกที่อื่น",
+  "s.place_closed": "ปิดในวันนั้น"
 }

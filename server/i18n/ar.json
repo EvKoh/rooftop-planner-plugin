@@ -384,5 +384,10 @@
   "sh.k.night": "المبيت",
   "sh.k.activity": "زيارة",
   "night_cancelled": "الليلة في «{name}» ملغاة ولا تزال في الخطة: ابحث عن مكان آخر للمبيت أو احذف الليلة",
-  "s.night_cancelled": "ليلة ملغاة: لا مبيت"
+  "s.night_cancelled": "ليلة ملغاة: لا مبيت",
+  "chip.closedRange": "مغلق {from}–{until}",
+  "chip.closedFrom": "مغلق ابتداءً من {from}",
+  "chip.closedUntil": "مغلق حتى {until}",
+  "place_closed": "«{name}» مغلق في ذلك اليوم (مغلق {from}–{until}): اختر مكانًا آخر",
+  "s.place_closed": "مغلق في ذلك اليوم"
 }

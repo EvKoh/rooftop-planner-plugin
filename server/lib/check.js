@@ -250,6 +250,14 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
     const { veille, nuit, trace, stops } = plan;
     dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L, tz });
 
+    // A place closed for the season on the day it is planned (a stop, or the night).
+    for (const s2 of [...stops, ...(nuit ? [{ place: { id: nuit.placeId, name: nuit.name } }] : [])]) {
+      const info = (model.poolById.get(s2.place.id) || {}).info || null;
+      if (d.date && placeInfo.closedOn(info, d.date)) {
+        add('blocking', J, 'place_closed', { name: s2.place.name, from: placeInfo.shortDate(info.closed_from, L) || '…', until: placeInfo.shortDate(info.closed_until, L) || '…' }, { ...ids, placeId: s2.place.id });
+      }
+    }
+
     if (anyTrace && (veille || nuit)) {
       if (!trace) add('fix', J, 'no_trace', {}, ids);
       else {
