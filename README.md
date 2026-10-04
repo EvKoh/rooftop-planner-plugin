@@ -254,6 +254,14 @@ reconnect the connector.
   once an admin lets the plugin in (Admin → Default user settings → *Plugin info on places*).
 
   <img src="./docs/hover-card.png" alt="Hover card of a booked farm night: green marker, Booked chip, price per night and one chip per amenity" width="254"> <img src="./docs/hover-card-discussion.png" alt="Hover card of a campsite in discussion: amber tent marker, In discussion chip, price and amenities" width="299">
+- **Place card** — the widget reads the place's description and notes ("Key : value" lines and
+  bullet lists, in English, French, Italian, German or Spanish) into one card per kind, with fixed
+  sections in a fixed order: a hike shows its key figures (distance, climb, descent, time,
+  difficulty, loop), how to get there, the itinerary as steps, conditions, highlights and links
+  (track page, map, GPX); a night its price, stay, services, access and reviews; a visit its
+  figures, opening and access. What it cannot classify stays under *Other notes*; nothing is
+  stored twice (the notes stay the record, `vanlife_place` `sheet_set` rewrites a line). TREK then
+  folds its raw copy of the text. The host's contact shows on nights only.
 - **Place panel** — a widget at the foot of the place view shows the night's status, the host's
   contact (e-mail, phone and website as links, last exchange) and the amenities; it edits the
   amenities and the contact, and has a *Fill the trip's amenities* button. Opening a place with

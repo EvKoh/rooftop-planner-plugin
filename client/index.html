@@ -27,6 +27,28 @@
     input, select { font-size: 16px; min-height: 44px; box-sizing: border-box; width: 100%; }
     .actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .actions button { min-height: 44px; }
+    /* The card: key figures as tiles, then labelled rows; the colour of a row's pictogram is
+       its tone from design.js (amber = to watch). Long lists wrap, nothing scrolls sideways. */
+    .about { margin: 0; font-size: 14px; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+    .about.open { display: block; }
+    .sec { display: flex; flex-direction: column; gap: 6px; }
+    .figs { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+    .fig { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; border-radius: 10px; background: var(--bg-secondary, rgba(127,127,127,.08)); min-width: 0; }
+    .fig svg, .rh svg { width: 16px; height: 16px; flex: none; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .fv { font-size: 16px; font-weight: 700; color: var(--text-primary); overflow-wrap: anywhere; }
+    .fl { font-size: 12px; color: var(--text-muted); }
+    .rows { display: flex; flex-direction: column; gap: 8px; }
+    .row { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .rh { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .lab { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+    .row--watch .lab { color: var(--c); }
+    .val { font-size: 14px; color: var(--text-primary); white-space: pre-line; overflow-wrap: anywhere; }
+    .row a { font-size: 14px; overflow-wrap: anywhere; color: var(--accent, inherit); }
+    .items { margin: 0; padding-left: 22px; font-size: 14px; color: var(--text-primary); display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
+    .fold { border-top: 1px solid var(--border-faint, rgba(127,127,127,.2)); padding-top: 6px; }
+    .fold summary { cursor: pointer; font-size: 12px; font-weight: 700; color: var(--text-faint); min-height: 32px; display: flex; align-items: center; }
+    .fold .rows { padding-top: 6px; }
+    .line span { white-space: normal; }
     /* The night's four states: the colour is the state's (design.js), the same as the map's. */
     .states { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; }
     .state { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 6px 10px;
@@ -84,20 +106,82 @@
       return kids;
     }
 
-    function summary(d) {
+    // The place's card, the same for every place of its kind (server/lib/place-sheet.js):
+    // fixed sections in a fixed order, then what the plugin keeps (amenities, access, the
+    // night), the host's contact on a night only, and the folded rest (checks, other notes).
+    function svgIcon(markup, color) {
+      var el = icon(markup);
+      if (color) el.style.stroke = color;
+      return el;
+    }
+    function valueNode(r) {
+      if (r.items && r.items.length) {
+        var list = h(r.field === 'itinerary' ? 'ol' : 'ul', { class: 'items' }, r.items.map(function (i) { return h('li', { text: i }); }));
+        return list;
+      }
+      if (r.url) return h('a', { href: r.url, target: '_blank', rel: 'noopener noreferrer', text: r.linkText || r.url, title: r.url });
+      return h('span', { class: 'val', text: r.text });
+    }
+    function rowNode(r) {
+      var head = [svgIcon(r.icon, r.color), r.label ? h('span', { class: 'lab', text: r.label }) : null];
+      if (r.chip) head.push(h('span', { class: 'trek-chip', text: r.chip }));
+      var kids = [h('div', { class: 'rh' }, head)];
+      if (!(r.chip && r.text.length < 24)) kids.push(valueNode(r));
+      if (r.links && r.links.length && !(r.items && r.items.length)) kids.push(h('div', { class: 'contact' }, r.links.map(function (u) { return h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', text: u.replace(/^https?:\/\/(www\.)?/, '').slice(0, 60) }); })));
+      return h('div', { class: 'row' + (r.tone === 'warn' ? ' row--watch' : r.tone === 'danger' ? ' row--danger' : ''), style: '--c:' + r.color }, kids);
+    }
+    function figuresNode(sec) {
+      return h('div', { class: 'figs' }, sec.rows.map(function (r) {
+        return h('div', { class: 'fig', title: r.label + ' — ' + r.text }, [
+          svgIcon(r.icon, r.color),
+          h('span', { class: 'fv', text: r.figure || r.text }),
+          h('span', { class: 'fl', text: r.label }),
+        ]);
+      }));
+    }
+    function sectionNode(sec) {
+      var body = sec.figures ? figuresNode(sec) : h('div', { class: 'rows' }, sec.rows.map(rowNode));
+      if (sec.folded) {
+        var det = h('details', { class: 'fold' }, [h('summary', { text: sec.title + ' (' + sec.rows.length + ')' }), body]);
+        return det;
+      }
+      return h('section', { class: 'sec' }, [h('div', { class: 'sub', text: sec.title }), body]);
+    }
+    function sheetNodes(d, folded) {
+      var sh = d.sheet;
+      if (!sh) return [];
+      var out = [];
+      if (!folded && sh.about && sh.about.length) {
+        var about = h('p', { class: 'about', text: sh.about.join(' ') });
+        about.addEventListener('click', function () { about.classList.toggle('open'); });
+        out.push(about);
+      }
+      sh.sections.forEach(function (sec) { if (!!sec.folded === folded) out.push(sectionNode(sec)); });
+      return out;
+    }
+    function chips(d) {
       var kids = [];
       if (d.nightStatus && STATUS_TONE[d.nightStatus]) kids.push(h('span', { class: 'trek-chip trek-chip--' + STATUS_TONE[d.nightStatus], text: S('ui.night').replace('{status}', S('st.' + d.nightStatus)) }));
-      // What TREK's header cannot say about the price: its unit, the free note, the dog fee.
+      if (d.refused) kids.push(h('span', { class: 'trek-chip trek-chip--danger', text: S('ui.vehicleRefused') }));
+      return kids.length ? [h('div', { class: 'line' }, kids)] : [];
+    }
+    // What the plugin keeps itself: amenities (a night always, others when recorded), the
+    // price details TREK's header cannot show, the visit (not a hike: its duration is a key
+    // figure), timed access and booking.
+    function extras(d) {
+      var kids = [];
+      var hike = d.sheet && d.sheet.kind === 'hike';
       var extra = [];
       if (d.priceText && (d.info.per || d.info.price_note || (d.info.amenities.dog === 'fee' && d.info.dog_fee != null))) extra.push(d.priceText);
-      if (d.refused) kids.push(h('span', { class: 'trek-chip trek-chip--danger', text: S('ui.vehicleRefused') }));
-      if (d.summary) kids.push(h('div', { class: 'line' }, d.summary.split('  ').map(function (p) { return h('span', { text: p }); })));
-      else kids.push(h('div', { class: 'muted', text: S('ui.none') }));
+      if (d.summary || d.night) {
+        kids.push(h('div', { class: 'sub', text: S('ui.title') }));
+        if (d.summary) kids.push(h('div', { class: 'line' }, d.summary.split('  ').map(function (p) { return h('span', { text: p }); })));
+        else kids.push(h('div', { class: 'muted', text: S('ui.none') }));
+      }
       if (extra.length) kids.push(h('div', { class: 'muted', text: extra.join(' · ') }));
-      if (d.visitText) kids.push(h('div', { class: 'line' }, [h('span', { text: S('ui.visit') + ' : ' + d.visitText })]));
+      if (d.visitText && !hike) kids.push(h('div', { class: 'line' }, [h('span', { text: S('ui.visit') + ' : ' + d.visitText })]));
       if (d.parkingText) kids.push(h('div', { class: 'line' }, [h('span', { text: d.parkingText })]));
       if (d.info.source_url && /^https?:\/\//i.test(d.info.source_url)) kids.push(h('div', { class: 'contact' }, [h('a', { href: d.info.source_url, target: '_blank', rel: 'noopener noreferrer', text: d.info.source_url.replace(/^https?:\/\/(www\.)?/i, '').split('/')[0] })]));
-      // Timed access, booking, toll: the planner's chips, then the booking link and note.
       if (d.access && d.access.length) kids.push(h('div', { class: 'line' }, d.access.map(function (a) { return h('span', { class: a.tone === 'warn' ? 'trek-chip trek-chip--warning' : 'trek-chip', text: a.value }); })));
       var bk = [];
       if (d.info.booking_url && /^https?:\/\//i.test(d.info.booking_url)) bk.push(h('a', { href: d.info.booking_url, target: '_blank', rel: 'noopener noreferrer', text: S('ui.book') }));
@@ -105,7 +189,7 @@
       if (bk.length) kids.push(h('div', { class: 'contact' }, bk));
       if (d.info.visit_source) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.visit_source) }));
       if (d.info.source) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.source) + (d.info.checked ? ' · ' + new Intl.DateTimeFormat(st.locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(d.info.checked + 'T12:00:00Z')) : '') }));
-      return kids.concat(contactLinks(d));
+      return kids;
     }
 
     function field(label, input) { return h('label', {}, [h('span', { text: label }), input]); }
@@ -267,14 +351,19 @@
       var d = st.data;
       if (!d) return;
       document.documentElement.lang = d.language;
+      var nightish = d.night || !!d.nightStatus;
       app.replaceChildren(
         h('div', { class: 'head' }, [
-          h('span', { class: 'eyebrow', text: S('ui.title') }),
+          h('span', { class: 'eyebrow', text: (d.sheet && d.sheet.title) || S('ui.title') }),
           h('button', { class: 'trek-btn trek-btn--ghost edit-btn', type: 'button', 'aria-expanded': String(st.open), text: st.open ? S('ui.close') : S('ui.edit'), on: { click: function () { st.open = !st.open; render(); } } }),
         ])
       );
-      summary(d).forEach(function (n) { app.appendChild(n); });
-      if (d.night || d.nightStatus) { var ns = nightSection(); if (ns) app.appendChild(ns); }
+      var add = function (n) { if (n) app.appendChild(n); };
+      chips(d).forEach(add);
+      sheetNodes(d, false).forEach(add);
+      extras(d).forEach(add);
+      if (nightish) { add(nightSection()); contactLinks(d).forEach(add); }
+      sheetNodes(d, true).forEach(add);
       app.appendChild(h('div', { class: 'actions' }, [
         h('button', { class: 'trek-btn trek-btn--ghost', type: 'button', disabled: st.filling ? 'disabled' : null, text: st.filling ? S('ui.filling') : S('ui.fillTrip'), on: { click: fillTrip } }),
       ]));
@@ -290,6 +379,9 @@
       try {
         st.data = await trek.invoke('/amenities', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId), locale: st.locale } });
         render();
+        // The card shows the place's description and notes structured: TREK may fold its raw copy.
+        var sh = st.data.sheet;
+        try { window.parent.postMessage({ type: 'trek:place-text', structured: !!(sh && (sh.sections.length || sh.about.length)) }, '*'); } catch (e) { /* no host */ }
         // First visit of a place with nothing recorded: look it up once in the open sources.
         if (!st.data.recorded && !st.tried[st.placeId]) {
           st.tried[st.placeId] = true;

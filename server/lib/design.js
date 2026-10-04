@@ -63,13 +63,38 @@ const NIGHT_STATUS = {
 /** The colour of each tone, the same hexes TREK's map draws its markers with. */
 const TONE_COLOR = { default: '#2563eb', success: '#16a34a', warn: '#f59e0b', danger: '#dc2626' };
 
-/** Lucide pictograms (ISC licence) as SVG inner markup, for the widget, which has no icon set. */
-const STATE_SVG = {
-  MapPin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
-  Clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-  BedDouble: '<path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/>',
-  XCircle: '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+/**
+ * Lucide pictograms (ISC licence) the widget draws, as SVG inner markup: it has no icon set
+ * of its own. Built from the names below by scripts/build-icons.js into icons.json.
+ */
+const ICONS = require('./icons.json');
+
+/** The pictogram of each field of a place's sheet (place-sheet.js). */
+const SHEET_ICONS = {
+  distance_km: 'Ruler', ascent_m: 'TrendingUp', descent_m: 'TrendingDown', duration: 'Timer', level: 'Gauge',
+  route_type: 'Repeat', alt_max_m: 'MountainSnow', alt_min_m: 'ArrowDownToLine', altitude_m: 'Mountain',
+  start: 'Flag', arrival: 'FlagTriangleRight', parking: 'ParkingSquare', transport: 'Bus', itinerary: 'Footprints',
+  conditions: 'CloudSun', closures: 'CalendarX', best_time: 'CalendarCheck', risk: 'AlertTriangle', vertigo: 'MoveVertical',
+  marking: 'Signpost', water: 'Droplet', supplies: 'Utensils', dog: 'Dog', highlights: 'Star',
+  website: 'Globe', map_url: 'Map', gpx_url: 'Download', links: 'Link', photo: 'Image',
+  doubts: 'HelpCircle', sources: 'BookOpen', checked: 'CheckCheck', price: 'Euro', services_price: 'Coins',
+  spots: 'LayoutGrid', type: 'Tag', opening: 'CalendarDays', hours: 'Clock', booking: 'CalendarPlus',
+  rooftop_tent: 'Tent', services: 'Wrench', electricity: 'Zap', access: 'Car', location: 'MapPin', address: 'Home',
+  reviews: 'MessageSquare', contact: 'Phone', rules: 'ScrollText', fuel: 'Fuel', other: 'StickyNote', about: 'AlignLeft',
 };
+/** Fields whose content is a point to watch (amber), never green: green is booked only. */
+const SHEET_WATCH = new Set(['risk', 'vertigo', 'closures', 'doubts']);
+
+/** Tone of a sheet field: watch fields amber, a dog not allowed red, the rest default. */
+function sheetTone(field, typedValue) {
+  if (field === 'dog' && typedValue && typedValue.allowed === false) return TONE.rulesOut;
+  if (field === 'level' && typedValue && typedValue.grade === 'hard') return TONE.watch;
+  return SHEET_WATCH.has(field) ? TONE.watch : TONE.info;
+}
+
+/** Every lucide name the widget may draw (what build-icons.js extracts). */
+const ICON_NAMES = [...new Set([...Object.values(SHEET_ICONS), ...Object.values(NIGHT_STATUS).map((x) => x.icon), 'MapPin', 'ChevronDown'])];
+const svgOf = (name) => ICONS[name] || '';
 
 /**
  * The four states a night can be set to from the place panel, in the order of its
@@ -78,7 +103,7 @@ const STATE_SVG = {
  */
 const NIGHT_STATES = ['spotted', 'contacted', 'booked', 'dropped'].map((status) => {
   const { tone, icon } = NIGHT_STATUS[status] || { tone: TONE.spotted, icon: 'MapPin' };
-  return { status, tone, color: TONE_COLOR[tone], icon, svg: STATE_SVG[icon] };
+  return { status, tone, color: TONE_COLOR[tone], icon, svg: svgOf(icon) };
 });
 
 /** One icon per amenity (names known to lucide-react 0.344, the SDK's snapshot). */
@@ -219,4 +244,4 @@ function categoryForKind(categories, kind) {
   return list.find((c) => RE.night.test(norm(c.name)) === night) || list[0] || null;
 }
 
-module.exports = { KINDS, NIGHT_KINDS, categoryForKind, activityKind, ACTIVITY_GLYPH, WALK_LINE, TONE, TONE_COLOR, NIGHT_STATUS, NIGHT_STATES, AMENITY_ICONS, CHIP, NIGHT_PICTOGRAM, ACTIVITY_PICTOGRAM, MARKER_ICONS, GLYPHS, VEHICLE_GLYPH, pictogramFor, markerStyle };
+module.exports = { KINDS, NIGHT_KINDS, categoryForKind, activityKind, ACTIVITY_GLYPH, WALK_LINE, TONE, TONE_COLOR, NIGHT_STATUS, NIGHT_STATES, SHEET_ICONS, sheetTone, ICON_NAMES, svgOf, AMENITY_ICONS, CHIP, NIGHT_PICTOGRAM, ACTIVITY_PICTOGRAM, MARKER_ICONS, GLYPHS, VEHICLE_GLYPH, pictogramFor, markerStyle };
