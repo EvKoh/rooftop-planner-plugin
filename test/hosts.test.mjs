@@ -421,6 +421,40 @@ describe('vanlife_host_message', () => {
     const de = await call(makeHost(), 'vanlife_host_message', { tripId: 1, placeId: 13, language_extra: 'de' });
     expect(de.languages_used).toEqual(['en', 'de']);
   });
+
+  it('has a complete host message template in every language, each filled without a gap', async () => {
+    const shape = (v) => (Array.isArray(v) ? `array${v.length}` : typeof v);
+    const placeholders = (v) => [].concat(v).join(' ').match(/\{\w+\}/g)?.sort() || [];
+    const langs = hm.langsOf();
+    expect(langs).toHaveLength(27);
+    for (const lg of langs) {
+      expect(Object.keys(hm.TEXT[lg]).sort(), lg).toEqual(Object.keys(hm.TEXT.en).sort());
+      for (const k of Object.keys(hm.TEXT.en)) {
+        expect(shape(hm.TEXT[lg][k]), `${lg}.${k}`).toBe(shape(hm.TEXT.en[k]));
+        // night: CJK counters and Arabic carry {k} themselves, the number is placed by the code elsewhere
+        if (k !== 'night' && k !== 'person') expect(placeholders(hm.TEXT[lg][k]), `${lg}.${k}`).toEqual(placeholders(hm.TEXT.en[k]));
+      }
+      expect(hm.TEXT[lg].person[1], lg).toContain('{k}');
+    }
+    // a van, a dog, one night then several, one person then several: every template is used
+    const settings = [
+      { vehicle: 'rooftop_tent', dog: true, travellers: 2 },
+      { vehicle: 'campervan', dog: true, travellers: 1, vehicle_length_m: 5.4, vehicle_height_m: 2.6 },
+      { vehicle: 'motorhome', dog: false, travellers: 3, vehicle_length_m: 7.4, vehicle_height_m: 3.1 },
+    ];
+    for (const lg of langs.filter((x) => x !== 'en')) {
+      for (const [i, s] of settings.entries()) {
+        const r = await call(makeHost({ userSettings: { language: 'en', ...s } }), 'vanlife_host_message', { tripId: 1, placeId: 13, dayNumber: 1, nights: i === 1 ? 1 : 3, language_extra: lg });
+        expect(r.languages_used, lg).toEqual(['en', lg]);
+        const parts = r.text.split(`\n\n${hm.SEPARATOR}\n\n`);
+        expect(parts, lg).toHaveLength(2);
+        expect(parts[1].startsWith(hm.TEXT[lg].hello), lg).toBe(true);
+        expect(parts[1], lg).toContain(hm.TEXT[lg].notBooking);
+        expect(r.text, lg).not.toMatch(/\{\w+\}/);
+        expect(r.subject, lg).toContain(hm.TEXT[lg].subject);
+      }
+    }
+  });
 });
 
 describe('vanlife_day, columns, widget and catalogues', () => {
