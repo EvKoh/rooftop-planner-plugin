@@ -300,5 +300,14 @@
   "ui.reasonOpt": "理由（任意）",
   "ui.nightSet": "宿泊: {status}",
   "ui.confirmAvailable": "空きに戻す: この夜の予約は TREK から削除されます。滞在は予定に残ります。",
-  "walk.noLink": "全ルートのページはまだ不明です"
+  "walk.noLink": "全ルートのページはまだ不明です",
+  "walk.loop": "周回",
+  "walk.outAndBack": "往復",
+  "walk_no_parking": "ハイキング「{hike}」：出発する駐車場「P」がないため描画されません。出発する駐車場に結び付けてください（vanlife_place set.walk）",
+  "walk_parking_to_parking": "ハイキング「{hike}」：駐車場「{parking}」から別の駐車場「{other}」へ向かうことになります。「{parking}」に戻る周回か、駐車場ではない地点への往復にしてください（それまで描画されません）",
+  "col.parking": "駐車場",
+  "park.camperYes": "キャンピングカー可",
+  "park.camperNo": "キャンピングカー不可",
+  "park.overnightYes": "車中泊可",
+  "park.overnightNo": "車中泊不可"
 }

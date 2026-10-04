@@ -300,5 +300,14 @@
   "ui.reasonOpt": "原因（可选）",
   "ui.nightSet": "住宿：{status}",
   "ui.confirmAvailable": "恢复为可用：这一晚的预订将从 TREK 中删除，住宿安排保留。",
-  "walk.noLink": "暂无完整路线页面"
+  "walk.noLink": "暂无完整路线页面",
+  "walk.loop": "环线",
+  "walk.outAndBack": "往返",
+  "walk_no_parking": "徒步「{hike}」：没有出发的停车场「P」，不绘制路线：请关联其出发的停车场（vanlife_place set.walk）",
+  "walk_parking_to_parking": "徒步「{hike}」：路线将从停车场「{parking}」到另一个停车场「{other}」：请改为回到「{parking}」的环线，或往返到非停车场的折返点（在此之前不绘制）",
+  "col.parking": "停车场",
+  "park.camperYes": "允许房车",
+  "park.camperNo": "禁止房车",
+  "park.overnightYes": "允许过夜",
+  "park.overnightNo": "禁止过夜"
 }

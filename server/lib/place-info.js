@@ -67,7 +67,11 @@ const ACCESS_FIELDS = ['access_before', 'access_after', 'booking_required', 'boo
 const BOOKING_NOTE_MAX = 120;
 // A hike's walk: the car park it starts from (a TREK place of the trip), the points it passes
 // (a loop's refuges, a pass...) and whether it comes back to the car park. walks.js draws it.
-const WALK_FIELDS = ['access_parking_place_id', 'walk_via', 'walk_loop', 'hike_url'];
+const WALK_FIELDS = ['access_parking_place_id', 'walk_via', 'walk_shape', 'walk_loop', 'hike_url'];
+const WALK_SHAPES = ['loop', 'out_and_back'];
+// A car park's details TREK has no field for (the price itself is TREK's, per day or per hour).
+const PARKING_FIELDS = ['parking_hours', 'parking_payment', 'camper_allowed', 'overnight_allowed', 'parking_notes', 'source_url'];
+const PARKING_TEXT = { parking_hours: 120, parking_payment: 120, parking_notes: 300 };
 const WALK_VIA_MAX = 8;
 const TOLL_MAX = 10000;
 const MIGRATION = 'CREATE TABLE IF NOT EXISTS place_info_index (trip_id INTEGER NOT NULL, place_id INTEGER NOT NULL, PRIMARY KEY (trip_id, place_id))';
@@ -99,6 +103,13 @@ const blank = () => ({
   toll_currency: null,
   access_parking_place_id: null,
   walk_via: null,
+  parking_hours: null,
+  parking_payment: null,
+  camper_allowed: 'unknown',
+  overnight_allowed: 'unknown',
+  parking_notes: null,
+  source_url: null,
+  walk_shape: null,
   walk_loop: null,
   hike_url: null,
   amenities: Object.fromEntries(Object.keys(AMENITIES).map((k) => [k, 'unknown'])),
@@ -206,6 +217,7 @@ function merge(stored, patch) {
   if (out.visit_min_minutes == null && out.visit_max_minutes == null) out.visit_source = null;
   mergeAccess(out, p);
   mergeWalk(out, p);
+  mergeParking(out, p);
   for (const [k, allowed] of Object.entries(AMENITIES)) {
     if (!(k in p)) continue;
     if (!allowed.includes(p[k])) throw new InfoError(`${k} must be one of ${allowed.join(', ')}`);
@@ -222,7 +234,7 @@ function merge(stored, patch) {
 }
 
 /**
- * The tool's `walk` object ({ parking_place_id, via, loop, url }) as record fields
+ * The tool's `walk` object ({ parking_place_id, shape, via, url }; loop: true = shape loop) as record fields
  * (WALK_FIELDS); null clears them all. Keys left out stay as they are.
  */
 function expandWalk(patch) {
@@ -230,13 +242,70 @@ function expandWalk(patch) {
   const { walk, ...rest } = patch;
   if (walk == null) return { ...rest, ...Object.fromEntries(WALK_FIELDS.map((k) => [k, null])) };
   if (typeof walk !== 'object' || Array.isArray(walk)) throw new InfoError('walk must be an object { parking_place_id, via, loop }, or null to clear');
-  const unknown = Object.keys(walk).filter((k) => !['parking_place_id', 'via', 'loop', 'url'].includes(k));
-  if (unknown.length) throw new InfoError(`walk takes parking_place_id, via, loop and url, not ${unknown.join(', ')}`);
+  const unknown = Object.keys(walk).filter((k) => !['parking_place_id', 'shape', 'via', 'loop', 'url'].includes(k));
+  if (unknown.length) throw new InfoError(`walk takes parking_place_id, shape, via and url, not ${unknown.join(', ')}`);
+  if ('shape' in walk) rest.walk_shape = walk.shape;
+  else if (walk.loop === true) rest.walk_shape = 'loop';
   if ('parking_place_id' in walk) rest.access_parking_place_id = walk.parking_place_id;
   if ('via' in walk) rest.walk_via = walk.via;
   if ('loop' in walk) rest.walk_loop = walk.loop;
   if ('url' in walk) rest.hike_url = walk.url;
   return rest;
+}
+
+/** A car park's fields of a patch (PARKING_FIELDS), validated onto `out`. */
+function mergeParking(out, p) {
+  for (const [k, max] of Object.entries(PARKING_TEXT)) {
+    if (!(k in p)) continue;
+    const v = p[k] == null ? '' : String(p[k]).replace(/\s+/g, ' ').trim();
+    if (v.length > max) throw new InfoError(`parking.${k.replace('parking_', '')} is too long (${max} characters at most)`);
+    out[k] = v || null;
+  }
+  for (const k of ['camper_allowed', 'overnight_allowed']) {
+    if (!(k in p)) continue;
+    const v = p[k] == null || p[k] === '' ? 'unknown' : p[k] === true ? 'yes' : p[k] === false ? 'no' : p[k];
+    if (!TRISTATE.includes(v)) throw new InfoError(`parking.${k} must be yes, no or unknown`);
+    out[k] = v;
+  }
+  if ('source_url' in p) {
+    const u = p.source_url == null ? '' : String(p.source_url).trim();
+    if (u && (!/^https?:\/\/[^\s/]+\.[^\s]+$/i.test(u) || u.length > 500)) throw new InfoError('source_url must be an http:// or https:// address (500 characters at most)');
+    out.source_url = u || null;
+  }
+}
+
+/**
+ * The tool's `parking` object ({ hours, payment, camper_allowed, overnight_allowed, notes,
+ * source_url }) as record fields; null clears them all. A `source` given without `checked`
+ * is dated today: it was just read.
+ */
+function expandParking(patch, today = new Date().toISOString().slice(0, 10)) {
+  if (!patch) return patch;
+  const out = { ...patch };
+  if ('source' in out && out.source && !('checked' in out)) out.checked = today;
+  if (!('parking' in out)) return out;
+  const { parking } = out;
+  delete out.parking;
+  if (parking == null) return { ...out, ...Object.fromEntries(PARKING_FIELDS.map((k) => [k, null])) };
+  if (typeof parking !== 'object' || Array.isArray(parking)) throw new InfoError('parking must be an object { hours, payment, camper_allowed, overnight_allowed, notes, source_url }, or null to clear');
+  const map = { hours: 'parking_hours', payment: 'parking_payment', camper_allowed: 'camper_allowed', overnight_allowed: 'overnight_allowed', notes: 'parking_notes', source_url: 'source_url' };
+  const unknown = Object.keys(parking).filter((k) => !(k in map));
+  if (unknown.length) throw new InfoError(`parking takes ${Object.keys(map).join(', ')}, not ${unknown.join(', ')}`);
+  for (const [k, v] of Object.entries(parking)) out[map[k]] = v;
+  return out;
+}
+
+/** "07:00–21:00 · card, cash · motorhomes allowed · no overnight · …" for a car park, or null. */
+function parkingText(info, L) {
+  if (!info) return null;
+  const parts = [info.parking_hours, info.parking_payment];
+  if (info.camper_allowed === 'yes') parts.push(t(L, 'park.camperYes'));
+  if (info.camper_allowed === 'no') parts.push(t(L, 'park.camperNo'));
+  if (info.overnight_allowed === 'yes') parts.push(t(L, 'park.overnightYes'));
+  if (info.overnight_allowed === 'no') parts.push(t(L, 'park.overnightNo'));
+  parts.push(info.parking_notes);
+  const s = parts.filter(Boolean).join(' · ');
+  return s || null;
 }
 
 /** The walk fields of a patch (WALK_FIELDS), validated onto `out`. */
@@ -265,6 +334,11 @@ function mergeWalk(out, p) {
     const u = p.hike_url == null ? '' : String(p.hike_url).trim();
     if (u && (!/^https?:\/\/[^\s/]+\.[^\s]+$/i.test(u) || u.length > 500)) throw new InfoError('walk.url must be the http:// or https:// address of the page with the full hike (500 characters at most)');
     out.hike_url = u || null;
+  }
+  if ('walk_shape' in p) {
+    const v = p.walk_shape;
+    if (v != null && v !== '' && !WALK_SHAPES.includes(v)) throw new InfoError('walk.shape must be "loop" (back to the same car park another way) or "out_and_back" (to a turnaround point and back the same way)');
+    out.walk_shape = v || null;
   }
   if ('walk_loop' in p) {
     const v = p.walk_loop;
@@ -320,6 +394,8 @@ function clearPatch(fields) {
     else if (k === 'contacts') for (const c of contacts.FIELDS) contactPatch[c] = null;
     else if (k === 'log') patch.log = null;
     else if (k === 'walk') for (const w of WALK_FIELDS) patch[w] = null;
+    else if (k === 'parking') for (const w of PARKING_FIELDS) patch[w] = null;
+    else if (PARKING_FIELDS.includes(k)) patch[k] = null;
     else if (contacts.FIELDS.includes(k)) contactPatch[k] = null;
     else throw new InfoError(`cannot clear "${f}": name an amenity (${Object.keys(AMENITIES).slice(0, 4).join(', ')}...), ${NUMBER_FIELDS.join(', ')}, per, price_note, source, checked, ${ACCESS_FIELDS.join(', ')}, ${WALK_FIELDS.join(', ')}, a contact field (${contacts.FIELDS.join(', ')}), or amenities / contacts / log`);
   }
@@ -569,4 +645,4 @@ async function getAll(ctx, tripId, placeIds) {
   return out;
 }
 
-module.exports = { expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

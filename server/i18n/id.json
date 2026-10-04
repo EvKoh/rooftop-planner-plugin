@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Alasan (opsional)",
   "ui.nightSet": "Menginap: {status}",
   "ui.confirmAvailable": "Kembali tersedia: pemesanan malam ini dihapus dari TREK. Masa inap tetap direncanakan.",
-  "walk.noLink": "Belum ada halaman jalur lengkap yang diketahui"
+  "walk.noLink": "Belum ada halaman jalur lengkap yang diketahui",
+  "walk.loop": "Putaran",
+  "walk.outAndBack": "Pulang-pergi",
+  "walk_no_parking": "pendakian \"{hike}\": tidak ada parkir \"P\" untuk mulai, jalurnya tidak digambar: kaitkan dengan parkir tempat ia mulai (vanlife_place set.walk)",
+  "walk_parking_to_parking": "pendakian \"{hike}\": jalur akan dari parkir \"{parking}\" ke parkir lain, \"{other}\": jadikan putaran kembali ke \"{parking}\" atau pulang-pergi ke titik yang bukan parkir (tidak digambar sampai itu)",
+  "col.parking": "Parkir",
+  "park.camperYes": "motorhome boleh",
+  "park.camperNo": "motorhome dilarang",
+  "park.overnightYes": "menginap boleh",
+  "park.overnightNo": "menginap dilarang"
 }

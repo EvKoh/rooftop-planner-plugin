@@ -13,17 +13,18 @@ const call = (h, name, args) => h.run(plugin).hook('mcpToolProvider', 'callTool'
 const layers = (h) => h.run(plugin).hook('mapLayerProvider', 'getLayers', 1);
 
 const PARK = { id: 80, name: 'Example Trailhead Car Park', lat: 46.6, lng: 11.8, category_name: 'Route – Parking' };
-const HIKE = { id: 81, name: 'Example Hut Chairs', lat: 46.612, lng: 11.79, category_name: 'See – Viewpoint', description: 'Reached on foot only.' };
+const HIKE = { id: 81, name: 'Example Hut Chairs', lat: 46.612, lng: 11.79, category_name: 'See – Viewpoint', description: 'Reached on foot only. Links: https://www.wikiloc.com/hiking-trails/example-1 • https://www.outdooractive.com/en/route/hiking-trail/example/123/.' };
 const RIDGE = { id: 82, name: 'Hike to Example Ridge', lat: 46.62, lng: 11.83, category_name: 'See – Hike' };
 const LOOP = { id: 83, name: 'Example Lakes Loop', lat: 46.55, lng: 12.0, category_name: 'See – Hike' };
 const PARK2 = { id: 84, name: 'Example Pass Car Park', lat: 46.551, lng: 12.001, category_name: 'Route – Parking' };
-const FAR = { id: 85, name: 'Example Summit Trail', lat: 46.7, lng: 11.4, category_name: 'See – Hike', notes: 'Start: lay-by on the pass road, 46.6950, 11.4100\nLinks: https://www.wikiloc.com/hiking-trails/example-1 • https://www.outdooractive.com/en/route/hiking-trail/example/123/.' };
+const FAR = { id: 85, name: 'Example Summit Trail', lat: 46.7, lng: 11.4, category_name: 'See – Hike', notes: 'Start: lay-by on the pass road, 46.6950, 11.4100' };
+const PARK3 = { id: 86, name: 'Example Upper Car Park', lat: 46.6205, lng: 11.8305, category_name: 'Route – Parking' };
 
 /** The fixture trip with: day 1 car park → viewpoint walked to (renamed "on foot"); day 2 a car park only, its loop not planned; day 3 a far hike with a start point in its notes. */
 function trip() {
   const t = build();
   const hike = { ...HIKE, name: `${HIKE.name} on foot` };
-  for (const p of [PARK, hike, RIDGE, LOOP, PARK2, FAR]) t.places.push({ ...p, trip_id: 1, description: p.description || '', notes: p.notes || '' });
+  for (const p of [PARK, hike, RIDGE, LOOP, PARK2, FAR, PARK3]) t.places.push({ ...p, trip_id: 1, description: p.description || '', notes: p.notes || '' });
   const asg = (id, order, p) => ({ id, day_id: null, order_index: order, notes: null, accommodation_id: null, place: { ...p, place_time: null, end_time: null, category: { name: p.category_name }, description: p.description || '', notes: p.notes || '' } });
   t.days[0].assignments.splice(2, 0, asg(1101, 2, PARK), asg(1102, 2, hike));
   t.days[1].assignments.push(asg(2101, 9, PARK2));
@@ -67,25 +68,29 @@ describe('hikes and their car park on the map', () => {
     expect(fetch.calls.length).toBe(before);
   });
 
-  it('opens a hike card on click: walk, climb, hiking time, car park, and the page of the full track', async () => {
-    const [layer] = await layers(await hostWith());
+  it('opens a hike card on click: shape, total walk, climb, hiking time, car park, and the page of the full track', async () => {
+    const [layer] = await layers(await hostWith({ [LOOP.id]: { access_parking_place_id: PARK2.id, walk_via: [[46.56, 12.02]], walk_shape: 'loop' } }));
     const chairs = layer.features.find((f) => /Hut Chairs/.test(f.label));
-    expect(chairs.popupText.split('\n')[0]).toBe('Example Hut Chairs on foot');
-    expect(chairs.popupText).toMatch(/km · .* on foot · \+\d+ m/);
-    expect(chairs.popupText).toMatch(/On foot from Example Trailhead Car Park/);
-    // no track page written anywhere: the card says so, no link is made up
-    expect(chairs.url).toBeUndefined();
-    expect(chairs.popupText).toMatch(/No page with the full track is known yet/);
+    const lines = chairs.popupText.split('\n');
+    expect(lines[0]).toBe('Example Hut Chairs on foot');
+    // the hike's place is the turnaround: an out-and-back, counted both ways
+    expect(lines[1]).toMatch(/^Out and back · [\d.]+ km · .* on foot · \+\d+ m$/);
+    expect(lines[2]).toBe('On foot from Example Trailhead Car Park');
     // Outdooractive wins over Wikiloc, trailing punctuation dropped
-    const far = layer.features.find((f) => /Summit Trail/.test(f.label));
-    expect(far.url).toBe('https://www.outdooractive.com/en/route/hiking-trail/example/123/');
-    expect(far.popupText).not.toMatch(/No page/);
+    expect(chairs.url).toBe('https://www.outdooractive.com/en/route/hiking-trail/example/123/');
+    // no track page written anywhere: the card says so, no link is made up
+    const loop = layer.features.find((f) => /Lakes Loop/.test(f.label));
+    expect(loop.popupText).toMatch(/\nLoop · /);
+    expect(loop.url).toBeUndefined();
+    expect(loop.popupText).toMatch(/No page with the full track is known yet/);
   });
 
-  it('takes the start point from the notes when no car park is planned near the hike', async () => {
-    const [layer] = await layers(await hostWith());
-    const far = layer.features.find((f) => /Summit Trail/.test(f.label));
-    expect(far.points[0]).toEqual([46.695, 11.41]);
+  it('draws no walk without a car park "P" to start from, and the check reports it', async () => {
+    const h = await hostWith();
+    const [layer] = await layers(h);
+    expect(layer.features.find((f) => /Summit Trail/.test(f.label))).toBeUndefined();
+    const r = await call(h, 'vanlife_check_trip', { tripId: 1 });
+    expect(r.findings.find((f) => f.key === 'walk_no_parking' && f.placeId === FAR.id)).toBeTruthy();
   });
 
   it('draws the walk of a hike that is not planned once the user ties it to a planned car park, with its loop', async () => {
@@ -124,15 +129,29 @@ describe('the hike\'s car park in the place tool', () => {
 
   it('sets the car park explicitly, refuses a place outside the trip, and clears back to the guess', async () => {
     const h = await hostWith();
-    const r = await call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, set: { walk: { parking_place_id: PARK.id, loop: true } } });
+    const r = await call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, set: { walk: { parking_place_id: PARK.id, shape: 'loop' } } });
     expect(r.hike.accessParking).toMatchObject({ placeId: PARK.id, found: 'set' });
-    expect(r.hike.loop).toBe(true);
+    expect(r.hike.shape).toBe('loop');
+    expect(r.hike.problem).toBeNull();
     await expect(call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, set: { walk: { parking_place_id: 9999 } } })).rejects.toThrow(/not in trip/);
     await expect(call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, set: { walk: { parking_place_id: RIDGE.id } } })).rejects.toThrow(/another place/);
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, set: { walk: { parking_place_id: HIKE.id, shape: 'loop' } } })).rejects.toThrow(/not a car park/);
     const cleared = await call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, clear_fields: ['walk'] });
     expect(cleared.record).toMatchObject({ access_parking_place_id: null, walk_loop: null, walk_via: null });
     await expect(call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, set: { walk: { start: 1 } } })).rejects.toThrow(/walk takes/);
     expect((await call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, clear_fields: ['all'] })).cleared).toBe(true);
+  });
+
+  it('refuses a walk from one car park to another, and a walk with no shape', async () => {
+    const h = await hostWith();
+    // the ridge is next to another car park: an out-and-back there goes P → P
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, set: { walk: { parking_place_id: PARK.id, shape: 'out_and_back' } } }))
+      .rejects.toThrow(/to another car park, "Example Upper Car Park"/);
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, set: { walk: { parking_place_id: PARK.id } } })).rejects.toThrow(/walk.shape is required/);
+    // the same as a loop back to the first car park is fine
+    const ok = await call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, set: { walk: { parking_place_id: PARK.id, shape: 'loop', via: [[46.615, 11.82]] } } });
+    expect(ok.hike).toMatchObject({ shape: 'loop', problem: null });
+    expect(() => pi.merge(null, pi.expandWalk({ walk: { shape: 'one_way' } }))).toThrow(/walk.shape/);
   });
 
   it('validates the walk fields', () => {

@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Põhjus (valikuline)",
   "ui.nightSet": "Öömaja: {status}",
   "ui.confirmAvailable": "Tagasi vabaks: selle öö broneering kustutatakse TREKist. Peatus jääb plaani.",
-  "walk.noLink": "Täieliku rajaga lehte pole veel teada"
+  "walk.noLink": "Täieliku rajaga lehte pole veel teada",
+  "walk.loop": "Ringmatk",
+  "walk.outAndBack": "Edasi-tagasi",
+  "walk_no_parking": "matk „{hike}”: pole „P” parklat, kust alustada, rada ei joonistata: seo see parklaga, kust see algab (vanlife_place set.walk)",
+  "walk_parking_to_parking": "matk „{hike}”: rada viiks parklast „{parking}” teise parklasse, „{other}”: tee sellest ring tagasi „{parking}” juurde või edasi-tagasi punkti, mis pole parkla (seni ei joonistata)",
+  "col.parking": "Parkla",
+  "park.camperYes": "matkaautod lubatud",
+  "park.camperNo": "matkaautod keelatud",
+  "park.overnightYes": "ööbimine lubatud",
+  "park.overnightNo": "ööbimine keelatud"
 }

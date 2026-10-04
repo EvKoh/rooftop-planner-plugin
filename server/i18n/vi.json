@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Lý do (không bắt buộc)",
   "ui.nightSet": "Nghỉ đêm: {status}",
   "ui.confirmAvailable": "Trở lại còn trống: đặt chỗ của đêm này bị xóa khỏi TREK. Kỳ lưu trú vẫn nằm trong kế hoạch.",
-  "walk.noLink": "Chưa biết trang nào có toàn bộ lộ trình"
+  "walk.noLink": "Chưa biết trang nào có toàn bộ lộ trình",
+  "walk.loop": "Vòng",
+  "walk.outAndBack": "Đi và về",
+  "walk_no_parking": "tuyến \"{hike}\": không có bãi đỗ \"P\" để xuất phát, lộ trình không được vẽ: gắn nó với bãi đỗ nơi bắt đầu (vanlife_place set.walk)",
+  "walk_parking_to_parking": "tuyến \"{hike}\": lộ trình sẽ đi từ bãi đỗ \"{parking}\" đến bãi đỗ khác, \"{other}\": hãy làm vòng quay về \"{parking}\" hoặc đi và về tới một điểm không phải bãi đỗ (chưa vẽ cho đến khi đó)",
+  "col.parking": "Bãi đỗ xe",
+  "park.camperYes": "cho phép nhà di động",
+  "park.camperNo": "cấm nhà di động",
+  "park.overnightYes": "cho phép ngủ qua đêm",
+  "park.overnightNo": "cấm ngủ qua đêm"
 }

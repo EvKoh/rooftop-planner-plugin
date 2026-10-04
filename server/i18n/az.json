@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Səbəb (istəyə bağlı)",
   "ui.nightSet": "Gecələmə: {status}",
   "ui.confirmAvailable": "Yenidən boş: bu gecənin bronu TREK-dən silinir. Qalma planda qalır.",
-  "walk.noLink": "Tam marşrut səhifəsi hələ məlum deyil"
+  "walk.noLink": "Tam marşrut səhifəsi hələ məlum deyil",
+  "walk.loop": "Dairəvi",
+  "walk.outAndBack": "Gediş-dönüş",
+  "walk_no_parking": "yürüş \"{hike}\": başlamaq üçün \"P\" dayanacağı yoxdur, marşrut çəkilmir: onu başladığı dayanacağa bağlayın (vanlife_place set.walk)",
+  "walk_parking_to_parking": "yürüş \"{hike}\": marşrut \"{parking}\" dayanacağından başqa dayanacağa, \"{other}\" gedərdi: \"{parking}\" dayanacağına qayıdan dairə və ya dayanacaq olmayan nöqtəyə gediş-dönüş edin (o vaxta qədər çəkilmir)",
+  "col.parking": "Dayanacaq",
+  "park.camperYes": "avtoevlərə icazə var",
+  "park.camperNo": "avtoevlər qadağandır",
+  "park.overnightYes": "gecələmək olar",
+  "park.overnightNo": "gecələmək qadağandır"
 }

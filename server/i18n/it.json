@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Motivo (facoltativo)",
   "ui.nightSet": "Notte: {status}",
   "ui.confirmAvailable": "Di nuovo disponibile: la prenotazione di questa notte viene eliminata da TREK. Il soggiorno resta pianificato.",
-  "walk.noLink": "Nessuna pagina con il percorso completo nota per ora"
+  "walk.noLink": "Nessuna pagina con il percorso completo nota per ora",
+  "walk.loop": "Anello",
+  "walk.outAndBack": "Andata e ritorno",
+  "walk_no_parking": "escursione «{hike}»: nessun parcheggio «P» di partenza, il percorso non è disegnato: collegarla al parcheggio da cui parte (vanlife_place set.walk)",
+  "walk_parking_to_parking": "escursione «{hike}»: il percorso andrebbe dal parcheggio «{parking}» a un altro parcheggio, «{other}»: farne un anello che torna a «{parking}» o un andata e ritorno verso un punto che non è un parcheggio (non disegnato fino ad allora)",
+  "col.parking": "Parcheggio",
+  "park.camperYes": "camper ammessi",
+  "park.camperNo": "camper vietati",
+  "park.overnightYes": "notte consentita",
+  "park.overnightNo": "notte vietata"
 }

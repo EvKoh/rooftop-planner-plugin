@@ -300,5 +300,14 @@
   "ui.reasonOpt": "Neden (isteğe bağlı)",
   "ui.nightSet": "Konaklama: {status}",
   "ui.confirmAvailable": "Yeniden müsait: bu gecenin rezervasyonu TREK'ten silinir. Konaklama planda kalır.",
-  "walk.noLink": "Tam rotayı gösteren bir sayfa henüz bilinmiyor"
+  "walk.noLink": "Tam rotayı gösteren bir sayfa henüz bilinmiyor",
+  "walk.loop": "Döngü",
+  "walk.outAndBack": "Gidiş-dönüş",
+  "walk_no_parking": "yürüyüş \"{hike}\": başlangıç için \"P\" otoparkı yok, rota çizilmiyor: başladığı otoparka bağlayın (vanlife_place set.walk)",
+  "walk_parking_to_parking": "yürüyüş \"{hike}\": rota \"{parking}\" otoparkından başka bir otoparka, \"{other}\" gider: \"{parking}\" otoparkına dönen bir döngü ya da otopark olmayan bir noktaya gidiş-dönüş yapın (o zamana kadar çizilmez)",
+  "col.parking": "Otopark",
+  "park.camperYes": "karavan serbest",
+  "park.camperNo": "karavan yasak",
+  "park.overnightYes": "gece kalma serbest",
+  "park.overnightNo": "gece kalma yasak"
 }

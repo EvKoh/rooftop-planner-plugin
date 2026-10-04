@@ -300,5 +300,14 @@
   "ui.reasonOpt": "السبب (اختياري)",
   "ui.nightSet": "المبيت: {status}",
   "ui.confirmAvailable": "العودة إلى متاح: يُحذف حجز هذه الليلة من TREK. تبقى الإقامة مخططة.",
-  "walk.noLink": "لا توجد بعد صفحة معروفة للمسار الكامل"
+  "walk.noLink": "لا توجد بعد صفحة معروفة للمسار الكامل",
+  "walk.loop": "حلقة",
+  "walk.outAndBack": "ذهاب وإياب",
+  "walk_no_parking": "المسار «{hike}»: لا يوجد موقف «P» للانطلاق، فلا يُرسم: اربطه بالموقف الذي ينطلق منه (vanlife_place set.walk)",
+  "walk_parking_to_parking": "المسار «{hike}»: سيذهب من الموقف «{parking}» إلى موقف آخر «{other}»: اجعله حلقة تعود إلى «{parking}» أو ذهابًا وإيابًا إلى نقطة ليست موقفًا (لا يُرسم حتى ذلك)",
+  "col.parking": "موقف",
+  "park.camperYes": "يُسمح بالبيوت المتنقلة",
+  "park.camperNo": "لا بيوت متنقلة",
+  "park.overnightYes": "المبيت مسموح",
+  "park.overnightNo": "المبيت ممنوع"
 }

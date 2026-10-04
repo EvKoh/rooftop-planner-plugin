@@ -300,5 +300,14 @@
   "ui.reasonOpt": "사유(선택)",
   "ui.nightSet": "숙박: {status}",
   "ui.confirmAvailable": "가능으로 되돌리기: 이 밤의 예약이 TREK에서 삭제됩니다. 숙박 일정은 그대로 남습니다.",
-  "walk.noLink": "전체 경로 페이지가 아직 없습니다"
+  "walk.noLink": "전체 경로 페이지가 아직 없습니다",
+  "walk.loop": "순환",
+  "walk.outAndBack": "왕복",
+  "walk_no_parking": "하이킹 \"{hike}\": 출발할 주차장 \"P\"가 없어 경로를 그리지 않습니다: 출발하는 주차장에 연결하세요 (vanlife_place set.walk)",
+  "walk_parking_to_parking": "하이킹 \"{hike}\": 경로가 주차장 \"{parking}\"에서 다른 주차장 \"{other}\"로 갑니다: \"{parking}\"로 돌아오는 순환이나 주차장이 아닌 지점까지의 왕복으로 만드세요 (그때까지 그리지 않음)",
+  "col.parking": "주차장",
+  "park.camperYes": "캠핑카 허용",
+  "park.camperNo": "캠핑카 금지",
+  "park.overnightYes": "차박 허용",
+  "park.overnightNo": "차박 금지"
 }

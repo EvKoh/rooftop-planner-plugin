@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.5.9",
+  "version": "0.5.10",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -924,7 +924,7 @@
                 "walk": {
                   "type": "object",
                   "nullable": true,
-                  "description": "A hike: { parking_place_id: its car park (place id; null = guessed from the plan), via: [[lat, lng], ...] points passed in order, loop: true to come back to the car park, url: the page with the full track (Outdooractive, Komoot...) }. Drawn dotted from the car park."
+                  "description": "A hike, from a car park \"P\" back to it: { parking_place_id, shape: \"loop\" or \"out_and_back\" (to the hike's place and back), via: [[lat, lng], ...], url: full track page (Outdooractive...) }. Never P to another P."
                 },
                 "max_height_m": {
                   "type": "number",
@@ -1124,12 +1124,12 @@
                 "source": {
                   "type": "string",
                   "maxLength": 300,
-                  "description": "Where the amenities and prices come from."
+                  "description": "Where the amenities and prices come from (dated today)."
                 },
-                "checked": {
-                  "type": "string",
-                  "format": "date",
-                  "description": "Date the source was read."
+                "parking": {
+                  "type": "object",
+                  "nullable": true,
+                  "description": "A car park (price above, per \"day\"/\"hour\"; height: max_height_m): { hours, payment, camper_allowed, overnight_allowed: yes/no/unknown, notes, source_url }."
                 },
                 "contacts": {
                   "type": "object",
@@ -1242,7 +1242,7 @@
                 "type": "string",
                 "maxLength": 40
               },
-              "description": "Clear only these: an amenity key, dog_fee, max_height_m, visit_min_minutes, per, price_note, source, checked, access_before, access_after, booking_required, booking_url, booking_note, toll_amount, toll_currency, walk, a contact field (email, phone...), amenities / contacts / log, or all (the whole record)."
+              "description": "Clear only these: an amenity key, dog_fee, max_height_m, visit_min_minutes, per, price_note, source, checked, access_before, access_after, booking_required, booking_url, booking_note, toll_amount, toll_currency, walk, parking, a contact field (email, phone...), amenities / contacts / log, or all (the whole record)."
             },
             "fill": {
               "type": "boolean",

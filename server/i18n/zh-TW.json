@@ -300,5 +300,14 @@
   "ui.reasonOpt": "原因（選填）",
   "ui.nightSet": "住宿：{status}",
   "ui.confirmAvailable": "恢復為可用：這一晚的預訂會從 TREK 刪除，住宿安排保留。",
-  "walk.noLink": "暫無完整路線頁面"
+  "walk.noLink": "暫無完整路線頁面",
+  "walk.loop": "環線",
+  "walk.outAndBack": "往返",
+  "walk_no_parking": "健行「{hike}」：沒有出發的停車場「P」，不繪製路線：請連結其出發的停車場（vanlife_place set.walk）",
+  "walk_parking_to_parking": "健行「{hike}」：路線將從停車場「{parking}」到另一個停車場「{other}」：請改為回到「{parking}」的環線，或往返到非停車場的折返點（在此之前不繪製）",
+  "col.parking": "停車場",
+  "park.camperYes": "允許露營車",
+  "park.camperNo": "禁止露營車",
+  "park.overnightYes": "允許過夜",
+  "park.overnightNo": "禁止過夜"
 }
