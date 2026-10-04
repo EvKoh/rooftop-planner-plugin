@@ -23,7 +23,7 @@ const contacts = require('./contacts');
 const nightStatus = require('./night-status');
 const hostMessage = require('./host-message');
 const walks = require('./walks');
-const { activityKind } = require('./design');
+const { activityKind, KINDS, categoryForKind } = require('./design');
 
 const TOOL_BUDGET_MS = 12500;
 const MAX_BYTES = 60000; // under the host's 64 KiB, with room for its envelope
@@ -135,6 +135,72 @@ async function hikesList(ctx, model, settings, opts) {
 /** List / read / set / log / clear / fill the record of the places of a trip. */
 async function placeTool(ctx, model, a, settings, opts = {}) {
   if (!a.placeId && a.filter === 'hikes') return hikesList(ctx, model, settings, opts);
+  // A new place (create), and a hike's car park given inline (set.walk.parking): made first,
+  // so a whole hike — car park, hike, dotted walk — goes on the map in one call.
+  const created = [];
+  if (a.create) {
+    if (a.placeId) throw new Error('create makes a new place: leave placeId out');
+    const p = await createPlace(ctx, model, a.create);
+    created.push(p);
+    a = { ...a, placeId: p.placeId };
+  }
+  const walkIn = a.set && a.set.walk && typeof a.set.walk === 'object' && !Array.isArray(a.set.walk) ? a.set.walk : null;
+  if (walkIn && walkIn.parking != null) {
+    if (typeof walkIn.parking !== 'object' || Array.isArray(walkIn.parking)) throw new Error('walk.parking is a new car park: { name, lat, lng, price_amount, per, day_number }');
+    if ('parking_place_id' in walkIn) throw new Error('give walk.parking_place_id (a car park of the trip) or walk.parking (a new one), not both');
+    const { parking, ...rest } = walkIn;
+    const park = await createPlace(ctx, model, { ...parking, kind: 'parking' });
+    created.push(park);
+    a = { ...a, set: { ...a.set, walk: { ...rest, parking_place_id: park.placeId } } };
+  }
+  if (created.length) model = await loadTrip(ctx, model.tripId, settings);
+  const out = await placeToolOn(ctx, model, a, settings, opts);
+  return created.length && out && typeof out === 'object' ? { created, ...out } : out;
+}
+
+const CREATE_KEYS = ['name', 'lat', 'lng', 'kind', 'address', 'website', 'description', 'notes', 'price_amount', 'currency', 'per', 'day_number'];
+
+/** A new place of the trip, filed under the category of its kind, planned on a day if asked. */
+async function createPlace(ctx, model, c) {
+  if (!c || typeof c !== 'object' || Array.isArray(c)) throw new Error('create is an object: { name, lat, lng, kind, ... }');
+  const unknown = Object.keys(c).filter((k) => !CREATE_KEYS.includes(k));
+  if (unknown.length) throw new Error(`create takes ${CREATE_KEYS.join(', ')}, not ${unknown.join(', ')}`);
+  const name = typeof c.name === 'string' ? c.name.trim() : '';
+  if (!name || name.length > 200) throw new Error('create.name is required (200 characters at most)');
+  const lat = Number(c.lat);
+  const lng = Number(c.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) throw new Error('create.lat and create.lng are required, in degrees');
+  const input = { name, lat, lng };
+  if (c.kind != null) {
+    if (!KINDS.includes(c.kind)) throw new Error(`create.kind must be one of: ${KINDS.join(', ')}`);
+    const cat = categoryForKind(await ctx.categories.list(), c.kind);
+    if (!cat) throw new Error(`no category of this trip matches "${c.kind}"`);
+    input.category_id = cat.id;
+  }
+  for (const k of ['address', 'website', 'description', 'notes']) {
+    if (c[k] == null) continue;
+    if (typeof c[k] !== 'string' || c[k].length > (k === 'notes' || k === 'description' ? 2000 : 500)) throw new Error(`create.${k} must be a text`);
+    input[k] = c[k];
+  }
+  if (c.website != null && !/^https?:\/\//i.test(c.website)) throw new Error('create.website must be an http(s) address');
+  if (c.price_amount != null) {
+    const v = Number(c.price_amount);
+    if (!Number.isFinite(v) || v < 0) throw new Error('create.price_amount must be a positive number');
+    input.price = v;
+    input.currency = typeof c.currency === 'string' && /^[A-Za-z]{3}$/.test(c.currency) ? c.currency.toUpperCase() : 'EUR';
+  }
+  let day = null;
+  if (c.day_number != null) {
+    day = model.days.find((d) => d.n === Number(c.day_number));
+    if (!day) throw new Error(`day ${c.day_number} is not in trip ${model.tripId}`);
+  }
+  const place = await ctx.places.create(Number(model.tripId), input);
+  if (c.per != null) await placeInfo.set(ctx, model.tripId, place.id, { per: c.per }, { place });
+  if (day) await ctx.itinerary.assign(Number(model.tripId), Number(day.id), Number(place.id));
+  return { placeId: place.id, name, kind: c.kind || null, categoryId: input.category_id || null, dayNumber: day ? day.n : null };
+}
+
+async function placeToolOn(ctx, model, a, settings, opts = {}) {
   if (a.fill) return amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, language: settings.language, budgetMs: 6000 });
   if (!a.placeId) {
     if (a.set || a.log || a.clear || a.sheet_set || (a.clear_fields && a.clear_fields.length)) throw new Error('placeId is required to set, log or clear');

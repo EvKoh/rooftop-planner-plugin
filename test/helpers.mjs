@@ -105,7 +105,7 @@ export function stubFetch({ failValhalla = false, failOverpass = false, failPark
 }
 
 /** Mock host seeded with the fixture trip and the manifest's exact grants. */
-export function makeHost({ fixed = false, grants = manifest.permissions, userSettings = { language: 'en', timezone: 'Europe/Rome' }, trip, queryResults, config = { park4night_enabled: false } } = {}) {
+export function makeHost({ fixed = false, grants = manifest.permissions, userSettings = { language: 'en', timezone: 'Europe/Rome' }, trip, queryResults, config = { park4night_enabled: false }, categories = CATS } = {}) {
   cache.clearMemory();
   overpass.resetBusy();
   park4night.resetRate();
@@ -113,7 +113,7 @@ export function makeHost({ fixed = false, grants = manifest.permissions, userSet
     grants,
     actingUserId: 42,
     userSettings,
-    categories: CATS,
+    categories,
     queryResults,
     config,
     trips: { 1: trip || build({ fixed }) },
