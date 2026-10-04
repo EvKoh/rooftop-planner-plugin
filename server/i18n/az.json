@@ -384,5 +384,10 @@
   "sh.k.night": "Gecələmə",
   "sh.k.activity": "Ziyarət",
   "night_cancelled": "“{name}” gecəsi ləğv edilib, amma hələ plandadır: başqa yer tapın və ya gecəni çıxarın",
-  "s.night_cancelled": "gecə ləğv edilib: qalacaq yer yoxdur"
+  "s.night_cancelled": "gecə ləğv edilib: qalacaq yer yoxdur",
+  "chip.closedRange": "Bağlıdır {from}–{until}",
+  "chip.closedFrom": "{from} tarixindən bağlıdır",
+  "chip.closedUntil": "{until} tarixinədək bağlıdır",
+  "place_closed": "“{name}” o gün bağlıdır ({from}–{until} bağlıdır): başqa yer seçin",
+  "s.place_closed": "o gün bağlıdır"
 }

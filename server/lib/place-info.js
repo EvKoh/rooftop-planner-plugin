@@ -63,7 +63,7 @@ const VISIT = { visit_min_minutes: [5, 1440], visit_max_minutes: [5, 1440] };
 // the day, a slot to book, a ticket per vehicle). access_before / access_after are "HH:MM":
 // with only one, it is a limit; with both, before < after is a road closed in between
 // (arrive before OR after), after < before a road open in between (arrive after AND before).
-const ACCESS_FIELDS = ['access_before', 'access_after', 'booking_required', 'booking_url', 'booking_note', 'toll_amount', 'toll_currency'];
+const ACCESS_FIELDS = ['access_before', 'access_after', 'booking_required', 'booking_url', 'booking_note', 'toll_amount', 'toll_currency', 'closed_from', 'closed_until'];
 const BOOKING_NOTE_MAX = 120;
 // A hike's walk: the car park it starts from (a TREK place of the trip), the points it passes
 // (a loop's refuges, a pass...) and whether it comes back to the car park. walks.js draws it.
@@ -101,6 +101,8 @@ const blank = () => ({
   booking_note: null,
   toll_amount: null,
   toll_currency: null,
+  closed_from: null,
+  closed_until: null,
   access_parking_place_id: null,
   walk_via: null,
   parking_hours: null,
@@ -136,8 +138,19 @@ function timeField(p, k) {
   return `${m[1].padStart(2, '0')}:${m[2]}`;
 }
 
+/** "2026-09-30" → same; null for null or ''; throws on anything else. */
+function dateField(p, k) {
+  if (p[k] == null || p[k] === '') return null;
+  const v = String(p[k]).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || Number.isNaN(Date.parse(`${v}T00:00:00Z`))) throw new InfoError(`${k} must be a date YYYY-MM-DD, or null to clear`);
+  return v;
+}
+
 /** Timed access, booking and toll fields of a patch, validated onto `out`. */
 function mergeAccess(out, p) {
+  // A seasonal closure: closed from that day, and/or until that day (both included).
+  for (const k of ['closed_from', 'closed_until']) if (k in p) out[k] = dateField(p, k);
+  if (out.closed_from && out.closed_until && out.closed_from > out.closed_until) throw new InfoError('closed_from must come before closed_until');
   for (const k of ['access_before', 'access_after']) if (k in p) out[k] = timeField(p, k);
   if (out.access_before && out.access_before === out.access_after) throw new InfoError('access_before and access_after cannot be the same time');
   if ('booking_required' in p) {
@@ -535,6 +548,19 @@ const tollCurrency = (info, fallback) => (info && info.toll_currency) || fallbac
  * The access chips of a record, in the planner's order: { key, label, value, icon, tone }.
  * Only what is recorded: no chip for an unknown or a "no booking" value.
  */
+/** "2026-09-30" → "30/09" in the user's language (day and month only). */
+function shortDate(iso, L) {
+  if (!iso) return '';
+  try { return new Intl.DateTimeFormat(L || 'en', { day: '2-digit', month: '2-digit', timeZone: 'UTC' }).format(new Date(`${iso}T12:00:00Z`)); } catch { return iso.slice(5); }
+}
+
+/** Is the place closed on that day ("YYYY-MM-DD")? */
+function closedOn(info, iso) {
+  if (!info || !iso || (!info.closed_from && !info.closed_until)) return false;
+  const d = iso.slice(0, 10);
+  return (!info.closed_from || d >= info.closed_from) && (!info.closed_until || d <= info.closed_until);
+}
+
 function accessChips(info, L, currency) {
   if (!info) return [];
   const { CHIP } = require('./design');
@@ -543,6 +569,10 @@ function accessChips(info, L, currency) {
   if (info.access_after) out.push({ key: 'access-after', label: t(L, 'col.access'), value: t(L, 'chip.accessAfter', { time: clock(hmOf(info.access_after), L) }), ...CHIP.accessAfter });
   if (info.booking_required === true) out.push({ key: 'booking', label: t(L, 'col.booking'), value: t(L, 'chip.booking'), ...CHIP.booking });
   if (info.toll_amount != null) out.push({ key: 'toll', label: t(L, 'col.toll'), value: t(L, 'chip.toll', { amount: money(info.toll_amount, tollCurrency(info, currency), L) }), ...CHIP.toll });
+  if (info.closed_from || info.closed_until) {
+    const key = info.closed_from && info.closed_until ? 'chip.closedRange' : info.closed_from ? 'chip.closedFrom' : 'chip.closedUntil';
+    out.unshift({ key: 'closed', label: t(L, 'col.access'), value: t(L, key, { from: shortDate(info.closed_from, L), until: shortDate(info.closed_until, L) }), ...CHIP.closed });
+  }
   return out;
 }
 
@@ -645,4 +675,4 @@ async function getAll(ctx, tripId, placeIds) {
   return out;
 }
 
-module.exports = { PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

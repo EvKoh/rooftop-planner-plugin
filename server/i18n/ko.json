@@ -384,5 +384,10 @@
   "sh.k.night": "숙박",
   "sh.k.activity": "방문",
   "night_cancelled": "“{name}” 숙박이 취소되었지만 아직 일정에 있습니다: 다른 숙소를 찾거나 그 밤을 빼세요",
-  "s.night_cancelled": "숙박 취소: 잘 곳 없음"
+  "s.night_cancelled": "숙박 취소: 잘 곳 없음",
+  "chip.closedRange": "휴업 {from}–{until}",
+  "chip.closedFrom": "{from}부터 휴업",
+  "chip.closedUntil": "{until}까지 휴업",
+  "place_closed": "“{name}”은(는) 그날 휴업입니다(휴업 {from}–{until}): 다른 곳을 고르세요",
+  "s.place_closed": "그날 휴업"
 }

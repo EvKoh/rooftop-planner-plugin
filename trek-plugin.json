@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.5.20",
+  "version": "0.5.21",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -800,7 +800,7 @@
             "create": {
               "type": "object",
               "nullable": true,
-              "description": "Without placeId: make a new place of the trip first, then apply set/log to it: { name, lat, lng, kind (one of the kinds below, e.g. \"hike\", \"parking\"), address, website, description, notes, price_amount, currency, per, day_number (plans it on that day) }. A hike on the map in one call: create { kind \"hike\", ... } + set.walk { parking { name, lat, lng, price_amount, per \"day\" }, shape \"loop\" or \"out_and_back\", via, url }."
+              "description": "Without placeId: a new place first, then set/log apply to it: { name, lat, lng, kind (e.g. \"hike\", \"parking\"), address, website, description, notes, price_amount, currency, per, day_number (plans it that day) }. A whole hike in one call: create { kind \"hike\" } + set.walk { parking { name, lat, lng, price_amount, per }, shape, via, url }."
             },
             "kind": {
               "type": "string",
@@ -893,7 +893,7 @@
                 "access_after": {
                   "type": "string",
                   "pattern": "^[0-2]?[0-9]:[0-5][0-9]$",
-                  "description": "Timed access: cars allowed only after this local time. With access_before earlier than it, the road is closed in between (arrive before OR after); with access_before later, open in between. null erases.",
+                  "description": "Timed access: cars only after this local time. With an earlier access_before, closed in between; with a later one, open in between.",
                   "nullable": true
                 },
                 "booking_required": {
@@ -925,6 +925,16 @@
                   "pattern": "^[A-Z]{3}$",
                   "nullable": true,
                   "description": "3-letter ISO code of the toll; default: the place's or trip's currency."
+                },
+                "closed_from": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Closed for the season from YYYY-MM-DD (included); a stop or night planned then is blocking."
+                },
+                "closed_until": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Closed until YYYY-MM-DD (included)."
                 },
                 "walk": {
                   "type": "object",

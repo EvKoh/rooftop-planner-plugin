@@ -68,6 +68,11 @@ describe('rules', () => {
   });
   it('judges the legality of a night by its ground and zone', () => {
     expect(rules.nightLegality({ categoryName: 'Night – Motorhome area', placeName: 'X' }).key).toBe('night_aire');
+    // a private motorhome park: its operator may accept a rooftop tent → a point to confirm
+    expect(rules.nightLegality({ categoryName: 'Night – Motorhome area', placeName: 'Example Camperpark', text: 'Private area, 90 pitches' })).toMatchObject({ key: 'night_private', level: 'verify' });
+    expect(rules.nightLegality({ categoryName: 'Night – Motorhome area', placeName: 'Aire X', text: 'aire privée de 20 places' }).level).toBe('verify');
+    // a communal one stays blocking
+    expect(rules.nightLegality({ categoryName: 'Night – Motorhome area', placeName: 'Aire X', text: 'parking communal pour camping-cars, aire privée' }).key).toBe('night_aire');
     expect(rules.nightLegality({ categoryName: 'Nuitée – Ferme / agricamping', placeName: 'Hof', lat: 46.64, lng: 11.72 }).key).toBe('night_farm_zone');
     expect(rules.nightLegality({ categoryName: 'farm', placeName: 'Hof', lat: 46.64, lng: 11.72, text: 'authorised by the municipality' })).toBeNull();
     expect(rules.nightLegality({ categoryName: 'farm', placeName: 'Agriturismo', lat: 44.52, lng: 8.71 })).toBeNull();

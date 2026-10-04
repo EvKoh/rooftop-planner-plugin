@@ -384,5 +384,10 @@
   "sh.k.night": "Szállás",
   "sh.k.activity": "Látogatás",
   "night_cancelled": "A(z) „{name}” éjszaka lemondva, de még a tervben van: keress másik szállást, vagy töröld az éjszakát",
-  "s.night_cancelled": "éjszaka lemondva: nincs szállás"
+  "s.night_cancelled": "éjszaka lemondva: nincs szállás",
+  "chip.closedRange": "Zárva {from}–{until}",
+  "chip.closedFrom": "Zárva {from}-tól",
+  "chip.closedUntil": "Zárva {until}-ig",
+  "place_closed": "„{name}” aznap zárva van (zárva {from}–{until}): válassz másik helyet",
+  "s.place_closed": "aznap zárva"
 }

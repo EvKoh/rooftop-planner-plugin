@@ -384,5 +384,10 @@
   "sh.k.night": "Overnachting",
   "sh.k.activity": "Bezoek",
   "night_cancelled": "De nacht bij „{name}” is geannuleerd maar staat nog in de planning: zoek een andere slaapplek of haal de nacht weg",
-  "s.night_cancelled": "nacht geannuleerd: geen slaapplek"
+  "s.night_cancelled": "nacht geannuleerd: geen slaapplek",
+  "chip.closedRange": "Gesloten {from}–{until}",
+  "chip.closedFrom": "Gesloten vanaf {from}",
+  "chip.closedUntil": "Gesloten tot {until}",
+  "place_closed": "„{name}” is die dag gesloten (gesloten {from}–{until}): kies een andere plek",
+  "s.place_closed": "die dag gesloten"
 }

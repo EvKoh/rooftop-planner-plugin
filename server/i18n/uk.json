@@ -384,5 +384,10 @@
   "sh.k.night": "Ночівля",
   "sh.k.activity": "Відвідування",
   "night_cancelled": "Ніч у «{name}» скасовано, але вона ще в плані: знайдіть інше житло або приберіть ніч",
-  "s.night_cancelled": "ніч скасовано: немає житла"
+  "s.night_cancelled": "ніч скасовано: немає житла",
+  "chip.closedRange": "Зачинено {from}–{until}",
+  "chip.closedFrom": "Зачинено з {from}",
+  "chip.closedUntil": "Зачинено до {until}",
+  "place_closed": "«{name}» цього дня зачинено (зачинено {from}–{until}): оберіть інше місце",
+  "s.place_closed": "цього дня зачинено"
 }

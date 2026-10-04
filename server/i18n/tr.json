@@ -384,5 +384,10 @@
   "sh.k.night": "Konaklama",
   "sh.k.activity": "Ziyaret",
   "night_cancelled": "“{name}” konaklaması iptal edildi ama hâlâ planda: başka bir yer bulun ya da geceyi çıkarın",
-  "s.night_cancelled": "gece iptal: konaklama yok"
+  "s.night_cancelled": "gece iptal: konaklama yok",
+  "chip.closedRange": "Kapalı {from}–{until}",
+  "chip.closedFrom": "{from} itibarıyla kapalı",
+  "chip.closedUntil": "{until} tarihine kadar kapalı",
+  "place_closed": "“{name}” o gün kapalı ({from}–{until} kapalı): başka bir yer seçin",
+  "s.place_closed": "o gün kapalı"
 }

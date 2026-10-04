@@ -384,5 +384,10 @@
   "sh.k.night": "Nghỉ đêm",
   "sh.k.activity": "Tham quan",
   "night_cancelled": "Đêm tại “{name}” đã hủy nhưng vẫn trong lịch trình: hãy tìm chỗ ngủ khác hoặc bỏ đêm đó",
-  "s.night_cancelled": "đêm đã hủy: không có chỗ ngủ"
+  "s.night_cancelled": "đêm đã hủy: không có chỗ ngủ",
+  "chip.closedRange": "Đóng cửa {from}–{until}",
+  "chip.closedFrom": "Đóng cửa từ {from}",
+  "chip.closedUntil": "Đóng cửa đến {until}",
+  "place_closed": "“{name}” đóng cửa ngày đó (đóng cửa {from}–{until}): hãy chọn nơi khác",
+  "s.place_closed": "đóng cửa ngày đó"
 }

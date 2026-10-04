@@ -384,5 +384,10 @@
   "sh.k.night": "Nocľah",
   "sh.k.activity": "Návšteva",
   "night_cancelled": "Noc v „{name}“ je zrušená, ale stále v pláne: nájdite iné ubytovanie alebo noc odstráňte",
-  "s.night_cancelled": "noc zrušená: bez ubytovania"
+  "s.night_cancelled": "noc zrušená: bez ubytovania",
+  "chip.closedRange": "Zatvorené {from}–{until}",
+  "chip.closedFrom": "Zatvorené od {from}",
+  "chip.closedUntil": "Zatvorené do {until}",
+  "place_closed": "„{name}“ má v ten deň zatvorené (zatvorené {from}–{until}): vyberte iné miesto",
+  "s.place_closed": "v ten deň zatvorené"
 }
