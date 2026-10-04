@@ -382,5 +382,7 @@
   "sh.v.dogNo": "불가",
   "sh.k.hike": "하이킹",
   "sh.k.night": "숙박",
-  "sh.k.activity": "방문"
+  "sh.k.activity": "방문",
+  "night_cancelled": "“{name}” 숙박이 취소되었지만 아직 일정에 있습니다: 다른 숙소를 찾거나 그 밤을 빼세요",
+  "s.night_cancelled": "숙박 취소: 잘 곳 없음"
 }

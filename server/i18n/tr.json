@@ -382,5 +382,7 @@
   "sh.v.dogNo": "İzinsiz",
   "sh.k.hike": "Yürüyüş",
   "sh.k.night": "Konaklama",
-  "sh.k.activity": "Ziyaret"
+  "sh.k.activity": "Ziyaret",
+  "night_cancelled": "“{name}” konaklaması iptal edildi ama hâlâ planda: başka bir yer bulun ya da geceyi çıkarın",
+  "s.night_cancelled": "gece iptal: konaklama yok"
 }

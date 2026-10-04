@@ -382,5 +382,7 @@
   "sh.v.dogNo": "Nem megengedett",
   "sh.k.hike": "Túra",
   "sh.k.night": "Szállás",
-  "sh.k.activity": "Látogatás"
+  "sh.k.activity": "Látogatás",
+  "night_cancelled": "A(z) „{name}” éjszaka lemondva, de még a tervben van: keress másik szállást, vagy töröld az éjszakát",
+  "s.night_cancelled": "éjszaka lemondva: nincs szállás"
 }

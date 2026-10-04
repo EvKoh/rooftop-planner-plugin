@@ -382,5 +382,7 @@
   "sh.v.dogNo": "不允许",
   "sh.k.hike": "徒步",
   "sh.k.night": "住宿",
-  "sh.k.activity": "参观"
+  "sh.k.activity": "参观",
+  "night_cancelled": "“{name}”的住宿已取消但仍在行程中：请另找住处或删去这一晚",
+  "s.night_cancelled": "住宿已取消：无处过夜"
 }

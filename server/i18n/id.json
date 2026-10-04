@@ -382,5 +382,7 @@
   "sh.v.dogNo": "Tidak diizinkan",
   "sh.k.hike": "Pendakian",
   "sh.k.night": "Menginap",
-  "sh.k.activity": "Kunjungan"
+  "sh.k.activity": "Kunjungan",
+  "night_cancelled": "Malam di “{name}” dibatalkan tetapi masih ada di rencana: cari tempat menginap lain atau hapus malam itu",
+  "s.night_cancelled": "malam dibatalkan: tidak ada penginapan"
 }

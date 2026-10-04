@@ -382,5 +382,7 @@
   "sh.v.dogNo": "Niet toegestaan",
   "sh.k.hike": "Wandeling",
   "sh.k.night": "Overnachting",
-  "sh.k.activity": "Bezoek"
+  "sh.k.activity": "Bezoek",
+  "night_cancelled": "De nacht bij „{name}” is geannuleerd maar staat nog in de planning: zoek een andere slaapplek of haal de nacht weg",
+  "s.night_cancelled": "nacht geannuleerd: geen slaapplek"
 }
