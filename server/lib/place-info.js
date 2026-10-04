@@ -399,11 +399,12 @@ const tollCurrency = (info, fallback) => (info && info.toll_currency) || fallbac
  */
 function accessChips(info, L, currency) {
   if (!info) return [];
+  const { CHIP } = require('./design');
   const out = [];
-  if (info.access_before) out.push({ key: 'access-before', label: t(L, 'col.access'), value: t(L, 'chip.accessBefore', { time: clock(hmOf(info.access_before), L) }), icon: 'AlarmClock', tone: 'warn' });
-  if (info.access_after) out.push({ key: 'access-after', label: t(L, 'col.access'), value: t(L, 'chip.accessAfter', { time: clock(hmOf(info.access_after), L) }), icon: 'Clock', tone: 'warn' });
-  if (info.booking_required === true) out.push({ key: 'booking', label: t(L, 'col.booking'), value: t(L, 'chip.booking'), icon: 'CalendarCheck', tone: 'warn' });
-  if (info.toll_amount != null) out.push({ key: 'toll', label: t(L, 'col.toll'), value: t(L, 'chip.toll', { amount: money(info.toll_amount, tollCurrency(info, currency), L) }), icon: 'Ticket', tone: 'default' });
+  if (info.access_before) out.push({ key: 'access-before', label: t(L, 'col.access'), value: t(L, 'chip.accessBefore', { time: clock(hmOf(info.access_before), L) }), ...CHIP.accessBefore });
+  if (info.access_after) out.push({ key: 'access-after', label: t(L, 'col.access'), value: t(L, 'chip.accessAfter', { time: clock(hmOf(info.access_after), L) }), ...CHIP.accessAfter });
+  if (info.booking_required === true) out.push({ key: 'booking', label: t(L, 'col.booking'), value: t(L, 'chip.booking'), ...CHIP.booking });
+  if (info.toll_amount != null) out.push({ key: 'toll', label: t(L, 'col.toll'), value: t(L, 'chip.toll', { amount: money(info.toll_amount, tollCurrency(info, currency), L) }), ...CHIP.toll });
   return out;
 }
 

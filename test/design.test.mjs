@@ -1,0 +1,49 @@
+import { describe, it, expect } from 'vitest';
+import { require } from './helpers.mjs';
+
+const d = require('../server/lib/design.js');
+
+// TREK's own map icon set (client/src/components/shared/categoryIcons.ts): a map marker can
+// only carry one of these.
+const TREK_MARKER_ICONS = ['MapPin', 'Building2', 'BedDouble', 'UtensilsCrossed', 'Landmark', 'ShoppingBag', 'Bus', 'Train',
+  'Car', 'Plane', 'Ship', 'Bike', 'Activity', 'Dumbbell', 'Mountain', 'Tent', 'Anchor', 'Coffee', 'Beer', 'Wine', 'Utensils',
+  'Camera', 'Music', 'Theater', 'Ticket', 'TreePine', 'Waves', 'Leaf', 'Flower2', 'Sun', 'Globe', 'Compass', 'Flag',
+  'Navigation', 'Map', 'Church', 'Library', 'Store', 'Home', 'Cross', 'Heart', 'Star', 'CreditCard', 'Wifi', 'Luggage',
+  'Backpack', 'Zap'];
+const TONES = ['default', 'success', 'warn', 'danger'];
+
+describe('design catalogue', () => {
+  it('gives every map marker an icon TREK can draw, and every look a TREK tone', () => {
+    for (const icon of d.MARKER_ICONS) expect(TREK_MARKER_ICONS).toContain(icon);
+    for (const tone of Object.values(d.TONE)) expect(TONES).toContain(tone);
+    for (const c of [...Object.values(d.NIGHT_STATUS), ...Object.values(d.CHIP)]) expect(TONES).toContain(c.tone);
+  });
+
+  it('colours by state: green planned or booked, amber in discussion, red dropped', () => {
+    const camp = { name: 'Camping X', categoryName: 'Night – Campsite' };
+    expect(d.markerStyle({ name: 'Lake walk', categoryName: 'Hike' })).toEqual({ tone: 'success', icon: 'Mountain' });
+    expect(d.markerStyle(camp, { night: true, status: 'booked' })).toEqual({ tone: 'success', icon: 'Tent' });
+    expect(d.markerStyle(camp, { night: true, status: 'contacted' }).tone).toBe('warn');
+    expect(d.markerStyle(camp, { night: true, status: 'dropped' }).tone).toBe('danger');
+    expect(d.markerStyle(camp, { night: true }).tone).toBe('default');
+  });
+
+  it('draws a pictogram per kind of place, from the category first, in several languages', () => {
+    const night = (categoryName, name = 'X') => d.pictogramFor({ categoryName, name }, { night: true });
+    const act = (categoryName, name = 'X') => d.pictogramFor({ categoryName, name });
+    expect(night('Nuitée – Camping')).toBe('Tent');
+    expect(night('Nuitée – Ferme / agricamping')).toBe('Leaf');
+    expect(night('Nuitée – Chez l’habitant')).toBe('Home');
+    expect(night('Night', 'Hotel Bellevue')).toBe('BedDouble');
+    expect(night('Nuitée – Aire')).toBe('Car');
+    expect(act('Voir – Randonnée')).toBe('Mountain');
+    expect(act('Voir – Lac / nature')).toBe('Waves');
+    expect(act('Voir – Point de vue')).toBe('Camera');
+    expect(act('Manger – Marché / producteur')).toBe('Store');
+    expect(act('Manger – Courses / boulangerie')).toBe('ShoppingBag');
+    expect(act('Route – Carburant')).toBe('Car');
+    expect(act('Visita', 'Museo del Prado')).toBe('Landmark');
+    expect(act('', 'Rifugio Example')).toBe('Utensils');
+    expect(act('', 'Somewhere')).toBe('MapPin');
+  });
+});
