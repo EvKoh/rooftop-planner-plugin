@@ -172,9 +172,18 @@ describe('util', () => {
 
 describe('i18n and settings', () => {
   it('has every key in every language', () => {
-    expect(Object.keys(MESSAGES.fr).sort()).toEqual(Object.keys(MESSAGES.en).sort());
+    const enKeys = Object.keys(MESSAGES.en).sort();
+    const holes = (v) => [...new Set(JSON.stringify(v).match(/\{\w+\}/g) || [])].sort();
+    expect(Object.keys(MESSAGES)).toHaveLength(27);
+    for (const [code, msgs] of Object.entries(MESSAGES)) {
+      expect(Object.keys(msgs).sort(), code).toEqual(enKeys);
+      for (const key of enKeys) {
+        expect(holes(msgs[key]), `${code} ${key}`).toEqual(holes(MESSAGES.en[key]));
+        if (Array.isArray(MESSAGES.en[key])) expect(msgs[key], `${code} ${key}`).toHaveLength(MESSAGES.en[key].length);
+      }
+    }
     expect(t('fr', 'day', { n: 2, date: 'x' })).toBe('J2 (x)');
-    expect(t('de', 'day', { n: 2, date: 'x' })).toBe('Day 2 (x)');
+    expect(t('xx', 'day', { n: 2, date: 'x' })).toBe('Day 2 (x)');
     expect(t('en', 'unknown_key')).toBe('unknown_key');
     expect(dayName('fr', 1)).toBe('lundi');
   });
