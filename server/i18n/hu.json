@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "pl. idősáv, parkoló vagy útengedély",
   "ui.tollAmount": "Útdíj vagy jegy járművenként",
   "ui.tollCurrency": "Útdíj pénzneme",
-  "ui.book": "Foglalás"
+  "ui.book": "Foglalás",
+  "walk.layer": "Túrák: gyalogutak",
+  "walk.from": "Gyalog innen: {parking}",
+  "walk.stats": "{km} km · {time} gyalog",
+  "walk.access": "Parkoló ehhez: {hike}"
 }

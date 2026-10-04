@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "p. ex. franja horària, aparcament o permís de carretera",
   "ui.tollAmount": "Peatge o entrada per vehicle",
   "ui.tollCurrency": "Moneda del peatge",
-  "ui.book": "Reservar"
+  "ui.book": "Reservar",
+  "walk.layer": "Excursions: rutes a peu",
+  "walk.from": "A peu des de {parking}",
+  "walk.stats": "{km} km · {time} a peu",
+  "walk.access": "Aparcament per a: {hike}"
 }

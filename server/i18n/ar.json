@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "مثال: فترة زمنية، موقف أو تصريح طريق",
   "ui.tollAmount": "رسوم أو تذكرة لكل مركبة",
   "ui.tollCurrency": "عملة الرسوم",
-  "ui.book": "احجز"
+  "ui.book": "احجز",
+  "walk.layer": "المشي: مسارات على الأقدام",
+  "walk.from": "سيرًا من {parking}",
+  "walk.stats": "{km} كم · {time} سيرًا",
+  "walk.access": "موقف لـ: {hike}"
 }

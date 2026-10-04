@@ -188,4 +188,20 @@ async function legs(ctx, pairs, opts = {}) {
   return { values, pending };
 }
 
-module.exports = { route, matrix, legs, legKey, decodePolyline, costingOf, vehicleOpts, VALHALLA };
+/**
+ * Walking route through `points` ([lat,lng] list, in order) on footpaths (Valhalla
+ * pedestrian costing): { km, minutes, points } with at most `maxPoints` vertices.
+ */
+async function walk(points, opts = {}) {
+  const d = await post('/route', {
+    locations: points.map((p) => ({ lat: +p[0], lon: +p[1], type: 'break' })),
+    costing: 'pedestrian',
+    units: 'kilometers',
+    directions_type: 'none',
+  }, opts.timeoutMs ?? 12000);
+  if (!d.trip) throw new Error('Valhalla: no walking route');
+  const pts = [].concat(...d.trip.legs.map((l) => decodePolyline(l.shape)));
+  return { km: Math.round(d.trip.summary.length * 10) / 10, minutes: Math.round(d.trip.summary.time / 60), points: thin(pts, opts.maxPoints ?? 600) };
+}
+
+module.exports = { walk, route, matrix, legs, legKey, decodePolyline, costingOf, vehicleOpts, VALHALLA };

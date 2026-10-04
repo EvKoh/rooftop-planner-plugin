@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "bv. tijdslot, parkeerplaats of wegvergunning",
   "ui.tollAmount": "Tol of ticket per voertuig",
   "ui.tollCurrency": "Valuta van de tol",
-  "ui.book": "Reserveren"
+  "ui.book": "Reserveren",
+  "walk.layer": "Wandelingen: looproutes",
+  "walk.from": "Te voet vanaf {parking}",
+  "walk.stats": "{km} km · {time} te voet",
+  "walk.access": "Parkeerplaats voor: {hike}"
 }

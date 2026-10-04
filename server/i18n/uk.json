@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "напр. часовий слот, парковка чи дозвіл на дорогу",
   "ui.tollAmount": "Збір або квиток за авто",
   "ui.tollCurrency": "Валюта збору",
-  "ui.book": "Забронювати"
+  "ui.book": "Забронювати",
+  "walk.layer": "Походи: пішохідні маршрути",
+  "walk.from": "Пішки від {parking}",
+  "walk.stats": "{km} км · {time} пішки",
+  "walk.access": "Парковка для: {hike}"
 }

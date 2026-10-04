@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "ex. créneau horaire, parking ou permis de route",
   "ui.tollAmount": "Péage ou ticket par véhicule",
   "ui.tollCurrency": "Devise du péage",
-  "ui.book": "Réserver"
+  "ui.book": "Réserver",
+  "walk.layer": "Randonnées : itinéraires à pied",
+  "walk.from": "À pied depuis {parking}",
+  "walk.stats": "{km} km · {time} à pied",
+  "walk.access": "Parking de : {hike}"
 }

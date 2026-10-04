@@ -6,6 +6,8 @@
 //   • mcpToolProvider  → 7 MCP tools `vanlife_*` (advertised as plugin_vanlife_vanlife_*)
 //   • warningProvider  → the planner's warnings banner (cache-only, 5 s budget)
 //   • routeProvider    → two route profiles in the planner's route toggle
+//   • mapMarkerProvider → every planned stop on the map (P for a car park, a hiker for a hike)
+//   • mapLayerProvider → the dotted walking route of each hike, from its car park
 //   • tableContributor → night status, price and amenities columns on each place (view "places")
 // Settings are TREK's native forms (user: vehicle and rules; instance: defaults).
 //
@@ -43,6 +45,11 @@ async function placeOf(ctx, tripId, placeId) {
 }
 
 const { overviewMarkers } = require('./lib/overview-markers');
+const walks = require('./lib/walks');
+const { deadline: makeDeadline } = require('./lib/util');
+
+// Hooks answer within 5 s: the map layer computes missing walking routes only inside this.
+const LAYER_BUDGET_MS = 4200;
 
 module.exports = definePlugin({
   async onLoad(ctx) {
@@ -71,7 +78,22 @@ module.exports = definePlugin({
         const ctx = gentle(raw);
         const settings = await readSettings(ctx);
         if (!settings.map_overview) return [];
-        return overviewMarkers(await loadTrip(ctx, tripId, settings), settings);
+        const model = await loadTrip(ctx, tripId, settings);
+        const list = walks.hikeWalks(model);
+        return overviewMarkers(model, settings, { walks: list, geometry: await walks.walkGeometry(ctx, list) });
+      },
+    },
+
+    mapLayerProvider: {
+      // The walking route of each hike, DOTTED, from its car park (walks.js). Cached routes
+      // first; the missing ones are asked to Valhalla only while the hook's budget allows.
+      async getLayers(tripId, raw) {
+        const dl = makeDeadline(LAYER_BUDGET_MS);
+        const ctx = gentle(raw);
+        const settings = await readSettings(ctx);
+        if (!settings.map_overview) return [];
+        const list = walks.hikeWalks(await loadTrip(ctx, tripId, settings));
+        return walks.walkLayers(list, await walks.walkGeometry(ctx, list, { network: true, deadline: dl }), settings);
       },
     },
 

@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "t.ex. tidslucka, parkering eller vägtillstånd",
   "ui.tollAmount": "Avgift eller biljett per fordon",
   "ui.tollCurrency": "Avgiftens valuta",
-  "ui.book": "Boka"
+  "ui.book": "Boka",
+  "walk.layer": "Vandringar: gångvägar",
+  "walk.from": "Till fots från {parking}",
+  "walk.stats": "{km} km · {time} till fots",
+  "walk.access": "Parkering för: {hike}"
 }

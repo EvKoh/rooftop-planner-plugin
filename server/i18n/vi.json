@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "vd. khung giờ, bãi đỗ hoặc giấy phép đường",
   "ui.tollAmount": "Phí hoặc vé mỗi xe",
   "ui.tollCurrency": "Đơn vị tiền của phí",
-  "ui.book": "Đặt chỗ"
+  "ui.book": "Đặt chỗ",
+  "walk.layer": "Đi bộ đường dài: lộ trình đi bộ",
+  "walk.from": "Đi bộ từ {parking}",
+  "walk.stats": "{km} km · {time} đi bộ",
+  "walk.access": "Bãi đỗ xe cho: {hike}"
 }

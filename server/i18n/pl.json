@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "np. przedział czasowy, parking lub zezwolenie na wjazd",
   "ui.tollAmount": "Opłata lub bilet za pojazd",
   "ui.tollCurrency": "Waluta opłaty",
-  "ui.book": "Zarezerwuj"
+  "ui.book": "Zarezerwuj",
+  "walk.layer": "Wędrówki: trasy piesze",
+  "walk.from": "Pieszo z {parking}",
+  "walk.stats": "{km} km · {time} pieszo",
+  "walk.access": "Parking dla: {hike}"
 }

@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "π.χ. χρονοθυρίδα, πάρκινγκ ή άδεια διέλευσης",
   "ui.tollAmount": "Διόδια ή εισιτήριο ανά όχημα",
   "ui.tollCurrency": "Νόμισμα διοδίων",
-  "ui.book": "Κράτηση"
+  "ui.book": "Κράτηση",
+  "walk.layer": "Πεζοπορίες: διαδρομές με τα πόδια",
+  "walk.from": "Με τα πόδια από {parking}",
+  "walk.stats": "{km} km · {time} με τα πόδια",
+  "walk.access": "Πάρκινγκ για: {hike}"
 }

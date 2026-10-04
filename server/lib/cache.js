@@ -6,6 +6,7 @@
 
 const TTL_MS = {
   route: 30 * 864e5, // drive times barely change
+  walk: 30 * 864e5, // footpaths even less
   osm: 7 * 864e5, // shops, campsites, opening hours
 };
 const memory = new Map();

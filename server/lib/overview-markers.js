@@ -10,12 +10,18 @@ const nightStatus = require('./night-status');
 const { t } = require('./i18n');
 const { hhmm } = require('./util');
 const { markerStyle } = require('./design');
+const { statsText } = require('./walks');
 
 const MAX = 200; // the host's cap per provider
 
 const span = (p) => (p.time == null ? '' : p.end == null ? hhmm(p.time) : `${hhmm(p.time)}–${hhmm(p.end)}`);
 
-function overviewMarkers(model, settings) {
+/**
+ * `walks` (walks.hikeWalks) ties each hike to its car park: the hike's popup says which car
+ * park it starts from (and the walk's length once computed), the car park's which hike it
+ * serves; a hike tied to a planned car park shows even when it is not planned itself.
+ */
+function overviewMarkers(model, settings, { walks = [], geometry = new Map() } = {}) {
   if (!settings.map_overview) return [];
   const L = settings.language;
   const nightPlaces = new Set(model.nights.map((n) => n.placeId));
@@ -37,9 +43,22 @@ function overviewMarkers(model, settings) {
       m.lines.push(when ? `${day} ${when}` : day);
     }
   }
+  const extra = new Map();
+  const add = (id, line) => { if (!extra.has(id)) extra.set(id, []); if (!extra.get(id).includes(line)) extra.get(id).push(line); };
+  for (const w of walks) {
+    if (!w.planned && w.access && byPlace.has(w.access.placeId) && !byPlace.has(w.hikeId)) {
+      const park = byPlace.get(w.access.placeId);
+      const p = model.poolById.get(w.hikeId);
+      if (p) byPlace.set(w.hikeId, { id: `stop-${w.hikeId}`, lat: p.lat, lng: p.lng, name: p.name, days: [...park.days], lines: [...park.days], night: false, place: p });
+    }
+    if (w.access && w.access.name) add(w.hikeId, t(L, 'walk.from', { parking: w.access.name }));
+    const stats = statsText(geometry.get(w.key), L);
+    if (stats) add(w.hikeId, stats);
+    if (w.access && w.access.placeId) add(w.access.placeId, t(L, 'walk.access', { hike: w.hike }));
+  }
   return [...byPlace.entries()].slice(0, MAX).map(([placeId, m]) => {
     const st = m.night ? status.get(Number(placeId)) || 'spotted' : null;
-    const lines = st ? [...m.lines, t(L, 'overview.night', { status: t(L, `st.${st}`) })] : m.lines;
+    const lines = [...(st ? [...m.lines, t(L, 'overview.night', { status: t(L, `st.${st}`) })] : m.lines), ...(extra.get(Number(placeId)) || [])];
     return {
       id: m.id,
       lat: m.lat,

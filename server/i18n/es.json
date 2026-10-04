@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "p. ej. franja horaria, aparcamiento o permiso de carretera",
   "ui.tollAmount": "Peaje o entrada por vehículo",
   "ui.tollCurrency": "Moneda del peaje",
-  "ui.book": "Reservar"
+  "ui.book": "Reservar",
+  "walk.layer": "Rutas de senderismo a pie",
+  "walk.from": "A pie desde {parking}",
+  "walk.stats": "{km} km · {time} a pie",
+  "walk.access": "Aparcamiento para: {hike}"
 }

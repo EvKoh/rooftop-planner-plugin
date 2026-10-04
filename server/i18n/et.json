@@ -282,5 +282,9 @@
   "ui.bookingNoteHint": "nt ajavahemik, parkla või teeluba",
   "ui.tollAmount": "Teemaks või pilet sõiduki kohta",
   "ui.tollCurrency": "Teemaksu valuuta",
-  "ui.book": "Broneeri"
+  "ui.book": "Broneeri",
+  "walk.layer": "Matkad: jalgrajad",
+  "walk.from": "Jalgsi kohast {parking}",
+  "walk.stats": "{km} km · {time} jalgsi",
+  "walk.access": "Parkla: {hike}"
 }

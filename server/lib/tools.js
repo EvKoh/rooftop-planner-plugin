@@ -21,6 +21,7 @@ const { isNightCategory } = require('./classify');
 const contacts = require('./contacts');
 const nightStatus = require('./night-status');
 const hostMessage = require('./host-message');
+const walks = require('./walks');
 
 const TOOL_BUDGET_MS = 12500;
 const MAX_BYTES = 60000; // under the host's 64 KiB, with room for its envelope
@@ -97,8 +98,30 @@ function placeView(model, p, info, settings, { full = false } = {}) {
   return out;
 }
 
+/** A hike's walk as the place tool shows it: car park, how it was found, km and minutes. */
+function walkView(w, geo, L) {
+  return {
+    hikeId: w.hikeId, hike: w.hike, day: w.day, planned: w.planned,
+    accessParking: w.access ? { placeId: w.access.placeId, name: w.access.name, point: w.access.point, found: w.access.how } : null,
+    loop: w.loop, via: Math.max(0, w.points.length - 2),
+    walk: geo ? { km: geo.km, minutes: geo.minutes, text: walks.statsText(geo, L) } : null,
+  };
+}
+
+/** Every hike of the plan with its car park and walking route (computed and cached here). */
+async function hikesList(ctx, model, settings, opts) {
+  const list = walks.hikeWalks(model);
+  const geo = await walks.walkGeometry(ctx, list, { network: opts.network !== false, deadline: opts.deadline });
+  return {
+    filter: 'hikes', count: list.length,
+    hikes: list.map((w) => walkView(w, geo.get(w.key), settings.language)),
+    note: 'found: set = chosen by the user (set.access_parking_place_id); plan = a car park planned next to the hike; notes = a start point in the hike\'s notes. A hike with no car park walks from its own place. The map draws each walk dotted.',
+  };
+}
+
 /** List / read / set / log / clear / fill the record of the places of a trip. */
-async function placeTool(ctx, model, a, settings) {
+async function placeTool(ctx, model, a, settings, opts = {}) {
+  if (!a.placeId && a.filter === 'hikes') return hikesList(ctx, model, settings, opts);
   if (a.fill) return amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, language: settings.language, budgetMs: 6000 });
   if (!a.placeId) {
     if (a.set || a.log || a.clear || (a.clear_fields && a.clear_fields.length)) throw new Error('placeId is required to set, log or clear');
@@ -139,18 +162,34 @@ async function placeTool(ctx, model, a, settings) {
   if (kindRes) { place.categoryId = kindRes.categoryId; place.categoryName = kindRes.category; place.raw = { ...place.raw, category_id: kindRes.categoryId }; }
   if (a.clear) { await placeInfo.clear(ctx, model.tripId, place.id); return { placeId: place.id, cleared: true }; }
   const patch = { ...(a.set || {}) };
+  const parkId = patch.access_parking_place_id;
+  if (parkId != null && parkId !== '') {
+    if (Number(parkId) === place.id) throw new Error('access_parking_place_id must be another place: the car park the hike starts from');
+    if (!model.poolById.get(Number(parkId))) throw new Error(`place ${parkId} is not in trip ${model.tripId}`);
+  }
   if (a.clear_fields && a.clear_fields.length) Object.assign(patch, placeInfo.clearPatch(a.clear_fields));
   if (a.log) patch.log = a.log;
   if (Object.keys(patch).length) {
     const before = await placeInfo.get(ctx, place.id);
     const native = placeInfo.nativeContacts(place.raw, placeInfo.merge(before, { ...patch, price_amount: undefined, currency: undefined }));
     const rec = await placeInfo.set(ctx, model.tripId, place.id, patch, { place: place.raw });
+    place.info = rec;
+    const walk = await hikeWalk(ctx, model, place.id, settings, opts);
     const priced = 'price_amount' in patch ? { ...place, price: patch.price_amount, raw: { ...place.raw, currency: patch.currency || place.raw.currency } } : place;
     const raw = native ? { ...priced.raw, ...native } : priced.raw;
-    return { saved: true, ...(kindRes ? { kind: kindRes } : {}), ...(native ? { copiedToTrek: native } : {}), ...placeView(model, { ...priced, raw }, rec, settings, { full: true }) };
+    return { saved: true, ...(kindRes ? { kind: kindRes } : {}), ...(native ? { copiedToTrek: native } : {}), ...placeView(model, { ...priced, raw }, rec, settings, { full: true }), ...(walk ? { hike: walk } : {}) };
   }
   // One place: read its value directly, not through the index.
-  return { ...(kindRes ? { kind: kindRes } : {}), ...placeView(model, place, await placeInfo.get(ctx, place.id), settings, { full: true }) };
+  const walk = await hikeWalk(ctx, model, place.id, settings, opts);
+  return { ...(kindRes ? { kind: kindRes } : {}), ...placeView(model, place, await placeInfo.get(ctx, place.id), settings, { full: true }), ...(walk ? { hike: walk } : {}) };
+}
+
+/** The walk of one hike (its route computed now, so the map finds it cached), or null. */
+async function hikeWalk(ctx, model, placeId, settings, opts) {
+  const w = walks.hikeWalks(model).find((x) => x.hikeId === placeId);
+  if (!w) return null;
+  const geo = await walks.walkGeometry(ctx, [w], { network: opts.network !== false, deadline: opts.deadline });
+  return walkView(w, geo.get(w.key), settings.language);
 }
 
 /** The three day actions that used to be three tools. */
@@ -211,7 +250,7 @@ async function callTool({ name, args }, ctx, { now } = {}) {
       break;
     case 'vanlife_place':
       needTrip();
-      res = await placeTool(ctx, model, a, settings);
+      res = await placeTool(ctx, model, a, settings, opts);
       break;
     case 'vanlife_night':
       needTrip();

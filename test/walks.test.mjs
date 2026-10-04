@@ -1,0 +1,144 @@
+// Hikes on the map: a walker for the hike, a P for its car park, and the walking route DOTTED
+// from the car park. FICTIONAL places only (public repository).
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
+import { require, makeHost, stubFetch } from './helpers.mjs';
+
+const plugin = require('../server/index.js');
+const pi = require('../server/lib/place-info.js');
+const walks = require('../server/lib/walks.js');
+const design = require('../server/lib/design.js');
+const { build } = require('./fixtures/trip.js');
+
+const call = (h, name, args) => h.run(plugin).hook('mcpToolProvider', 'callTool', { name, args });
+const markers = (h) => h.run(plugin).hook('mapMarkerProvider', 'getMarkers', 1);
+const layers = (h) => h.run(plugin).hook('mapLayerProvider', 'getLayers', 1);
+
+const PARK = { id: 80, name: 'Example Trailhead Car Park', lat: 46.6, lng: 11.8, category_name: 'Route – Parking' };
+const HIKE = { id: 81, name: 'Example Hut Chairs', lat: 46.612, lng: 11.79, category_name: 'See – Viewpoint', description: 'Reached on foot only.' };
+const RIDGE = { id: 82, name: 'Hike to Example Ridge', lat: 46.62, lng: 11.83, category_name: 'See – Hike' };
+const LOOP = { id: 83, name: 'Example Lakes Loop', lat: 46.55, lng: 12.0, category_name: 'See – Hike' };
+const PARK2 = { id: 84, name: 'Example Pass Car Park', lat: 46.551, lng: 12.001, category_name: 'Route – Parking' };
+const FAR = { id: 85, name: 'Example Summit Trail', lat: 46.7, lng: 11.4, category_name: 'See – Hike', notes: 'Start: lay-by on the pass road, 46.6950, 11.4100' };
+
+/** The fixture trip with: day 1 car park → viewpoint walked to (renamed "on foot"); day 2 a car park only, its loop not planned; day 3 a far hike with a start point in its notes. */
+function trip() {
+  const t = build();
+  const hike = { ...HIKE, name: `${HIKE.name} on foot` };
+  for (const p of [PARK, hike, RIDGE, LOOP, PARK2, FAR]) t.places.push({ ...p, trip_id: 1, description: p.description || '', notes: p.notes || '' });
+  const asg = (id, order, p) => ({ id, day_id: null, order_index: order, notes: null, accommodation_id: null, place: { ...p, place_time: null, end_time: null, category: { name: p.category_name }, description: p.description || '', notes: p.notes || '' } });
+  t.days[0].assignments.splice(2, 0, asg(1101, 2, PARK), asg(1102, 2, hike));
+  t.days[1].assignments.push(asg(2101, 9, PARK2));
+  t.days[2].assignments.push(asg(3101, 9, FAR));
+  for (const d of t.days) for (const a of d.assignments) a.day_id = d.id;
+  return t;
+}
+
+async function hostWith(records = {}) {
+  const ids = Object.keys(records).map(Number);
+  const h = makeHost({ trip: trip(), queryResults: { [pi.INDEX_SQL]: ids.map((id) => ({ place_id: id })) } });
+  for (const id of ids) await h.ctx.meta.set('place', id, pi.META_KEY, pi.merge(null, records[id]));
+  return h;
+}
+
+describe('hikes and their car park on the map', () => {
+  beforeEach(() => vi.stubGlobal('fetch', stubFetch()));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows the car park as a P and the hike reached on foot as a walker, each card naming the other', async () => {
+    const m = await markers(await hostWith());
+    const park = m.find((x) => /Trailhead Car Park/.test(x.label));
+    const hike = m.find((x) => /Hut Chairs/.test(x.label));
+    expect(park).toMatchObject({ icon: 'ParkingSquare', glyph: design.GLYPHS.parking, tone: 'default' });
+    expect(hike).toMatchObject({ icon: 'Footprints', glyph: design.GLYPHS.hiker, tone: 'default' });
+    expect(hike.popupText).toMatch(/On foot from Example Trailhead Car Park/);
+    expect(park.popupText).toMatch(/Car park for: Example Hut Chairs on foot/);
+  });
+
+  it('draws each walk dotted from its car park, on footpaths, and caches the route', async () => {
+    const h = await hostWith();
+    const [layer] = await layers(h);
+    expect(layer.id).toBe('walks');
+    const chairs = layer.features.find((f) => /Hut Chairs/.test(f.label));
+    expect(chairs).toMatchObject({ type: 'polyline', dash: 'dot', tone: 'default' });
+    expect(chairs.points[0]).toEqual([PARK.lat, PARK.lng]);
+    expect(chairs.points.at(-1)).toEqual([HIKE.lat, HIKE.lng]);
+    expect(chairs.label).toMatch(/km · .* on foot/);
+    const asked = fetch.calls.filter((c) => c.url.endsWith('/route') && JSON.parse(c.body).costing === 'pedestrian');
+    expect(asked.length).toBeGreaterThan(0);
+    // every feature is dotted: the dotted line means a walk and nothing else
+    for (const f of layer.features) expect(f.dash).toBe('dot');
+    // second load: from the cache, no new request
+    const before = fetch.calls.length;
+    await layers(h);
+    expect(fetch.calls.length).toBe(before);
+  });
+
+  it('takes the start point from the notes when no car park is planned near the hike', async () => {
+    const [layer] = await layers(await hostWith());
+    const far = layer.features.find((f) => /Summit Trail/.test(f.label));
+    expect(far.points[0]).toEqual([46.695, 11.41]);
+  });
+
+  it('shows a hike that is not planned once the user ties it to a planned car park, with its loop', async () => {
+    const h = await hostWith({ [LOOP.id]: { access_parking_place_id: PARK2.id, walk_via: [[46.56, 12.02], [46.57, 12.0]], walk_loop: true } });
+    const m = await markers(h);
+    const loop = m.find((x) => /Lakes Loop/.test(x.label));
+    expect(loop).toMatchObject({ icon: 'Footprints' });
+    expect(loop.label).toMatch(/^D2 · /);
+    const [layer] = await layers(h);
+    const f = layer.features.find((x) => /Lakes Loop/.test(x.label));
+    expect(f.points[0]).toEqual([PARK2.lat, PARK2.lng]);
+    expect(f.points.at(-1)).toEqual([PARK2.lat, PARK2.lng]); // back to the car park
+  });
+
+  it('draws the straight dotted line when the router cannot answer, and never fails the hook', async () => {
+    vi.stubGlobal('fetch', stubFetch({ failValhalla: true }));
+    const [layer] = await layers(await hostWith());
+    const chairs = layer.features.find((f) => /Hut Chairs/.test(f.label));
+    expect(chairs.points).toEqual([[PARK.lat, PARK.lng], [HIKE.lat, HIKE.lng]]);
+    expect(chairs.label).not.toMatch(/km/);
+  });
+
+  it('is off with the map overview setting', async () => {
+    const h = makeHost({ trip: trip(), userSettings: { language: 'en', timezone: 'Europe/Rome', map_overview: false } });
+    expect(await layers(h)).toEqual([]);
+  });
+});
+
+describe('the hike\'s car park in the place tool', () => {
+  beforeEach(() => vi.stubGlobal('fetch', stubFetch()));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('lists every hike with its car park, how it was found, and the walk', async () => {
+    const r = await call(await hostWith(), 'vanlife_place', { tripId: 1, filter: 'hikes' });
+    const chairs = r.hikes.find((x) => x.hikeId === HIKE.id);
+    expect(chairs.accessParking).toMatchObject({ placeId: PARK.id, found: 'plan' });
+    expect(chairs.walk.km).toBeGreaterThan(0);
+    expect(r.hikes.find((x) => x.hikeId === FAR.id).accessParking).toMatchObject({ placeId: null, found: 'notes' });
+  });
+
+  it('sets the car park explicitly, refuses a place outside the trip, and clears back to the guess', async () => {
+    const h = await hostWith();
+    const r = await call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, set: { access_parking_place_id: PARK.id, walk_loop: true } });
+    expect(r.hike.accessParking).toMatchObject({ placeId: PARK.id, found: 'set' });
+    expect(r.hike.loop).toBe(true);
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, set: { access_parking_place_id: 9999 } })).rejects.toThrow(/not in trip/);
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, set: { access_parking_place_id: RIDGE.id } })).rejects.toThrow(/another place/);
+    const cleared = await call(h, 'vanlife_place', { tripId: 1, placeId: RIDGE.id, clear_fields: ['access_parking_place_id', 'walk_loop'] });
+    expect(cleared.record.access_parking_place_id).toBeNull();
+  });
+
+  it('validates the walk fields', () => {
+    expect(pi.merge(null, { walk_via: [[46.1, 11.2], { lat: 46.2, lng: 11.3 }] }).walk_via).toEqual([[46.1, 11.2], [46.2, 11.3]]);
+    expect(() => pi.merge(null, { walk_via: [[100, 0]] })).toThrow(/walk_via/);
+    expect(() => pi.merge(null, { walk_via: Array(9).fill([46, 11]) })).toThrow(/walk_via/);
+    expect(() => pi.merge(null, { walk_loop: 'yes' })).toThrow(/walk_loop/);
+    expect(() => pi.merge(null, { access_parking_place_id: -1 })).toThrow(/access_parking_place_id/);
+  });
+
+  it('merges the points of a walk that coincide', () => {
+    const pts = walks.walkPoints({ lat: 46.6, lng: 11.8 }, { point: [46.6, 11.8] }, { walk_via: [[46.61, 11.81]], walk_loop: true });
+    expect(pts).toEqual([[46.6, 11.8], [46.61, 11.81], [46.6, 11.8]]);
+    expect(walks.walkPoints({ lat: 46.6, lng: 11.8 }, null, null)).toEqual([]);
+  });
+});
