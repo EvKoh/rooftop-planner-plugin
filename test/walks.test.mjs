@@ -128,6 +128,13 @@ describe('the hike\'s car park in the place tool', () => {
     expect(() => pi.merge(null, { access_parking_place_id: -1 })).toThrow(/parking_place_id/);
   });
 
+  it('names places by the first meaningful part of their name in the line\'s label', () => {
+    expect(walks.shortName('Rando — Boucle Example → Hut Example', 32)).toBe('Boucle Example');
+    expect(walks.shortName('Example Lakes Car Park - Upper Example', 24)).toBe('Example Lakes Car Park');
+    expect(walks.shortName('P1 Example — Example Plateau', 24)).toBe('P1 Example');
+    expect(walks.shortName('A very long example hike name that goes on', 20)).toBe('A very long example…');
+  });
+
   it('merges the points of a walk that coincide', () => {
     const pts = walks.walkPoints({ lat: 46.6, lng: 11.8 }, { point: [46.6, 11.8] }, { walk_via: [[46.61, 11.81]], walk_loop: true });
     expect(pts).toEqual([[46.6, 11.8], [46.61, 11.81], [46.6, 11.8]]);

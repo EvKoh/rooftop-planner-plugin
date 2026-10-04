@@ -146,17 +146,24 @@ function statsText(geo, L) {
   return t(L, 'walk.stats', { km: num(geo.km, L, 1), time });
 }
 
+/** The first part of a place name that says something (not a 1-word prefix), at most `max` characters. */
+function shortName(name, max) {
+  const parts = String(name || '').split(/\s+[—–-]\s+|\s+→\s+/).map((x) => x.trim()).filter(Boolean);
+  const s = parts.find((x) => x.length > 6) || parts[0] || '';
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+}
+
 /** The map layer: one dotted polyline per walk (the straight line until the route is computed). */
 function walkLayers(walks, geometry, settings) {
   const L = settings.language;
   const features = walks.filter((w) => w.key).map((w) => {
     const geo = geometry.get(w.key);
-    // TREK caps a label at 80 characters: the hike, the walk, then the car park.
-    const short = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
-    const label = [short(w.hike, 34), statsText(geo, L), w.access && w.access.name ? t(L, 'walk.from', { parking: w.access.name }) : null].filter(Boolean).join(' · ');
+    // TREK caps a label at 80 characters: the hike, the walk, then the car park, each by the
+    // first meaningful part of its name ("Hike — Example loop → hut" → "Example loop").
+    const label = [shortName(w.hike, 32), statsText(geo, L), w.access && w.access.name ? t(L, 'walk.from', { parking: shortName(w.access.name, 24) }) : null].filter(Boolean).join(' · ');
     return { type: 'polyline', points: geo && geo.points && geo.points.length > 1 ? geo.points : w.points, tone: TONE.planned, ...WALK_LINE, label: label.slice(0, 80) };
   });
   return features.length ? [{ id: 'walks', name: t(L, 'walk.layer'), features }] : [];
 }
 
-module.exports = { hikeWalks, walkGeometry, walkLayers, walkPoints, walkKey, statsText, accessFor, plannedStops };
+module.exports = { shortName, hikeWalks, walkGeometry, walkLayers, walkPoints, walkKey, statsText, accessFor, plannedStops };
