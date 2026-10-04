@@ -109,6 +109,25 @@ describe('check_trip on the fictional trip', () => {
     expect(has(r, 'fix', 'checkin_mismatch', 1)).toBe(true);
   });
 
+  it('takes any place with a drawn route as the day\'s route, whatever its category', async () => {
+    const trip = build();
+    const fuel = { id: 30, name: 'Route day 3', lat: 46.4097, lng: 11.5753, category_id: 4, route_geometry: JSON.stringify([[46.4097, 11.5753], [46.64, 11.72]]) };
+    trip.places.push({ ...fuel, trip_id: 1, description: '' });
+    trip.days[2].assignments.unshift({ id: 3000, day_id: 103, order_index: -1, notes: null, accommodation_id: null, place: { ...fuel, place_time: '09:00', end_time: '16:00', description: '' } });
+    const h = makeHost({ trip });
+    const r = await checkTrip(h.ctx, await loadTrip(h.ctx, 1), { settings: await readSettings(h.ctx), deadline: deadline(12000) });
+    expect(has(r, 'fix', 'no_trace', 3)).toBe(false);
+  });
+
+  it('says a wrong arrival once when the check-in field and the notes repeat it', async () => {
+    const trip = build();
+    trip.accommodations[0].check_in = '17:00';
+    trip.accommodations[0].notes = 'Planned arrival 17h00';
+    const h = makeHost({ trip });
+    const r = await checkTrip(h.ctx, await loadTrip(h.ctx, 1), { settings: await readSettings(h.ctx), deadline: deadline(12000) });
+    expect(r.findings.filter((f) => f.key === 'checkin_mismatch' && f.dayNumber === 1)).toHaveLength(1);
+  });
+
   it('reports a day ending after sunset and a planned water refill', async () => {
     const trip = build({ fixed: true });
     trip.days[2].assignments[0].place.end_time = '19:30'; // Carezza until after sunset

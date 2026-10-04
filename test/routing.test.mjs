@@ -37,6 +37,27 @@ describe('routing', () => {
     expect(body.costing_options.auto).toEqual({ exclude_tolls: true, height: 2 });
   });
 
+  it('rescales drive times by the user\'s factor, and caches the router\'s own minutes', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    const pts = [[46.53, 12.13], [46.58, 12.25], [46.64, 11.72]];
+    const raw = await routing.route(pts, { tolls: false });
+    const fast = await routing.route(pts, { tolls: false, factor: 0.5 });
+    expect(fast.minutes).toBe(Math.round(raw.minutes * 0.5));
+    expect(fast.legs[0].minutes).toBe(Math.round(raw.legs[0].minutes * 0.5));
+    const { ctx } = fakeDbCtx();
+    const pair = [[46.53, 12.13], [46.58, 12.25]];
+    const a = await routing.legs(ctx, [pair], { tolls: false });
+    const b = await routing.legs(ctx, [pair], { tolls: false, factor: 2 }); // from the cache
+    expect(b.values.get(0).minutes).toBe(Math.round(a.values.get(0).minutes * 2));
+    const c = await routing.legs(ctx, [pair], { tolls: false });
+    expect(c.values.get(0).minutes).toBe(a.values.get(0).minutes);
+    const { readSettings } = require('../server/lib/settings.js');
+    const at = (v) => readSettings({ settings: { get: async (k) => (k === 'drive_time_factor' ? v : undefined) } }, ['drive_time_factor']);
+    expect((await at('0.8')).drive_time_factor).toBe(0.8);
+    expect((await at('7')).drive_time_factor).toBe(1); // out of 0.5–2
+    expect(routing.vehicleOpts({ drive_time_factor: 0.8 }, false).factor).toBe(0.8);
+  });
+
   it('turns a Valhalla error into an exception', async () => {
     vi.stubGlobal('fetch', stubFetch({ failValhalla: true }));
     await expect(routing.route([[46, 11], [46.1, 11.1]])).rejects.toThrow(/Valhalla 503/);

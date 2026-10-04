@@ -187,8 +187,12 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
   const L = lang || settings.language;
   const findings = [];
   const dayLabel = (d) => t(L, 'day', { n: d.n, date: d.date || '?' });
+  const seen = new Set();
   const add = (level, scope, key, params = {}, extra = {}) => {
-    findings.push({ level, key, scope, message: `${scope} — ${t(L, key, params)}`, params, ...extra });
+    const message = `${scope} — ${t(L, key, params)}`;
+    if (seen.has(message)) return; // two rules can reach the same sentence (check-in field and notes)
+    seen.add(message);
+    findings.push({ level, key, scope, message, params, ...extra });
   };
   const tz = settings.timezone;
 

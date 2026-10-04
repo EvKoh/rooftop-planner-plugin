@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -192,6 +192,13 @@
       "scope": "user",
       "input_type": "number",
       "default": 150
+    },
+    {
+      "key": "drive_time_factor",
+      "label": "Drive time factor: multiplies the router's times (e.g. 0.8 if your map app is 20 % faster on mountain roads; 0.5 to 2)",
+      "scope": "user",
+      "input_type": "number",
+      "default": 1
     },
     {
       "key": "timezone",
