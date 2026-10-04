@@ -7,7 +7,7 @@ const { hhmm, hm, distKm, norm } = require('./util');
 const { t, dayName, money, num, clock } = require('./i18n');
 const placeInfo = require('./place-info');
 const { sunset } = require('./sun');
-const { isShopping, isHike, isTrace, isNightCategory, parkingFromNotes } = require('./classify');
+const { isShopping, isHike, isTrace, isNightCategory, isParkingCategory, parkingFromNotes } = require('./classify');
 const rules = require('./rules');
 const routing = require('./routing');
 const { highwayAllowed, fuelPerKm } = require('./settings');
@@ -60,12 +60,16 @@ function dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L,
   const visits = [];
   let drive = 0;
   let complete = true;
+  // A car park is where the car waits, not an activity; on a day with a hike its time is the
+  // hike's, so it is not counted twice.
+  const hikeDay = stops.some((s) => isHike(s.place.categoryName));
   stops.forEach((s, i) => {
     const leg = legIdx[i];
     if (leg && leg.drive != null) { const m = M(leg.drive); if (m == null) complete = false; else drive += m; }
     if (nuit && s.accommodationId === nuit.id) return;
     const info = (model.poolById.get(s.place.id) || {}).info || null;
-    visits.push({ s, minutes: stopMinutes(s.place, info), visit: isVisit(s.place) });
+    const parking = isParkingCategory(s.place.categoryName);
+    visits.push({ s, minutes: parking && hikeDay ? 0 : stopMinutes(s.place, info), visit: isVisit(s.place) && !parking });
   });
   if (toNight != null) { const m = M(toNight); if (m == null) complete = false; else drive += m; }
   const unknown = visits.filter((v) => v.visit && v.minutes == null).map((v) => v.s.place.name);
