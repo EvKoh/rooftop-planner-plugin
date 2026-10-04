@@ -109,6 +109,15 @@ describe('place sheet: the card', () => {
     expect(v.sections.at(-1)).toMatchObject({ id: 'other', folded: true });
   });
 
+  it('a price tile shows its amount and keeps the rest as detail; a row named like its section says it once', () => {
+    const v = ps.view(ps.parse('', 'Prix : 44,60 €/nuit — tarif officiel (2 × 12 € + voiture 13 €)\nAvis : 4,8/5 sur 57', { kind: 'night' }), 'fr');
+    expect(v.sections[0].rows[0]).toMatchObject({ figure: '44,60 €/nuit', detail: '44,60 €/nuit — tarif officiel (2 × 12 € + voiture 13 €)' });
+    expect(ps.view(ps.parse('', 'Prix : participation libre', { kind: 'night' }), 'fr').sections[0].rows[0].figure).toBeUndefined();
+    const reviews = v.sections.find((x) => x.id === 'reviews');
+    expect(reviews).toMatchObject({ title: 'Avis' });
+    expect(reviews.rows[0].label).toBe('');
+  });
+
   it('every label, section, value and kind is in every language', () => {
     const keys = [
       ...ps.FIELD_NAMES.map((f) => `sh.f.${f}`),

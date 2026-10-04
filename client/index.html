@@ -130,14 +130,22 @@
       if (r.links && r.links.length && !(r.items && r.items.length)) kids.push(h('div', { class: 'contact' }, r.links.map(function (u) { return h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', text: u.replace(/^https?:\/\/(www\.)?/, '').slice(0, 60) }); })));
       return h('div', { class: 'row' + (r.tone === 'warn' ? ' row--watch' : r.tone === 'danger' ? ' row--danger' : ''), style: '--c:' + r.color }, kids);
     }
+    // Key figures: a tile per short value; a figure with no short form, or a price's detail,
+    // reads as a row under the tiles.
     function figuresNode(sec) {
-      return h('div', { class: 'figs' }, sec.rows.map(function (r) {
+      var tiles = sec.rows.filter(function (r) { return r.figure; });
+      var rest = sec.rows.filter(function (r) { return !r.figure; });
+      var kids = [];
+      if (tiles.length) kids.push(h('div', { class: 'figs' }, tiles.map(function (r) {
         return h('div', { class: 'fig', title: r.label + ' — ' + r.text }, [
           svgIcon(r.icon, r.color),
-          h('span', { class: 'fv', text: r.figure || r.text }),
+          h('span', { class: 'fv', text: r.figure }),
           h('span', { class: 'fl', text: r.label }),
         ]);
-      }));
+      })));
+      tiles.filter(function (r) { return r.detail; }).forEach(function (r) { kids.push(h('div', { class: 'muted', text: r.label + ' : ' + r.detail })); });
+      if (rest.length) kids.push(h('div', { class: 'rows' }, rest.map(rowNode)));
+      return h('div', { class: 'rows' }, kids);
     }
     function sectionNode(sec) {
       var body = sec.figures ? figuresNode(sec) : h('div', { class: 'rows' }, sec.rows.map(rowNode));
@@ -187,7 +195,7 @@
       if (d.info.booking_url && /^https?:\/\//i.test(d.info.booking_url)) bk.push(h('a', { href: d.info.booking_url, target: '_blank', rel: 'noopener noreferrer', text: S('ui.book') }));
       if (d.info.booking_note) bk.push(h('span', { class: 'muted', text: d.info.booking_note }));
       if (bk.length) kids.push(h('div', { class: 'contact' }, bk));
-      if (d.info.visit_source) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.visit_source) }));
+      if (d.info.visit_source && !hike) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.visit_source) }));
       if (d.info.source) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.source) + (d.info.checked ? ' · ' + new Intl.DateTimeFormat(st.locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(d.info.checked + 'T12:00:00Z')) : '') }));
       return kids;
     }

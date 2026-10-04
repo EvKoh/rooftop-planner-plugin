@@ -369,6 +369,12 @@ function figure(field, v, L) {
   if (field === 'duration' && v.minutes != null) return durationText(v.minutes);
   if (field === 'level' && v.grade) return t(L, `sh.v.${v.grade}`);
   if (field === 'route_type' && v.kind) return t(L, `sh.v.${v.kind}`);
+  // A price: its leading amount and unit ("44,60 €/nuit"), the rest stays its detail.
+  if ((field === 'price' || field === 'services_price') && v.text) {
+    const m = v.text.match(/^[^\n—(;]*?(?:\d[\d.,  ]*\s?(?:€|eur|chf|\$|£|kr)|(?:€|\$|£)\s?\d[\d.,]*)[^\n—(;,]*/i);
+    const lead = m ? m[0].trim().replace(/[.:]$/, '') : null;
+    return lead && lead.length <= 28 ? lead : null;
+  }
   return null;
 }
 
@@ -380,6 +386,8 @@ function row(field, v, L) {
   const out = { field, label: t(L, `sh.f.${field}`), icon: design.svgOf(design.SHEET_ICONS[field]), color: design.TONE_COLOR[tone], tone };
   const short = figure(field, v, L);
   if (short) out.figure = short;
+  // A price says more than its amount (what it includes, the source): kept as its detail.
+  if (short && (field === 'price' || field === 'services_price') && v.text.length > short.length + 8) out.detail = v.text;
   if (field === 'dog' && v.allowed != null) out.chip = t(L, v.allowed ? 'sh.v.dogYes' : 'sh.v.dogNo');
   if (v.url) { out.url = v.url; out.linkText = host(v.url); }
   if (v.items && v.items.length) out.items = v.items;
@@ -401,7 +409,10 @@ function view(sheet, L, { trackUrl = null } = {}) {
   const sections = [];
   for (const [id, names] of SECTIONS[sheet.kind] || SECTIONS.activity) {
     const rows = names.filter((n) => f[n] && (f[n].text || f[n].url || (f[n].items && f[n].items.length))).map((n) => { used.add(n); return row(n, f[n], L); });
-    if (rows.length) sections.push({ id, title: t(L, `sh.s.${id}`), rows, figures: id === 'figures' });
+    const title = t(L, `sh.s.${id}`);
+    // A row named like its section says it once.
+    for (const r of rows) if (r.label === title) r.label = '';
+    if (rows.length) sections.push({ id, title, rows, figures: id === 'figures' });
   }
   const more = [...TAIL, ...Object.keys(f)].filter((n, i, a) => a.indexOf(n) === i && !used.has(n) && f[n] && (f[n].text || f[n].url))
     .map((n) => row(n, f[n], L));
