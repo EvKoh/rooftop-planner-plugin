@@ -46,7 +46,8 @@ const isNightCategory = (cat) => test(RE.night, cat);
 const isShopping = (cat, stopType) => stopType === 'fuel' || test(RE.shop, cat) || test(RE.fuel, cat);
 const isHike = (cat) => test(RE.hike, cat);
 /** A route place carries a geometry; the category name is the fallback when it is not loaded. */
-const isTrace = (cat, place) => !!(place && place.route_geometry) || test(RE.trace, cat);
+// A drawn route, whatever its category: TREK's row (route_geometry) or the loaded model (geometry).
+const isTrace = (cat, place) => !!(place && (place.route_geometry || place.geometry?.length)) || test(RE.trace, cat);
 
 /**
  * Where the car is left for a stop reached on foot: a "Departure/Start/Parking ... lat, lng"
