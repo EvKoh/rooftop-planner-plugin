@@ -1,8 +1,4 @@
 {
-  "level.blocking": "致命的",
-  "level.fix": "要修正",
-  "level.verify": "要確認",
-  "level.info": "情報",
   "day": "{n}日目（{date}）",
   "scope.bookings": "予約",
   "scope.budget": "予算",
@@ -43,7 +39,6 @@
   "stale_budget": "「{name}」がもう予定にない宿泊に触れています（{list}）",
   "budget_total": "予算の宿泊費：{budget}、予定の宿泊：{nights}",
   "stale_todo": "「{name}」がもう予定にない宿泊に触れています（{list}）",
-  "stale_note": "メモ「{text}」がもう予定にない {list} に触れています",
   "route_pending": "{n} 件の運転時間が未計算です（時間上限に到達）：もう一度チェックを実行してください",
   "dayShort": "{n}日目",
   "s.night_late": "到着 {arr}、遅くとも {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "問い合わせ中",
   "st.booked": "予約済み",
   "st.dropped": "見送り",
-  "overview.night": "宿泊 — {status}",
   "st.chip.booked": "予約済み ✓",
   "st.chip.contacted": "問い合わせ中",
   "st.chip.dropped": "見送り",
@@ -403,5 +397,7 @@
   "src.auto": "（自動）",
   "s.resa_unlinked": "計画に宿泊のない予約",
   "s.resa_note_stale": "確定済み、メモはまだ「返事待ち」",
-  "s.resa_price": "予約料金 ≠ 計画"
+  "s.resa_price": "予約料金 ≠ 計画",
+  "tent_refused": "「{name}」はルーフテント不可（場所に記録済み）：別の宿泊地を探してください",
+  "s.tent_refused": "ルーフテント不可"
 }

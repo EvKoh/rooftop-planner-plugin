@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOCKIEREND",
-  "level.fix": "ZU BEHEBEN",
-  "level.verify": "ZU PRÜFEN",
-  "level.info": "INFO",
   "day": "Tag {n} ({date})",
   "scope.bookings": "Buchungen",
   "scope.budget": "Budget",
@@ -43,7 +39,6 @@
   "stale_budget": "„{name}“ nennt eine Nacht, die nicht mehr geplant ist ({list})",
   "budget_total": "Unterkunft im Budget: {budget}; geplante Nächte: {nights}",
   "stale_todo": "„{name}“ nennt eine Nacht, die nicht mehr geplant ist ({list})",
-  "stale_note": "Notiz „{text}“ nennt {list}, nicht mehr geplant",
   "route_pending": "{n} Fahrzeit(en) noch nicht berechnet (Zeitbudget erreicht): Prüfung erneut starten",
   "dayShort": "T{n}",
   "s.night_late": "Ankunft {arr}, spätestens {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "In Klärung",
   "st.booked": "Gebucht",
   "st.dropped": "Verworfen",
-  "overview.night": "Nacht — {status}",
   "st.chip.booked": "Gebucht ✓",
   "st.chip.contacted": "In Klärung",
   "st.chip.dropped": "Verworfen",
@@ -403,5 +397,7 @@
   "src.auto": "(automatisch)",
   "s.resa_unlinked": "Buchung ohne Nacht im Plan",
   "s.resa_note_stale": "bestätigt, Notizen sagen noch „wartend“",
-  "s.resa_price": "Buchungspreis ≠ Plan"
+  "s.resa_price": "Buchungspreis ≠ Plan",
+  "tent_refused": "„{name}“ lehnt Dachzelte ab (beim Ort erfasst): eine andere Übernachtung suchen",
+  "s.tent_refused": "keine Dachzelte"
 }

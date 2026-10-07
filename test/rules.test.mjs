@@ -139,7 +139,8 @@ describe('classify', () => {
     expect(cls.nightKind('', 'Hotel')).toBe('unknown');
     expect(cls.isShopping('Manger – Courses', null)).toBe(true);
     expect(cls.isShopping('x', 'fuel')).toBe(true);
-    expect(cls.isHike('Voir – Randonnée')).toBe(true);
+    expect(require('../server/lib/design.js').isHikePlace({ name: 'x', categoryName: 'Voir – Randonnée' })).toBe(true);
+    expect(require('../server/lib/design.js').isParkingPlace({ name: 'Car park Lago Example', categoryName: 'Voir' })).toBe(true);
     expect(cls.isTrace('Route – Tracé du jour', {})).toBe(true);
     expect(cls.isTrace('x', { route_geometry: '[]' })).toBe(true);
     expect(cls.parkingFromNotes('Départ : parking du lac, 46.5000, 11.7000')).toEqual([46.5, 11.7]);

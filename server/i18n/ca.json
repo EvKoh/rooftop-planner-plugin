@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOQUEJANT",
-  "level.fix": "A CORREGIR",
-  "level.verify": "A VERIFICAR",
-  "level.info": "INFO",
   "day": "Dia {n} ({date})",
   "scope.bookings": "Reserves",
   "scope.budget": "Pressupost",
@@ -43,7 +39,6 @@
   "stale_budget": "«{name}» esmenta una nit que ja no està prevista ({list})",
   "budget_total": "allotjament al pressupost: {budget}; nits previstes: {nights}",
   "stale_todo": "«{name}» esmenta una nit que ja no està prevista ({list})",
-  "stale_note": "la nota «{text}» esmenta {list}, que ja no està previst",
   "route_pending": "{n} temps de trajecte encara no calculats (límit de temps assolit): torna a fer la comprovació",
   "dayShort": "D{n}",
   "s.night_late": "arriba {arr}, com a tard {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "En conversa",
   "st.booked": "Reservada",
   "st.dropped": "Descartada",
-  "overview.night": "Nit — {status}",
   "st.chip.booked": "Reservat ✓",
   "st.chip.contacted": "En conversa",
   "st.chip.dropped": "Descartat",
@@ -403,5 +397,7 @@
   "src.auto": "(automàtic)",
   "s.resa_unlinked": "reserva sense nit al pla",
   "s.resa_note_stale": "confirmada, notes encara «en espera»",
-  "s.resa_price": "preu reservat ≠ pla"
+  "s.resa_price": "preu reservat ≠ pla",
+  "tent_refused": "«{name}» no admet tendes de sostre (registrat al lloc): busca una altra nit",
+  "s.tent_refused": "sense tendes de sostre"
 }

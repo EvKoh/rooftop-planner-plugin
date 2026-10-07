@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOCKERANDE",
-  "level.fix": "ÅTGÄRDA",
-  "level.verify": "KONTROLLERA",
-  "level.info": "INFO",
   "day": "Dag {n} ({date})",
   "scope.bookings": "Bokningar",
   "scope.budget": "Budget",
@@ -43,7 +39,6 @@
   "stale_budget": "\"{name}\" nämner en natt som inte längre är planerad ({list})",
   "budget_total": "boende i budgeten: {budget}; planerade nätter: {nights}",
   "stale_todo": "\"{name}\" nämner en natt som inte längre är planerad ({list})",
-  "stale_note": "anteckningen \"{text}\" nämner {list}, som inte längre är planerad",
   "route_pending": "{n} körtid(er) inte beräknade än (tidsgräns nådd): kör kontrollen igen",
   "dayShort": "D{n}",
   "s.night_late": "ankomst {arr}, senast {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "Under diskussion",
   "st.booked": "Bokad",
   "st.dropped": "Struken",
-  "overview.night": "Natt — {status}",
   "st.chip.booked": "Bokad ✓",
   "st.chip.contacted": "Under diskussion",
   "st.chip.dropped": "Struken",
@@ -403,5 +397,7 @@
   "src.auto": "(automatiskt)",
   "s.resa_unlinked": "bokning utan natt i planen",
   "s.resa_note_stale": "bekräftad, anteckningar säger fortfarande ”väntar”",
-  "s.resa_price": "bokat pris ≠ plan"
+  "s.resa_price": "bokat pris ≠ plan",
+  "tent_refused": "”{name}” tar inte emot taktält (sparat på platsen): hitta en annan natt",
+  "s.tent_refused": "inga taktält"
 }

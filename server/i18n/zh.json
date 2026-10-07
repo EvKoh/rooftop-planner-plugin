@@ -1,8 +1,4 @@
 {
-  "level.blocking": "阻断",
-  "level.fix": "需修正",
-  "level.verify": "需核实",
-  "level.info": "提示",
   "day": "第 {n} 天（{date}）",
   "scope.bookings": "预订",
   "scope.budget": "预算",
@@ -43,7 +39,6 @@
   "stale_budget": "“{name}”提到一个已不在计划中的夜晚（{list}）",
   "budget_total": "预算中的住宿：{budget}；计划的住宿：{nights}",
   "stale_todo": "“{name}”提到一个已不在计划中的夜晚（{list}）",
-  "stale_note": "备注“{text}”提到 {list}，已不在计划中",
   "route_pending": "{n} 段驾车时间尚未计算（已达时间上限）：请重新运行检查",
   "dayShort": "D{n}",
   "s.night_late": "{arr} 到达，最晚 {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "洽谈中",
   "st.booked": "已预订",
   "st.dropped": "已放弃",
-  "overview.night": "过夜 — {status}",
   "st.chip.booked": "已预订 ✓",
   "st.chip.contacted": "洽谈中",
   "st.chip.dropped": "已放弃",
@@ -403,5 +397,7 @@
   "src.auto": "（自动）",
   "s.resa_unlinked": "计划中无对应过夜的预订",
   "s.resa_note_stale": "已确认，备注仍为“等待中”",
-  "s.resa_price": "预订价格 ≠ 计划"
+  "s.resa_price": "预订价格 ≠ 计划",
+  "tent_refused": "“{name}”不接受车顶帐篷（已记录在地点上）：请另找过夜地",
+  "s.tent_refused": "不接受车顶帐篷"
 }

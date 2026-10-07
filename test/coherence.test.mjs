@@ -337,3 +337,37 @@ describe('one language on one screen', () => {
     expect((await fr.run(plugin).hook('tableContributor', 'getContributions', 'places', 1)).find((x) => x.id === 'vanlife-price').label).toBe('Prix');
   });
 });
+
+describe('the last audit: car parks, currencies, the day\'s road', () => {
+  it('a car park known by its name only costs no time on a hike day', () => {
+    const park = { place: { name: 'Car park Example', categoryName: 'Misc' } }; // a generic category: the name decides
+    const hike = { place: { name: 'Summit Example', categoryName: 'Hike' } };
+    expect(dayStopMinutes(park, null, [park, hike])).toBe(0);
+  });
+
+  it('a night priced in another currency is never compared with candidates', async () => {
+    const { anchors } = require('../server/lib/nights.js');
+    const trip = build();
+    const h = makeHost({ trip });
+    const model = await loadTrip(h.ctx, 1);
+    expect(anchors(model, model.days[0]).current.comparablePrice).toBe(38);
+    trip.places.find((p) => p.id === 13).currency = 'HUF';
+    const other = await loadTrip(makeHost({ trip }).ctx, 1);
+    expect(anchors(other, other.days[0]).current.comparablePrice).toBeNull();
+  });
+
+  it('supplies are searched along the road the car drives, not up to a hike\'s summit', async () => {
+    const routing = require('../server/lib/routing.js');
+    const { dayGeometry } = require('../server/lib/supplies.js');
+    const trip = build();
+    trip.days[2].assignments.find((a) => a.id === 3001).place.category = { id: 9, name: 'Hike' };
+    trip.days[2].assignments.find((a) => a.id === 3001).place.name = 'Summit Example';
+    const model = await loadTrip(makeHost({ trip }).ctx, 1);
+    const spy = vi.spyOn(routing, 'route').mockResolvedValue({ points: [[0, 0], [1, 1]] });
+    try {
+      await dayGeometry({}, model, model.days[2], { vehicle: 'rooftop_tent', highway_days: 'never' }, { network: true });
+      const pts = spy.mock.calls[0][0];
+      expect(pts.some((p) => p[0] === 46.4097 && p[1] === 11.5753)).toBe(false); // the summit is walked
+    } finally { spy.mockRestore(); }
+  });
+});

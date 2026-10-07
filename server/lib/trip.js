@@ -183,11 +183,16 @@ function evenings(model) {
   return model.days.filter((d) => d !== last || model.nights.some((n) => n.startDayId === d.id));
 }
 
-/** A place that is a night: planned as one, or filed in a night category. Route places never are. */
-function isNightPlace(model, p) {
-  if (!p || p.geometry) return false;
-  return model.nights.some((n) => n.placeId === p.id) || isNightCategory(p.categoryName);
-}
+/**
+ * A place that is a night: planned as one (its id among `lodgedIds`, the places of the
+ * trip's lodging blocks), or filed in a night category. Route places never are. The raw
+ * form, for readers that have TREK's rows rather than the trip model (planner columns,
+ * place panel).
+ */
+const isNightOf = (lodgedIds, id, categoryName, geometry) => !geometry && (lodgedIds.has(id) || isNightCategory(categoryName || ''));
+
+/** A place of the trip model that is a night (isNightOf). */
+const isNightPlace = (model, p) => !!p && isNightOf(new Set(model.nights.map((n) => n.placeId)), p.id, p.categoryName, p.geometry);
 
 /** Night places of the pool that are not planned as any night (the "candidates"). */
 function candidateNights(model) {
@@ -216,5 +221,5 @@ function unplannedNights(model) {
 }
 
 module.exports = {
-  loadTrip, findDay, stayOn, stayBefore, isFirstEvening, evenings, isNightPlace, candidateNights, nameKey, unplannedNights, parseGeometry,
+  loadTrip, findDay, stayOn, isNightOf, stayBefore, isFirstEvening, evenings, isNightPlace, candidateNights, nameKey, unplannedNights, parseGeometry,
 };

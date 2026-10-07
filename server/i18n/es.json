@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOQUEANTE",
-  "level.fix": "A CORREGIR",
-  "level.verify": "A VERIFICAR",
-  "level.info": "INFO",
   "day": "Día {n} ({date})",
   "scope.bookings": "Reservas",
   "scope.budget": "Presupuesto",
@@ -43,7 +39,6 @@
   "stale_budget": "«{name}» menciona una noche que ya no está prevista ({list})",
   "budget_total": "alojamiento en el presupuesto: {budget}; noches previstas: {nights}",
   "stale_todo": "«{name}» menciona una noche que ya no está prevista ({list})",
-  "stale_note": "la nota «{text}» menciona {list}, que ya no está previsto",
   "route_pending": "{n} tiempo(s) de trayecto aún sin calcular (límite de tiempo alcanzado): vuelve a lanzar la comprobación",
   "dayShort": "D{n}",
   "s.night_late": "llega {arr}, máx. {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "En conversación",
   "st.booked": "Reservada",
   "st.dropped": "Descartada",
-  "overview.night": "Noche — {status}",
   "st.chip.booked": "Reservado ✓",
   "st.chip.contacted": "En conversación",
   "st.chip.dropped": "Descartado",
@@ -403,5 +397,7 @@
   "src.auto": "(automático)",
   "s.resa_unlinked": "reserva sin noche en el plan",
   "s.resa_note_stale": "confirmada, notas aún «en espera»",
-  "s.resa_price": "precio reservado ≠ plan"
+  "s.resa_price": "precio reservado ≠ plan",
+  "tent_refused": "«{name}» no admite tiendas de techo (registrado en el lugar): busca otra noche",
+  "s.tent_refused": "sin tiendas de techo"
 }

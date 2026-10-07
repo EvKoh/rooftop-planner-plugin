@@ -343,8 +343,6 @@ const TAIL = ['doubts', 'sources', 'checked', 'contact'];
 
 const FIGURE_FIELDS = new Set(['distance_km', 'ascent_m', 'descent_m', 'duration', 'level', 'route_type', 'alt_max_m', 'alt_min_m', 'altitude_m', 'price', 'services_price', 'spots']);
 
-/** "4 h 10", "51 min". */
-
 /** The short value a key figure shows ("10.9 km", "+770 m", "Medium"); its full text stays the title. */
 function figure(field, v, L) {
   const n = (x, d = 0) => new Intl.NumberFormat(locale(L), { maximumFractionDigits: d }).format(x);

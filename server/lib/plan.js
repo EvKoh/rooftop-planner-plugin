@@ -4,6 +4,7 @@
 // A tool call must answer within 15 s (host limit) and the night search hits the network
 // for every night, so work is cut into steps; when the time budget runs out the result
 // carries a `continuation` token ("<step>.<index>") and the assistant calls again.
+const { stayOn, isFirstEvening } = require('./trip');
 const { checkTrip } = require('./check');
 const { findNightsForDay } = require('./nights');
 const { computeRoutes } = require('./traces');
@@ -57,7 +58,7 @@ async function planTrip(ctx, model, o, opts) {
     } else if (name === 'nights') {
       out.results.nights = out.results.nights || [];
       // Each stay once, on its first evening.
-      const nightDays = model.days.filter((d) => model.nights.some((n) => n.startDayId === d.id));
+      const nightDays = model.days.filter((d) => isFirstEvening(stayOn(model, d), d));
       for (; index < nightDays.length; index++) {
         if (deadline.left() < 6000) break;
         const d = nightDays[index];

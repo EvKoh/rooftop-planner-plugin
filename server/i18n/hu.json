@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOKKOLÓ",
-  "level.fix": "JAVÍTANDÓ",
-  "level.verify": "ELLENŐRIZENDŐ",
-  "level.info": "INFÓ",
   "day": "{n}. nap ({date})",
   "scope.bookings": "Foglalások",
   "scope.budget": "Költségvetés",
@@ -43,7 +39,6 @@
   "stale_budget": "„{name}” olyan éjszakát említ, ami már nincs tervben ({list})",
   "budget_total": "szállás a költségvetésben: {budget}; tervezett éjszakák: {nights}",
   "stale_todo": "„{name}” olyan éjszakát említ, ami már nincs tervben ({list})",
-  "stale_note": "a(z) „{text}” jegyzet ezt említi: {list}, ami már nincs tervben",
   "route_pending": "{n} menetidő még nincs kiszámítva (elérte az időkeretet): futtasd újra az ellenőrzést",
   "dayShort": "{n}. n",
   "s.night_late": "érkezés {arr}, legkésőbb {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "Egyeztetés alatt",
   "st.booked": "Lefoglalva",
   "st.dropped": "Elvetve",
-  "overview.night": "Éjszaka — {status}",
   "st.chip.booked": "Lefoglalva ✓",
   "st.chip.contacted": "Egyeztetés alatt",
   "st.chip.dropped": "Elvetve",
@@ -403,5 +397,7 @@
   "src.auto": "(automatikus)",
   "s.resa_unlinked": "foglalás éjszaka nélkül a tervben",
   "s.resa_note_stale": "megerősítve, a jegyzet még „várakozik”",
-  "s.resa_price": "foglalt ár ≠ terv"
+  "s.resa_price": "foglalt ár ≠ terv",
+  "tent_refused": "„{name}” nem fogad tetősátrat (a helynél rögzítve): keressen másik szállást",
+  "s.tent_refused": "tetősátor nem"
 }

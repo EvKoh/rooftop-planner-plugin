@@ -5,13 +5,13 @@
 // applying a new route RECREATES the place (create + assign + delete the old one). The SDK
 // cannot reorder a day either: the result lists the core `reorder_day_assignments` call that
 // puts the route first (otherwise TREK draws a straight line to the morning start).
-const { pmap, hhmm, norm } = require('./util');
+const { pmap, hhmm, norm, durationText } = require('./util');
 const routing = require('./routing');
 const { highwayAllowed } = require('./settings');
 const { dayPlan, carPos } = require('./check');
 const { findDay } = require('./trip');
 const { isHikePlace } = require('./design');
-const { t } = require('./i18n');
+const { t, num } = require('./i18n');
 
 const located = (p) => p && p.lat != null && p.lng != null;
 const COLORS = ['#059669', '#c026d3', '#0891b2', '#e11d48', '#d97706', '#65a30d', '#7c3aed', '#2563eb'];
@@ -83,8 +83,8 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
         category_id: routeCategoryId(model, trace),
         notes: t(settings.language, 'route.notes', {
           mode: t(settings.language, r.motorway ? 'route.mode.motorway' : 'route.mode.notolls'),
-          height: settings.vehicle_height_m,
-          legs: r.legs.map((l) => `${l.km} km / ${l.minutes} min`).join('; '),
+          height: num(settings.vehicle_height_m, settings.language),
+          legs: r.legs.map((l) => `${num(l.km, settings.language, 1)} km / ${durationText(l.minutes)}`).join('; '),
         }).slice(0, 2000),
       });
       const asg = await ctx.itinerary.assign(model.tripId, day.id, place.id, null);

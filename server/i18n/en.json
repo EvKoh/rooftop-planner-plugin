@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOCKING",
-  "level.fix": "TO FIX",
-  "level.verify": "TO VERIFY",
-  "level.info": "INFO",
   "day": "Day {n} ({date})",
   "scope.bookings": "Bookings",
   "scope.budget": "Budget",
@@ -43,7 +39,6 @@
   "stale_budget": "\"{name}\" mentions a night that is no longer planned ({list})",
   "budget_total": "accommodation in the budget: {budget}; planned nights: {nights}",
   "stale_todo": "\"{name}\" mentions a night that is no longer planned ({list})",
-  "stale_note": "note \"{text}\" mentions {list}, which is no longer planned",
   "route_pending": "{n} drive time(s) not computed yet (time budget reached): run the check again",
   "dayShort": "D{n}",
   "s.night_late": "arrives {arr}, latest {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "In discussion",
   "st.booked": "Booked",
   "st.dropped": "Dropped",
-  "overview.night": "Night — {status}",
   "st.chip.booked": "Booked ✓",
   "st.chip.contacted": "In discussion",
   "st.chip.dropped": "Dropped",
@@ -403,5 +397,7 @@
   "src.auto": "(auto)",
   "s.resa_unlinked": "booking tied to no night",
   "s.resa_note_stale": "confirmed, notes still say waiting",
-  "s.resa_price": "booked price ≠ plan"
+  "s.resa_price": "booked price ≠ plan",
+  "tent_refused": "\"{name}\" refuses rooftop tents (recorded on the place): find another night",
+  "s.tent_refused": "no rooftop tents"
 }

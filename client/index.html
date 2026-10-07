@@ -422,6 +422,8 @@
       // The trip's currency shown by default is not written on the place: it would stay frozen
       // there if the trip's currency changed. Only a currency the user picked is saved.
       if (!st.data.placeCurrency && set.currency === st.data.currency) delete set.currency;
+      // A new source with no check date is dated today by the server, as the tool does.
+      if (!String(set.checked || '').trim() && set.source && set.source !== (st.data.info.source || '')) delete set.checked;
       // An empty unit or note means "not said".
       set.per = set.per ? set.per : null;
       set.price_note = String(set.price_note || '').trim() || null;

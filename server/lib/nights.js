@@ -1,8 +1,9 @@
 'use strict';
-// Night candidates from OpenStreetMap: campsites and farms (agriturismo) between the last
-// visit of the evening and the first stop of the next morning. Ranked the way the trip
-// owner ranks them: anything forbidden last, then legal risk, then price (unknown price
-// after known ones), then the real detour in drive minutes. OSM has no reviews and rarely
+// Night candidates from OpenStreetMap (campsites and farms; motorhome areas too for a van or
+// a motorhome) and park4night when the instance enables it, between the last visit of the
+// evening and the first stop of the next morning. Ranked the way the trip owner ranks them:
+// anything forbidden last, then legal risk, then a detour over 60 min, then price (unknown
+// price after known ones), then the real detour in drive minutes. OSM has no reviews and rarely
 // a price: what it cannot answer is returned as `toVerify` for the assistant to research
 // (official site first) or to ask the host — never invented.
 const { distKm, norm, toNum } = require('./util');
@@ -37,8 +38,9 @@ function anchors(model, day) {
     evening: located(evening) ? { name: evening.name, lat: evening.lat, lng: evening.lng } : null,
     morning: located(morning) ? { name: morning.name, lat: morning.lat, lng: morning.lng } : null,
     // `price`: the party's total for one night; `comparablePrice`: the same night in the unit
-    // candidates are quoted in (per night, for the vehicle), null when they do not compare.
-    current: nuit ? { name: nuit.name, price: nuit.price, comparablePrice: placeInfo.comparableNightPrice(nuit), currency: nuit.currency, lat: nuit.lat, lng: nuit.lng, placeId: nuit.placeId } : null,
+    // candidates are quoted in (per night, for the vehicle, in the trip's currency), null when
+    // they do not compare.
+    current: nuit ? { name: nuit.name, price: nuit.price, comparablePrice: nuit.currency === model.currency ? placeInfo.comparableNightPrice(nuit) : null, currency: nuit.currency, lat: nuit.lat, lng: nuit.lng, placeId: nuit.placeId } : null,
   };
 }
 

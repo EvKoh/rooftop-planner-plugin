@@ -1,8 +1,4 @@
 {
-  "level.blocking": "치명적",
-  "level.fix": "수정 필요",
-  "level.verify": "확인 필요",
-  "level.info": "정보",
   "day": "{n}일차 ({date})",
   "scope.bookings": "예약",
   "scope.budget": "예산",
@@ -43,7 +39,6 @@
   "stale_budget": "\"{name}\"이(가) 더 이상 계획에 없는 숙박을 언급합니다({list})",
   "budget_total": "예산상 숙박비: {budget}; 계획된 숙박: {nights}",
   "stale_todo": "\"{name}\"이(가) 더 이상 계획에 없는 숙박을 언급합니다({list})",
-  "stale_note": "메모 \"{text}\"이(가) 더 이상 계획에 없는 {list}을(를) 언급합니다",
   "route_pending": "운전 시간 {n}건 아직 미계산(시간 한도 도달): 검사를 다시 실행하세요",
   "dayShort": "{n}일차",
   "s.night_late": "도착 {arr}, 늦어도 {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "문의 중",
   "st.booked": "예약됨",
   "st.dropped": "제외됨",
-  "overview.night": "숙박 — {status}",
   "st.chip.booked": "예약됨 ✓",
   "st.chip.contacted": "문의 중",
   "st.chip.dropped": "제외됨",
@@ -403,5 +397,7 @@
   "src.auto": "(자동)",
   "s.resa_unlinked": "계획에 숙박이 없는 예약",
   "s.resa_note_stale": "확정됨, 메모는 아직 “대기 중”",
-  "s.resa_price": "예약 가격 ≠ 계획"
+  "s.resa_price": "예약 가격 ≠ 계획",
+  "tent_refused": "“{name}”은(는) 루프탑 텐트를 받지 않습니다(장소에 기록됨): 다른 숙박지를 찾으세요",
+  "s.tent_refused": "루프탑 텐트 불가"
 }

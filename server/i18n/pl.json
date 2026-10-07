@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOKUJĄCE",
-  "level.fix": "DO POPRAWY",
-  "level.verify": "DO SPRAWDZENIA",
-  "level.info": "INFO",
   "day": "Dzień {n} ({date})",
   "scope.bookings": "Rezerwacje",
   "scope.budget": "Budżet",
@@ -43,7 +39,6 @@
   "stale_budget": "„{name}” wspomina nocleg, którego już nie ma w planie ({list})",
   "budget_total": "noclegi w budżecie: {budget}; zaplanowane noce: {nights}",
   "stale_todo": "„{name}” wspomina nocleg, którego już nie ma w planie ({list})",
-  "stale_note": "notatka „{text}” wspomina {list}, czego już nie ma w planie",
   "route_pending": "{n} czas(y) jazdy jeszcze nie obliczone (osiągnięto limit czasu): uruchom kontrolę ponownie",
   "dayShort": "D{n}",
   "s.night_late": "przyjazd {arr}, najpóźniej {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "W rozmowach",
   "st.booked": "Zarezerwowany",
   "st.dropped": "Odrzucony",
-  "overview.night": "Nocleg — {status}",
   "st.chip.booked": "Zarezerwowano ✓",
   "st.chip.contacted": "W rozmowach",
   "st.chip.dropped": "Odrzucono",
@@ -403,5 +397,7 @@
   "src.auto": "(automatycznie)",
   "s.resa_unlinked": "rezerwacja bez noclegu w planie",
   "s.resa_note_stale": "potwierdzona, notatki wciąż „oczekuje”",
-  "s.resa_price": "cena rezerwacji ≠ plan"
+  "s.resa_price": "cena rezerwacji ≠ plan",
+  "tent_refused": "„{name}” nie przyjmuje namiotów dachowych (zapisane przy miejscu): znajdź inny nocleg",
+  "s.tent_refused": "bez namiotów dachowych"
 }

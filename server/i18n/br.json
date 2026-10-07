@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOQUEANTE",
-  "level.fix": "A CORRIGIR",
-  "level.verify": "A VERIFICAR",
-  "level.info": "INFO",
   "day": "Dia {n} ({date})",
   "scope.bookings": "Reservas",
   "scope.budget": "Orçamento",
@@ -43,7 +39,6 @@
   "stale_budget": "\"{name}\" cita uma noite que não está mais prevista ({list})",
   "budget_total": "hospedagem no orçamento: {budget}; noites previstas: {nights}",
   "stale_todo": "\"{name}\" cita uma noite que não está mais prevista ({list})",
-  "stale_note": "a nota \"{text}\" cita {list}, que não está mais previsto",
   "route_pending": "{n} tempo(s) de estrada ainda não calculado(s) (limite de tempo atingido): rode a verificação de novo",
   "dayShort": "D{n}",
   "s.night_late": "chega {arr}, no máximo {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "Em conversa",
   "st.booked": "Reservada",
   "st.dropped": "Descartada",
-  "overview.night": "Noite — {status}",
   "st.chip.booked": "Reservado ✓",
   "st.chip.contacted": "Em conversa",
   "st.chip.dropped": "Descartado",
@@ -403,5 +397,7 @@
   "src.auto": "(automático)",
   "s.resa_unlinked": "reserva sem noite no plano",
   "s.resa_note_stale": "confirmada, notas ainda “aguardando”",
-  "s.resa_price": "preço reservado ≠ plano"
+  "s.resa_price": "preço reservado ≠ plano",
+  "tent_refused": "“{name}” não aceita barracas de teto (registrado no local): encontre outra noite",
+  "s.tent_refused": "sem barracas de teto"
 }

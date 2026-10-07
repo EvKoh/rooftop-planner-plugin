@@ -193,10 +193,14 @@ function activityKind(place) {
 }
 
 /**
- * Is this place a hike: its category, or a walkable category whose name says it is reached
- * on foot. The one hike test of the plugin: the map's walks, the place card, the check, the
- * schedule and the routes (the car waits at the car park) all read it.
+ * Is this place a car park, or a hike: its category, else its name (a walkable category
+ * whose name says it is reached on foot is a hike). The one car-park and hike test of the
+ * plugin: the map's walks, the place card, the check, the schedule, the routes and the
+ * supplies (the car waits at the car park) all read them.
  */
+const isParkingPlace = (place) => !!place && activityKind({ name: place.name || '', categoryName: place.categoryName || place.category_name || '' }) === 'parking';
+
+/** Is this place a hike (see isParkingPlace for the car park, same rule). */
 const isHikePlace = (place) => !!place && activityKind({ name: place.name || '', categoryName: place.categoryName || place.category_name || '' }) === 'hike';
 
 const iconOfKind = (kind) => (ACTIVITY_PICTOGRAM.find(([k]) => k === kind) || [])[1];
@@ -256,4 +260,4 @@ function categoryForKind(categories, kind) {
   return list.find((c) => RE.night.test(norm(c.name)) === night) || list[0] || null;
 }
 
-module.exports = { NIGHT_STATUSES, KINDS, NIGHT_KINDS, categoryForKind, activityKind, isHikePlace, ACTIVITY_GLYPH, WALK_LINE, TONE, TONE_COLOR, NIGHT_STATUS, NIGHT_STATES, SHEET_ICONS, sheetTone, ICON_NAMES, svgOf, AMENITY_ICONS, CHIP, NIGHT_PICTOGRAM, ACTIVITY_PICTOGRAM, MARKER_ICONS, GLYPHS, VEHICLE_GLYPH, pictogramFor, markerStyle };
+module.exports = { NIGHT_STATUSES, KINDS, NIGHT_KINDS, categoryForKind, activityKind, isHikePlace, isParkingPlace, ACTIVITY_GLYPH, WALK_LINE, TONE, TONE_COLOR, NIGHT_STATUS, NIGHT_STATES, SHEET_ICONS, sheetTone, ICON_NAMES, svgOf, AMENITY_ICONS, CHIP, NIGHT_PICTOGRAM, ACTIVITY_PICTOGRAM, MARKER_ICONS, GLYPHS, VEHICLE_GLYPH, pictogramFor, markerStyle };

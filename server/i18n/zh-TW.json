@@ -1,8 +1,4 @@
 {
-  "level.blocking": "阻斷",
-  "level.fix": "需修正",
-  "level.verify": "需核實",
-  "level.info": "提示",
   "day": "第 {n} 天（{date}）",
   "scope.bookings": "預訂",
   "scope.budget": "預算",
@@ -43,7 +39,6 @@
   "stale_budget": "「{name}」提到一個已不在計畫中的夜晚（{list}）",
   "budget_total": "預算中的住宿：{budget}；計畫的住宿：{nights}",
   "stale_todo": "「{name}」提到一個已不在計畫中的夜晚（{list}）",
-  "stale_note": "備註「{text}」提到 {list}，已不在計畫中",
   "route_pending": "{n} 段開車時間尚未計算（已達時間上限）：請重新執行檢查",
   "dayShort": "D{n}",
   "s.night_late": "{arr} 抵達，最晚 {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "洽談中",
   "st.booked": "已預訂",
   "st.dropped": "已放棄",
-  "overview.night": "過夜 — {status}",
   "st.chip.booked": "已預訂 ✓",
   "st.chip.contacted": "洽談中",
   "st.chip.dropped": "已放棄",
@@ -403,5 +397,7 @@
   "src.auto": "（自動）",
   "s.resa_unlinked": "計畫中無對應過夜的預訂",
   "s.resa_note_stale": "已確認，備註仍為「等待中」",
-  "s.resa_price": "預訂價格 ≠ 計畫"
+  "s.resa_price": "預訂價格 ≠ 計畫",
+  "tent_refused": "「{name}」不接受車頂帳篷（已記錄在地點上）：請另找過夜地",
+  "s.tent_refused": "不接受車頂帳篷"
 }

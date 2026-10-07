@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOKLAYICI",
-  "level.fix": "DÜZƏLDİLMƏLİ",
-  "level.verify": "YOXLANMALI",
-  "level.info": "MƏLUMAT",
   "day": "Gün {n} ({date})",
   "scope.bookings": "Bronlar",
   "scope.budget": "Büdcə",
@@ -43,7 +39,6 @@
   "stale_budget": "\"{name}\" artıq planlaşdırılmayan gecəni xatırladır ({list})",
   "budget_total": "büdcədə yaşayış: {budget}; planlaşdırılan gecələr: {nights}",
   "stale_todo": "\"{name}\" artıq planlaşdırılmayan gecəni xatırladır ({list})",
-  "stale_note": "\"{text}\" qeydi artıq planlaşdırılmayan {list} xatırladır",
   "route_pending": "{n} yol müddəti hələ hesablanmayıb (vaxt həddinə çatılıb): yoxlamanı yenidən işə salın",
   "dayShort": "G{n}",
   "s.night_late": "çatma {arr}, ən gec {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "Danışıqda",
   "st.booked": "Bron edilib",
   "st.dropped": "İmtina edilib",
-  "overview.night": "Gecə — {status}",
   "st.chip.booked": "Bron edilib ✓",
   "st.chip.contacted": "Danışıqda",
   "st.chip.dropped": "İmtina edilib",
@@ -403,5 +397,7 @@
   "src.auto": "(avtomatik)",
   "s.resa_unlinked": "planda gecəsi olmayan rezervasiya",
   "s.resa_note_stale": "təsdiqlənib, qeydlər hələ “gözləyir”",
-  "s.resa_price": "rezervasiya qiyməti ≠ plan"
+  "s.resa_price": "rezervasiya qiyməti ≠ plan",
+  "tent_refused": "“{name}” dam çadırlarını qəbul etmir (yerdə qeyd olunub): başqa gecə tapın",
+  "s.tent_refused": "dam çadırı yox"
 }

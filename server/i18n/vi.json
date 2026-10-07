@@ -1,8 +1,4 @@
 {
-  "level.blocking": "CHẶN",
-  "level.fix": "CẦN SỬA",
-  "level.verify": "CẦN KIỂM TRA",
-  "level.info": "THÔNG TIN",
   "day": "Ngày {n} ({date})",
   "scope.bookings": "Đặt chỗ",
   "scope.budget": "Ngân sách",
@@ -43,7 +39,6 @@
   "stale_budget": "\"{name}\" nhắc đến một đêm không còn trong kế hoạch ({list})",
   "budget_total": "chỗ ở trong ngân sách: {budget}; số đêm dự kiến: {nights}",
   "stale_todo": "\"{name}\" nhắc đến một đêm không còn trong kế hoạch ({list})",
-  "stale_note": "ghi chú \"{text}\" nhắc đến {list}, không còn trong kế hoạch",
   "route_pending": "{n} thời gian lái xe chưa được tính (hết thời gian cho phép): hãy chạy lại kiểm tra",
   "dayShort": "N{n}",
   "s.night_late": "đến {arr}, muộn nhất {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "Đang trao đổi",
   "st.booked": "Đã đặt",
   "st.dropped": "Đã loại",
-  "overview.night": "Đêm — {status}",
   "st.chip.booked": "Đã đặt ✓",
   "st.chip.contacted": "Đang trao đổi",
   "st.chip.dropped": "Đã loại",
@@ -403,5 +397,7 @@
   "src.auto": "(tự động)",
   "s.resa_unlinked": "đặt chỗ không có đêm trong kế hoạch",
   "s.resa_note_stale": "đã xác nhận, ghi chú vẫn “đang chờ”",
-  "s.resa_price": "giá đã đặt ≠ kế hoạch"
+  "s.resa_price": "giá đã đặt ≠ kế hoạch",
+  "tent_refused": "“{name}” không nhận lều nóc xe (đã ghi ở địa điểm): hãy tìm đêm khác",
+  "s.tent_refused": "không lều nóc"
 }
