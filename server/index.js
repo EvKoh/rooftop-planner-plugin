@@ -21,7 +21,7 @@ const cache = require('./lib/cache');
 const routing = require('./lib/routing');
 const { TOOL_NAMES } = require('./lib/tool-specs');
 const { callTool } = require('./lib/tools');
-const { readSettings } = require('./lib/settings');
+const { readSettings, rememberUiLanguage } = require('./lib/settings');
 const { loadTrip } = require('./lib/trip');
 const { warnings } = require('./lib/report');
 const placeInfo = require('./lib/place-info');
@@ -70,7 +70,7 @@ module.exports = definePlugin({
     warningProvider: {
       async getWarnings(tripId, raw) {
         const ctx = gentle(raw);
-        const settings = await readSettings(ctx);
+        const settings = await readSettings(ctx, null, { tripId });
         return warnings(ctx, await loadTrip(ctx, tripId, settings), settings);
       },
     },
@@ -81,7 +81,7 @@ module.exports = definePlugin({
       async getLayers(tripId, raw) {
         const dl = makeDeadline(LAYER_BUDGET_MS);
         const ctx = gentle(raw);
-        const settings = await readSettings(ctx);
+        const settings = await readSettings(ctx, null, { tripId });
         if (!settings.map_walks) return [];
         const list = walks.hikeWalks(await loadTrip(ctx, tripId, settings));
         return walks.walkLayers(list, await walks.walkGeometry(ctx, list, { network: true, deadline: dl }), settings);
@@ -92,7 +92,7 @@ module.exports = definePlugin({
       async getContributions(view, tripId, raw) {
         if (view !== 'places') return [];
         const ctx = gentle(raw);
-        return placeColumns(ctx, tripId, await readSettings(ctx, ['language', 'dog', 'vehicle', 'vehicle_height_m', 'vehicle_length_m', 'vehicle_weight_t']));
+        return placeColumns(ctx, tripId, await readSettings(ctx, ['language', 'dog', 'vehicle', 'vehicle_height_m', 'vehicle_length_m', 'vehicle_weight_t'], { tripId }));
       },
     },
 
@@ -131,6 +131,9 @@ module.exports = definePlugin({
           // The user's own language setting wins; "auto" follows the language TREK gives the frame.
           const own = await ctx.settings.get('language').catch(() => undefined);
           const L = own && own !== 'auto' ? lang(own) : req.body.locale ? lang(req.body.locale) : settings.language;
+          // Under "auto", remember the frame's language on the trip for the banner, the
+          // columns, the map and the tools (settings.js).
+          if ((!own || own === 'auto') && req.body.locale) await rememberUiLanguage(ctx, at.tripId, req.body.locale);
           const [info, resas, accs, cats, trip] = await Promise.all([
             placeInfo.get(ctx, at.placeId),
             ctx.trips.getReservations(at.tripId).catch(() => []),
@@ -222,7 +225,7 @@ module.exports = definePlugin({
         const placeId = Number(req.body && req.body.placeId);
         if (!Number.isInteger(tripId) || tripId < 1) return json(400, { error: 'tripId required' });
         try {
-          const settings = await readSettings(ctx, ['language']);
+          const settings = await readSettings(ctx, ['language'], { tripId });
           const opts = { park4night: settings.park4night, language: settings.language };
           if (Number.isInteger(placeId) && placeId > 0) {
             if (!(await placeOf(ctx, tripId, placeId))) return json(404, { error: 'place not in this trip' });
@@ -271,7 +274,7 @@ module.exports = definePlugin({
         try {
           if (!(await placeOf(ctx, at.tripId, at.placeId))) return json(404, { error: 'place not in this trip' });
           const model = await loadTrip(ctx, at.tripId, null);
-          const { language } = await readSettings(ctx, ['language']);
+          const { language } = await readSettings(ctx, ['language'], { tripId: at.tripId });
           const text = (v, n) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : undefined);
           const result = await nightStatus.set(ctx, model, {
             placeId: at.placeId, dayId, status: b.status, clear: true, language,

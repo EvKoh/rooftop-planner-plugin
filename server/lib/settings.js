@@ -52,8 +52,25 @@ function instance(ctx) {
   };
 }
 
-/** All settings, or only `keys` (each one is an RPC). Missing keys keep their default. */
-async function readSettings(ctx, keys) {
+// The language TREK last showed the place panel in, on this trip (trip meta). The host hands
+// that language to the panel's frame only, never to hooks or tools: kept here, it lets the
+// banner, the columns, the map and the tools speak the user's language under "auto".
+const UI_LANGUAGE_KEY = 'vanlife.ui_language';
+
+/** Remember the panel's language on a trip (only when it changed: one meta write). */
+async function rememberUiLanguage(ctx, tripId, language) {
+  const l = lang(language);
+  try {
+    if ((await ctx.meta.get('trip', Number(tripId), UI_LANGUAGE_KEY)) !== l) await ctx.meta.set('trip', Number(tripId), UI_LANGUAGE_KEY, l);
+  } catch { /* no db:meta: the instance default stays */ }
+}
+
+/**
+ * All settings, or only `keys` (each one is an RPC). Missing keys keep their default.
+ * `tripId`: under "auto", the language the panel last showed on that trip, before the
+ * instance default.
+ */
+async function readSettings(ctx, keys, { tripId } = {}) {
   const out = { ...DEFAULTS };
   await Promise.all((keys || Object.keys(DEFAULTS)).map(async (k) => {
     let v;
@@ -67,9 +84,14 @@ async function readSettings(ctx, keys) {
   if (!(out.drive_time_factor >= 0.5 && out.drive_time_factor <= 2)) out.drive_time_factor = DEFAULTS.drive_time_factor;
   if (!['first_last', 'always', 'never'].includes(out.highway_days)) out.highway_days = DEFAULTS.highway_days;
   if (!/^([01]?\d|2[0-3])[:h][0-5]\d$/.test(out.day_start)) out.day_start = DEFAULTS.day_start;
-  // "auto": the host passes no language to hooks and tools, so the admin's instance default
-  // decides there; the widget uses the language TREK hands its frame instead.
-  out.language = out.language === 'auto' || !out.language ? instance(ctx).defaultLanguage : lang(out.language);
+  // "auto": the host passes no language to hooks and tools: the language the panel last
+  // showed on the trip decides, else the admin's instance default. The widget itself uses
+  // the language TREK hands its frame.
+  if (out.language === 'auto' || !out.language) {
+    let seen;
+    if (tripId != null) { try { seen = await ctx.meta.get('trip', Number(tripId), UI_LANGUAGE_KEY); } catch { seen = undefined; } }
+    out.language = seen ? lang(seen) : instance(ctx).defaultLanguage;
+  } else out.language = lang(out.language);
   out.park4night = instance(ctx).park4night;
   return out;
 }
@@ -86,4 +108,4 @@ function highwayAllowed(settings, dayIndex, dayCount) {
 /** Fuel cost of one km, in the trip currency. */
 const fuelPerKm = (s) => (s.fuel_l_per_100km / 100) * s.fuel_price_per_l;
 
-module.exports = { DEFAULTS, VEHICLES, readSettings, highwayAllowed, fuelPerKm, instance };
+module.exports = { UI_LANGUAGE_KEY, rememberUiLanguage, DEFAULTS, VEHICLES, readSettings, highwayAllowed, fuelPerKm, instance };

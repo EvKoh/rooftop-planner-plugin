@@ -1,8 +1,11 @@
 'use strict';
 // Message catalogues for everything a person reads (warnings banner, planner columns, the
-// place widget, the messages inside tool results). One JSON file per language TREK ships,
-// same codes as TREK (shared/src/i18n/languages.ts). English is canonical; a test fails
-// when any key is missing in any language. Tool descriptions for assistants stay English.
+// place widget, the findings and night-list lines inside tool results, and anything written
+// into TREK: booking notes, budget line names). One JSON file per language TREK ships, same
+// codes as TREK (shared/src/i18n/languages.ts). English is canonical; a test fails when any
+// key is missing in any language. What only the assistant reads stays English, like the
+// tool descriptions: the `note`, `reminder`, `warnings` and error texts that tell it what
+// to do next, and the night search's `blocked` / `toVerify` items it researches.
 
 // TREK language code → BCP-47 locale for Intl (mirror of TREK's SUPPORTED_LANGUAGES).
 const LOCALES = {

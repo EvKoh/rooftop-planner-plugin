@@ -329,7 +329,7 @@ async function dayTool(ctx, model, a, opts) {
 async function callTool({ name, args }, ctx, { now } = {}) {
   if (!TOOL_NAMES.includes(name)) throw new Error(`unknown tool ${name}`);
   const a = withDefaults(name, args);
-  const settings = await readSettings(ctx);
+  const settings = await readSettings(ctx, null, { tripId: a.tripId });
   if (a.language) settings.language = lang(a.language);
   const deadline = makeDeadline(TOOL_BUDGET_MS, now);
   const opts = { settings, deadline, network: true };

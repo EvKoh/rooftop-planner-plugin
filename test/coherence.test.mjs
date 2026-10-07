@@ -323,3 +323,17 @@ describe('the review\'s counter-checks: each shared rule is held by a test', () 
     expect(w).toMatchObject({ currency: 'EUR', placeCurrency: null });
   });
 });
+
+describe('one language on one screen', () => {
+  it('under "auto", the columns follow the language the place panel was shown in', async () => {
+    const h = makeHost({ userSettings: { language: 'auto', timezone: 'Europe/Rome' } });
+    const label = async () => (await h.run(plugin).hook('tableContributor', 'getContributions', 'places', 1)).find((x) => x.id === 'vanlife-price').label;
+    expect(await label()).toBe('Price'); // the instance default, before any panel was opened
+    await h.run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13, locale: 'de-DE' } });
+    expect(await label()).toBe((require('../server/i18n/de.json'))['col.price']);
+    // A language the user chose wins over the panel's.
+    const fr = makeHost({ userSettings: { language: 'fr', timezone: 'Europe/Rome' } });
+    await fr.run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13, locale: 'de-DE' } });
+    expect((await fr.run(plugin).hook('tableContributor', 'getContributions', 'places', 1)).find((x) => x.id === 'vanlife-price').label).toBe('Prix');
+  });
+});
