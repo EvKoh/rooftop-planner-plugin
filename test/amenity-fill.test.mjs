@@ -90,12 +90,13 @@ describe('amenities filled from open sources', () => {
 
     const camping = await pi.get(ctx, 13);
     expect(camping.amenities).toMatchObject({ dog: 'yes', water: 'yes', electricity: 'yes', shower: 'yes', toilets: 'yes', wifi: 'yes', dump_station: 'no', rooftop_tent: 'unknown' });
-    expect(camping.source).toMatch(/^OpenStreetMap https:\/\/www\.openstreetmap\.org\/node\/70 \(auto\)$/);
+    expect(camping.source).toMatch(/^OpenStreetMap https:\/\/www\.openstreetmap\.org\/node\/70 @src\.auto$/);
     expect(camping.checked).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 
     const aire = await pi.get(ctx, 16); // 20 m from #777, also its link
     expect(aire.amenities).toMatchObject({ water: 'yes', dump_station: 'yes', toilets: 'yes', dog: 'unknown', electricity: 'unknown' });
-    expect(aire.source).toBe('park4night #777 (auto)');
+    expect(aire.source).toBe('park4night #777 @src.auto');
+    expect(pi.localized(aire, 'fr').source).toBe('park4night #777 (auto)');
 
     const farm = await pi.get(ctx, 18); // 9 km from #888, matched by its link
     expect(farm.amenities).toMatchObject({ dog: 'yes', electricity: 'yes', shower: 'yes', laundry: 'yes', playground: 'yes', water: 'unknown' });
@@ -114,7 +115,9 @@ describe('amenities filled from open sources', () => {
     const camping = await pi.get(ctx, 13);
     expect(camping.amenities.dog).toBe('no'); // the host's answer wins over OSM's "yes"
     expect(camping.amenities.water).toBe('yes');
-    expect(camping).toMatchObject({ source: 'Host e-mail', checked: '2026-10-01' });
+    // The new source is named next to the host's; the host's check date stays.
+    expect(camping.source).toMatch(/^Host e-mail · OpenStreetMap/);
+    expect(camping.checked).toBe('2026-10-01');
   });
 
   it('does not ask again about places it looked at lately, unless one is named', async () => {

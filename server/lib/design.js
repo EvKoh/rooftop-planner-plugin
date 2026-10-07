@@ -101,7 +101,11 @@ const svgOf = (name) => ICONS[name] || '';
  * buttons: available (no booking, blue), in discussion (amber), booked (green),
  * cancelled (red). Each with its tone, colour, lucide icon and that icon's SVG.
  */
-const NIGHT_STATES = ['spotted', 'contacted', 'booked', 'dropped'].map((status) => {
+// The four states of a night, in the order of the panel's buttons: the one list the night
+// status module, the tool schema and the panel read.
+const NIGHT_STATUSES = ['spotted', 'contacted', 'booked', 'dropped'];
+
+const NIGHT_STATES = NIGHT_STATUSES.map((status) => {
   const { tone, icon } = NIGHT_STATUS[status] || { tone: TONE.spotted, icon: 'MapPin' };
   return { status, tone, color: TONE_COLOR[tone], icon, svg: svgOf(icon) };
 });
@@ -188,6 +192,13 @@ function activityKind(place) {
   return byCat || kindOf(name);
 }
 
+/**
+ * Is this place a hike: its category, or a walkable category whose name says it is reached
+ * on foot. The one hike test of the plugin: the map's walks, the place card, the check, the
+ * schedule and the routes (the car waits at the car park) all read it.
+ */
+const isHikePlace = (place) => !!place && activityKind({ name: place.name || '', categoryName: place.categoryName || place.category_name || '' }) === 'hike';
+
 const iconOfKind = (kind) => (ACTIVITY_PICTOGRAM.find(([k]) => k === kind) || [])[1];
 
 /** Pictogram of a planned stop: a night by its ground, an activity by what it is (category first). */
@@ -245,4 +256,4 @@ function categoryForKind(categories, kind) {
   return list.find((c) => RE.night.test(norm(c.name)) === night) || list[0] || null;
 }
 
-module.exports = { KINDS, NIGHT_KINDS, categoryForKind, activityKind, ACTIVITY_GLYPH, WALK_LINE, TONE, TONE_COLOR, NIGHT_STATUS, NIGHT_STATES, SHEET_ICONS, sheetTone, ICON_NAMES, svgOf, AMENITY_ICONS, CHIP, NIGHT_PICTOGRAM, ACTIVITY_PICTOGRAM, MARKER_ICONS, GLYPHS, VEHICLE_GLYPH, pictogramFor, markerStyle };
+module.exports = { NIGHT_STATUSES, KINDS, NIGHT_KINDS, categoryForKind, activityKind, isHikePlace, ACTIVITY_GLYPH, WALK_LINE, TONE, TONE_COLOR, NIGHT_STATUS, NIGHT_STATES, SHEET_ICONS, sheetTone, ICON_NAMES, svgOf, AMENITY_ICONS, CHIP, NIGHT_PICTOGRAM, ACTIVITY_PICTOGRAM, MARKER_ICONS, GLYPHS, VEHICLE_GLYPH, pictogramFor, markerStyle };

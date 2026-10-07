@@ -21,7 +21,7 @@ const cache = require('./lib/cache');
 const routing = require('./lib/routing');
 const { TOOL_NAMES } = require('./lib/tool-specs');
 const { callTool } = require('./lib/tools');
-const { readSettings } = require('./lib/settings');
+const { readSettings, rememberUiLanguage } = require('./lib/settings');
 const { loadTrip } = require('./lib/trip');
 const { warnings } = require('./lib/report');
 const placeInfo = require('./lib/place-info');
@@ -30,7 +30,7 @@ const { placeColumns } = require('./lib/contributions');
 const nightStatus = require('./lib/night-status');
 const contacts = require('./lib/contacts');
 const { gentle } = require('./lib/gentle');
-const { bundle, lang } = require('./lib/i18n');
+const { bundle, lang, locale } = require('./lib/i18n');
 const { isNightCategory } = require('./lib/classify');
 const { NIGHT_STATES } = require('./lib/design');
 const placeSheet = require('./lib/place-sheet');
@@ -70,7 +70,7 @@ module.exports = definePlugin({
     warningProvider: {
       async getWarnings(tripId, raw) {
         const ctx = gentle(raw);
-        const settings = await readSettings(ctx);
+        const settings = await readSettings(ctx, null, { tripId });
         return warnings(ctx, await loadTrip(ctx, tripId, settings), settings);
       },
     },
@@ -81,7 +81,7 @@ module.exports = definePlugin({
       async getLayers(tripId, raw) {
         const dl = makeDeadline(LAYER_BUDGET_MS);
         const ctx = gentle(raw);
-        const settings = await readSettings(ctx);
+        const settings = await readSettings(ctx, null, { tripId });
         if (!settings.map_walks) return [];
         const list = walks.hikeWalks(await loadTrip(ctx, tripId, settings));
         return walks.walkLayers(list, await walks.walkGeometry(ctx, list, { network: true, deadline: dl }), settings);
@@ -92,7 +92,7 @@ module.exports = definePlugin({
       async getContributions(view, tripId, raw) {
         if (view !== 'places') return [];
         const ctx = gentle(raw);
-        return placeColumns(ctx, tripId, await readSettings(ctx, ['language', 'dog', 'vehicle', 'vehicle_height_m', 'vehicle_length_m', 'vehicle_weight_t']));
+        return placeColumns(ctx, tripId, await readSettings(ctx, ['language', 'dog', 'vehicle', 'vehicle_height_m', 'vehicle_length_m', 'vehicle_weight_t'], { tripId }));
       },
     },
 
@@ -131,46 +131,60 @@ module.exports = definePlugin({
           // The user's own language setting wins; "auto" follows the language TREK gives the frame.
           const own = await ctx.settings.get('language').catch(() => undefined);
           const L = own && own !== 'auto' ? lang(own) : req.body.locale ? lang(req.body.locale) : settings.language;
-          const [info, resas, accs, cats] = await Promise.all([
+          // Under "auto", remember the frame's language on the trip for the banner, the
+          // columns, the map and the tools (settings.js).
+          if ((!own || own === 'auto') && req.body.locale) await rememberUiLanguage(ctx, at.tripId, req.body.locale);
+          const [info, resas, accs, cats, trip] = await Promise.all([
             placeInfo.get(ctx, at.placeId),
             ctx.trips.getReservations(at.tripId).catch(() => []),
             ctx.trips.getAccommodations(at.tripId).catch(() => []),
             ctx.categories.list().catch(() => []),
+            ctx.trips.getById(at.tripId).catch(() => null),
           ]);
+          // The place's currency, else the trip's (place-info.js currencyOf): the same everywhere.
+          const currency = placeInfo.currencyOf(place, trip && trip.currency);
           const status = nightStatus.statusByPlace(resas).get(at.placeId) || null;
           const catName = (cats || []).find((c) => c.id === place.category_id);
           const night = (accs || []).some((a) => a.place_id === at.placeId) || isNightCategory(place.category_name || (catName && catName.name) || '');
-          const site = place.website && !contacts.notOwnSite(place.website) ? place.website : null;
           // The structured card: description and notes read into the fixed sections of its kind.
           const categoryName = place.category_name || (catName && catName.name) || '';
           const sheet = placeSheet.view(placeSheet.sheetOf({ ...place, categoryName, raw: place }, { night }), L, {
             trackUrl: walks.hikeUrl({ raw: place, description: place.description, notes: place.notes }, info),
+            visitMinutes: info ? info.visit_min_minutes : null,
           });
           return json(200, {
             language: L,
             strings: bundle(L, ['ui.', 'am', 'opt.', 'per.', 'fee', 'st.', 'ch.', 'chip.']),
             vehicle: settings.vehicle,
             price: place.price == null ? null : +place.price,
-            currency: place.currency || null,
-            info: info || placeInfo.blank(),
+            currency,
+            // The place's own currency, null when it has none (the trip's applies): the panel
+            // writes a currency only when the user sets one.
+            placeCurrency: place.currency || null,
+            // The language's locale, for the dates the widget formats itself.
+            locale: locale(L),
+            info: placeInfo.localized(info, L) || placeInfo.blank(),
             night,
             // The price as the planner chip shows it (unit, free note, dog fee).
-            priceText: placeInfo.priceText(place.price == null ? null : +place.price, place.currency || 'EUR', info, L, { night }),
+            priceText: placeInfo.priceText(place.price == null ? null : +place.price, currency, info, L, { night }),
             units: placeInfo.PER,
             visitText: placeInfo.visitText(info),
             // A car park's hours, payment, motorhomes and overnight rules, notes.
             parkingText: placeInfo.parkingText(info, L),
             // Timed access, booking, toll: the planner's chips, as text.
-            access: placeInfo.accessChips(info, L, place.currency || 'EUR').map((c) => ({ key: c.key, value: c.value, tone: c.tone })),
+            access: placeInfo.accessChips(info, L, currency).map((c) => ({ key: c.key, value: c.value, tone: c.tone })),
             recorded: !!info,
             summary: placeInfo.amenitiesText(info, L),
             refused: placeInfo.refuses(info, settings),
             amenities: placeInfo.AMENITIES,
             channels: contacts.CHANNELS,
-            // TREK's own fields, shown when the plugin's record has nothing.
-            // A platform page (park4night, Google Maps...) is not the host's site.
-            trek: { website: site, phone: place.phone || null },
+            // The host's ways in: the record, then TREK's own fields (contacts.js reachOf; a
+            // platform page is never the host's site).
+            reach: contacts.reachOf(info, place),
+            // Strongest status over the place's evenings; the panel shows the selected
+            // evening's own status once /night has answered.
             nightStatus: status,
+            states: NIGHT_STATES,
             sheet,
           });
         } catch (e) {
@@ -211,7 +225,7 @@ module.exports = definePlugin({
         const placeId = Number(req.body && req.body.placeId);
         if (!Number.isInteger(tripId) || tripId < 1) return json(400, { error: 'tripId required' });
         try {
-          const settings = await readSettings(ctx, ['language']);
+          const settings = await readSettings(ctx, ['language'], { tripId });
           const opts = { park4night: settings.park4night, language: settings.language };
           if (Number.isInteger(placeId) && placeId > 0) {
             if (!(await placeOf(ctx, tripId, placeId))) return json(404, { error: 'place not in this trip' });
@@ -260,9 +274,10 @@ module.exports = definePlugin({
         try {
           if (!(await placeOf(ctx, at.tripId, at.placeId))) return json(404, { error: 'place not in this trip' });
           const model = await loadTrip(ctx, at.tripId, null);
+          const { language } = await readSettings(ctx, ['language'], { tripId: at.tripId });
           const text = (v, n) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : undefined);
           const result = await nightStatus.set(ctx, model, {
-            placeId: at.placeId, dayId, status: b.status, clear: true,
+            placeId: at.placeId, dayId, status: b.status, clear: true, language,
             confirmation: b.status === 'booked' ? text(b.confirmation, 100) : undefined,
             reason: b.status === 'dropped' ? text(b.reason, 200) : undefined,
           });

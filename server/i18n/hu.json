@@ -389,5 +389,19 @@
   "chip.closedFrom": "Zárva {from}-tól",
   "chip.closedUntil": "Zárva {until}-ig",
   "place_closed": "„{name}” aznap zárva van (zárva {from}–{until}): válassz másik helyet",
-  "s.place_closed": "aznap zárva"
+  "s.place_closed": "aznap zárva",
+  "night.none": "erre a napra nincs tervezett szállás",
+  "night.unlinked": "a(z) „{title}” foglalás nincs a terv egyik éjszakájához sem kötve",
+  "night.dropped_note": "Elvetve: {reason}",
+  "resa_unlinked": "a(z) „{title}” foglalás ({day}. nap) nincs a terv egyik éjszakájához sem kötve: a TREK lefoglaltként mutatja, de a terv szerint senki sem alszik ott — kösse az aznap esti éjszakához, vagy mondja le",
+  "resa_note_stale": "a(z) „{title}” foglalás megerősítve, de a jegyzetei szerint még válaszra vár: frissítse a jegyzeteket",
+  "resa_price": "a(z) „{title}” foglalás ára {booked}, a terv {planned} összeggel számol: frissítse a hely árát",
+  "budget.fuel_line": "Üzemanyag {day}. nap ({km} km)",
+  "budget.toll_line": "Útdíj {day}. nap — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "max. {t} t",
+  "src.auto": "(automatikus)",
+  "s.resa_unlinked": "foglalás éjszaka nélkül a tervben",
+  "s.resa_note_stale": "megerősítve, a jegyzet még „várakozik”",
+  "s.resa_price": "foglalt ár ≠ terv"
 }

@@ -5,7 +5,7 @@
 const { TOOL_NAMES, withDefaults } = require('./tool-specs');
 const placeSheet = require('./place-sheet');
 const { readSettings } = require('./settings');
-const { loadTrip } = require('./trip');
+const { loadTrip, findDay, stayOn, isNightPlace, candidateNights } = require('./trip');
 const { applyKind } = require('./place-kind');
 const { checkTrip } = require('./check');
 const { findNights, findNightsForDay } = require('./nights');
@@ -15,10 +15,9 @@ const { suppliesForDay } = require('./supplies');
 const { planTrip, planRequest } = require('./plan');
 const { sunset, sunrise } = require('./sun');
 const { hhmm, deadline: makeDeadline } = require('./util');
-const { nightOf } = require('./trip');
+const { lang } = require('./i18n');
 const placeInfo = require('./place-info');
 const amenityFill = require('./amenity-fill');
-const { isNightCategory } = require('./classify');
 const contacts = require('./contacts');
 const nightStatus = require('./night-status');
 const hostMessage = require('./host-message');
@@ -53,14 +52,14 @@ function fit(result, max = MAX_BYTES) {
   return out;
 }
 
-/** Sunrise, sunset and latest arrival of each day, at that night's place (else the last located stop). */
+/** Sunrise, sunset and latest arrival of each day, at that evening's stay (else the last located stop). */
 function sunTable(model, settings) {
   const row = (date, lat, lng, name) => {
     const ss = sunset(lat, lng, date, settings.timezone);
     return { date, place: name || `${lat},${lng}`, sunrise: hhmm(sunrise(lat, lng, date, settings.timezone)), sunset: hhmm(ss), latestArrival: hhmm(ss == null ? null : ss - settings.sunset_margin_min) };
   };
   return model.days.filter((d) => d.date).map((d) => {
-    const n = nightOf(model, d);
+    const n = stayOn(model, d);
     const last = n && n.lat != null ? n : [...d.assignments].reverse().map((a) => a.place).find((p) => p.lat != null);
     return last ? { day: d.n, ...row(d.date, last.lat, last.lng, last.name) } : { day: d.n, date: d.date, place: null };
   });
@@ -74,28 +73,29 @@ function keyAmenities(settings) {
 /** One place, as the place tool shows it. */
 function placeView(model, p, info, settings, { full = false } = {}) {
   const L = settings.language;
-  const rec = info || placeInfo.blank();
-  const plannedNights = model.nights.filter((n) => n.placeId === p.id).map((n) => (model.days.find((d) => d.id === n.startDayId) || {}).n).filter(Boolean);
-  // A night place: planned as a night, or of a night category. Only a night has a night total.
-  const night = plannedNights.length > 0 || isNightCategory(p.categoryName);
+  const rec = placeInfo.localized(info, L) || placeInfo.blank();
+  const plannedNights = model.nights.filter((n) => n.placeId === p.id).map((n) => (findDay(model, { dayId: n.startDayId }) || {}).n).filter(Boolean);
+  // A night place: planned as a night, or of a night category (trip.js). Only a night has a night total.
+  const night = isNightPlace(model, p);
   const site = (p.raw && p.raw.website) || null;
-  const statuses = (model.reservations || []).filter((r) => nightStatus.placeOfReservation(r) != null && Number(nightStatus.placeOfReservation(r)) === p.id && (r.type === 'hotel' || r.accommodation_id != null));
+  const currency = placeInfo.currencyOf(p.raw, model.currency);
+  const statuses = (model.reservations || []).filter((r) => nightStatus.isNightReservation(r) && Number(nightStatus.placeOfReservation(r)) === p.id);
   const out = {
     placeId: p.id, name: p.name,
     plannedNights,
-    price: placeInfo.priceText(p.price, (p.raw && p.raw.currency) || model.currency, info, L, { night }),
+    price: placeInfo.priceText(p.price, currency, info, L, { night }),
     nightTotal: night ? placeInfo.nightTotal(p.price, info, settings) : null,
     amenities: placeInfo.amenitiesText(info, L),
     parking: placeInfo.parkingText(info, L),
     visit: placeInfo.visitText(info),
     // Timed access, booking and toll: "Before 09:00 · Booking · Toll €40.00", or null.
-    access: placeInfo.accessText(info, L, (p.raw && p.raw.currency) || model.currency),
+    access: placeInfo.accessText(info, L, currency),
     bookingUrl: (info && info.booking_url) || null,
     contacts: { ...rec.contacts, ...(full ? {} : { notes: undefined, languages: undefined }) },
     // TREK's own website field, unless it is a platform page (park4night, Google Maps...).
     trekFields: { website: site && !contacts.notOwnSite(site) ? site : null, phone: (p.raw && p.raw.phone) || null },
     lastExchange: rec.log[0] || null,
-    nightStatus: statuses.map((r) => ({ reservationId: r.id, status: nightStatus.statusOf(r), confirmation: r.confirmation_number || null })),
+    nightStatus: statuses.map((r) => ({ reservationId: r.id, status: nightStatus.statusOf(r), confirmation: r.confirmation_number || null, day: (findDay(model, { dayId: nightStatus.dayOfReservation(r) }) || {}).n ?? null, unlinked: nightStatus.unlinkedBookings(model).some((u) => u.res === r) })),
   };
   if (full) {
     Object.assign(out, { recorded: !!info, record: rec, contactSources: rec.contact_sources, log: rec.log });
@@ -187,11 +187,11 @@ async function createPlace(ctx, model, c) {
     const v = Number(c.price_amount);
     if (!Number.isFinite(v) || v < 0) throw new Error('create.price_amount must be a positive number');
     input.price = v;
-    input.currency = typeof c.currency === 'string' && /^[A-Za-z]{3}$/.test(c.currency) ? c.currency.toUpperCase() : 'EUR';
+    input.currency = typeof c.currency === 'string' && /^[A-Za-z]{3}$/.test(c.currency) ? c.currency.toUpperCase() : model.currency;
   }
   let day = null;
   if (c.day_number != null) {
-    day = model.days.find((d) => d.n === Number(c.day_number));
+    day = findDay(model, { dayNumber: c.day_number });
     if (!day) throw new Error(`day ${c.day_number} is not in trip ${model.tripId}`);
   }
   const place = await ctx.places.create(Number(model.tripId), input);
@@ -204,19 +204,19 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
   if (a.fill) return amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, language: settings.language, budgetMs: 6000 });
   if (!a.placeId) {
     if (a.set || a.log || a.clear || a.sheet_set || (a.clear_fields && a.clear_fields.length)) throw new Error('placeId is required to set, log or clear');
+    // Three sets of nights: planned (a lodging in the trip), candidates (a night category but
+    // no lodging), and both together (trip.js decides both).
     const planned = new Set(model.nights.map((n) => n.placeId));
     const real = model.pool.filter((p) => !p.geometry);
-    // Three sets of nights: planned (a lodging in the trip), candidates (a night category but
-    // no lodging), and both together.
     const sets = {
       planned: real.filter((p) => planned.has(p.id)),
-      candidates: real.filter((p) => !planned.has(p.id) && isNightCategory(p.categoryName)),
+      candidates: candidateNights(model),
     };
     sets.all_nights = [...sets.planned, ...sets.candidates];
     const scope = sets[a.scope] ? a.scope : 'planned';
     const nightish = sets[scope];
     const keys = keyAmenities(settings);
-    const missingContact = (p) => !contacts.hasContact(p.info && p.info.contacts) && !(p.raw && p.raw.phone);
+    const missingContact = (p) => !contacts.hasContact(contacts.reachOf(p.info, p.raw));
     const missingAmenities = (p) => keys.filter((k) => !p.info || p.info.amenities[k] === 'unknown');
     const filter = a.filter || 'nights';
     const chosen = filter === 'all' ? real
@@ -251,7 +251,7 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
     Object.assign(raw, patchTexts);
     place.raw = raw;
     if (!a.set && !a.log && !(a.clear_fields && a.clear_fields.length)) {
-      const sh = placeSheet.sheetOf(place, { night: model.nights.some((x) => x.placeId === place.id) });
+      const sh = placeSheet.sheetOf(place, { night: isNightPlace(model, place) });
       return { saved: true, placeId: place.id, sheetFields: sheetSet.map(([f]) => f), sheet: { kind: sh.kind, fields: sh.fields, otherNotes: sh.other } };
     }
   }
@@ -268,7 +268,7 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
   if (a.log) patch.log = a.log;
   if (Object.keys(patch).length) {
     const before = await placeInfo.get(ctx, place.id);
-    const native = placeInfo.nativeContacts(place.raw, placeInfo.merge(before, { ...patch, price_amount: undefined, currency: undefined }));
+    const native = placeInfo.nativeContacts(place.raw, placeInfo.merge(before, { ...patch, price_amount: undefined, currency: undefined }), before);
     const rec = await placeInfo.set(ctx, model.tripId, place.id, patch, { place: place.raw });
     place.info = rec;
     const walk = await hikeWalk(ctx, model, place.id, settings, opts);
@@ -329,8 +329,8 @@ async function dayTool(ctx, model, a, opts) {
 async function callTool({ name, args }, ctx, { now } = {}) {
   if (!TOOL_NAMES.includes(name)) throw new Error(`unknown tool ${name}`);
   const a = withDefaults(name, args);
-  const settings = await readSettings(ctx);
-  if (a.language) settings.language = a.language;
+  const settings = await readSettings(ctx, null, { tripId: a.tripId });
+  if (a.language) settings.language = lang(a.language);
   const deadline = makeDeadline(TOOL_BUDGET_MS, now);
   const opts = { settings, deadline, network: true };
   const model = a.tripId ? await loadTrip(ctx, a.tripId, settings) : null;
@@ -351,7 +351,12 @@ async function callTool({ name, args }, ctx, { now } = {}) {
       break;
     }
     case 'vanlife_find_nights':
-      if (model && a.dayNumber) res = await findNightsForDay(ctx, model, { dayNumber: a.dayNumber, sources: a.sources }, { ...opts, radiusKm: a.radius_km });
+      if (model && a.dayNumber) {
+        res = await findNightsForDay(ctx, model, { dayNumber: a.dayNumber, sources: a.sources }, { ...opts, radiusKm: a.radius_km });
+        // In trip mode the day gives the date and both anchors: say so rather than drop them silently.
+        const ignored = ['lat', 'lng', 'morning_lat', 'morning_lng', 'date'].filter((k) => args && args[k] != null);
+        if (ignored.length) res.ignored = `${ignored.join(', ')}: not used with tripId + dayNumber (the day's own date and stops are the anchors)`;
+      }
       else if (a.lat != null && a.lng != null) {
         res = await findNights(ctx, {
           evening: { lat: a.lat, lng: a.lng }, morning: a.morning_lat != null && a.morning_lng != null ? { lat: a.morning_lat, lng: a.morning_lng } : null, date: a.date, radiusKm: a.radius_km, sources: a.sources,
@@ -373,7 +378,7 @@ async function callTool({ name, args }, ctx, { now } = {}) {
     case 'vanlife_night':
       needTrip();
       if (a.action === 'list') res = nightStatus.list(model, settings, { now: now ? now() : undefined });
-      else if (a.action === 'set') res = await nightStatus.set(ctx, model, a);
+      else if (a.action === 'set') res = await nightStatus.set(ctx, model, { ...a, language: settings.language });
       else throw new Error('action must be list or set');
       break;
     case 'vanlife_host_message':

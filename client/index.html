@@ -41,7 +41,8 @@
     .row { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .rh { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .lab { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
-    .row--watch .lab { color: var(--c); }
+    .row--watch .lab, .row--danger .lab { color: var(--c); }
+    .row--danger .val { color: var(--c); }
     .val { font-size: 14px; color: var(--text-primary); white-space: pre-line; overflow-wrap: anywhere; }
     .row a { font-size: 14px; overflow-wrap: anywhere; color: var(--accent, inherit); }
     .items { margin: 0; padding-left: 22px; font-size: 14px; color: var(--text-primary); display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
@@ -79,15 +80,15 @@
       (kids || []).forEach(function (c) { if (c) el.appendChild(c); });
       return el;
     }
-    function money(v, cur) {
-      try { return new Intl.NumberFormat(st.locale, { style: 'currency', currency: cur || 'EUR' }).format(v); } catch (e) { return v + ' ' + (cur || ''); }
-    }
-
-    var STATUS_TONE = { booked: 'success', contacted: 'warning', dropped: 'danger' };
+    // The locale of the language the strings are in (server/lib/i18n.js), for dates.
+    function loc() { return (st.data && st.data.locale) || st.locale; }
+    // A night state's tone (server/lib/design.js) → TREK's chip class.
+    var CHIP_CLASS = { success: 'trek-chip--success', warn: 'trek-chip--warning', danger: 'trek-chip--danger' };
+    function stateOf(d, status) { return (d.states || []).find(function (s) { return s.status === status; }) || null; }
     function contactLinks(d) {
-      var c = d.info.contacts || {};
-      var phone = c.phone || (d.trek && d.trek.phone);
-      var site = c.website || (d.trek && d.trek.website);
+      var c = d.reach || {};
+      var phone = c.phone;
+      var site = c.website;
       var links = [];
       if (c.email) links.push(h('a', { href: 'mailto:' + c.email, text: c.email }));
       if (phone) links.push(h('a', { href: 'tel:' + String(phone).replace(/[^+0-9]/g, ''), text: phone }));
@@ -143,7 +144,7 @@
           h('span', { class: 'fl', text: r.label }),
         ]);
       })));
-      tiles.filter(function (r) { return r.detail; }).forEach(function (r) { kids.push(h('div', { class: 'muted', text: r.label + ' : ' + r.detail })); });
+      tiles.filter(function (r) { return r.detail; }).forEach(function (r) { kids.push(h('div', { class: 'muted', text: S('ui.labelValue').replace('{label}', r.label).replace('{value}', r.detail) })); });
       if (rest.length) kids.push(h('div', { class: 'rows' }, rest.map(rowNode)));
       return h('div', { class: 'rows' }, kids);
     }
@@ -169,7 +170,11 @@
     }
     function chips(d) {
       var kids = [];
-      if (d.nightStatus && STATUS_TONE[d.nightStatus]) kids.push(h('span', { class: 'trek-chip trek-chip--' + STATUS_TONE[d.nightStatus], text: S('ui.night').replace('{status}', S('st.' + d.nightStatus)) }));
+      // The selected evening's status (the night section's), else the place's strongest.
+      var row = st.night && st.night.nights.find(function (r) { return r.dayId === st.dayId; });
+      var status = row ? row.status : d.nightStatus;
+      var state = status && stateOf(d, status);
+      if (state && CHIP_CLASS[state.tone]) kids.push(h('span', { class: 'trek-chip ' + CHIP_CLASS[state.tone], text: S('ui.night').replace('{status}', S('st.' + status)) }));
       if (d.refused) kids.push(h('span', { class: 'trek-chip trek-chip--danger', text: S('ui.vehicleRefused') }));
       return kids.length ? [h('div', { class: 'line' }, kids)] : [];
     }
@@ -187,7 +192,7 @@
         else kids.push(h('div', { class: 'muted', text: S('ui.none') }));
       }
       if (extra.length) kids.push(h('div', { class: 'muted', text: extra.join(' · ') }));
-      if (d.visitText && !hike) kids.push(h('div', { class: 'line' }, [h('span', { text: S('ui.visit') + ' : ' + d.visitText })]));
+      if (d.visitText && !hike) kids.push(h('div', { class: 'line' }, [h('span', { text: S('ui.labelValue').replace('{label}', S('ui.visit')).replace('{value}', d.visitText) })]));
       if (d.parkingText) kids.push(h('div', { class: 'line' }, [h('span', { text: d.parkingText })]));
       if (d.info.source_url && /^https?:\/\//i.test(d.info.source_url)) kids.push(h('div', { class: 'contact' }, [h('a', { href: d.info.source_url, target: '_blank', rel: 'noopener noreferrer', text: d.info.source_url.replace(/^https?:\/\/(www\.)?/i, '').split('/')[0] })]));
       if (d.access && d.access.length) kids.push(h('div', { class: 'line' }, d.access.map(function (a) { return h('span', { class: a.tone === 'warn' ? 'trek-chip trek-chip--warning' : 'trek-chip', text: a.value }); })));
@@ -196,7 +201,7 @@
       if (d.info.booking_note) bk.push(h('span', { class: 'muted', text: d.info.booking_note }));
       if (bk.length) kids.push(h('div', { class: 'contact' }, bk));
       if (d.info.visit_source && !hike) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.visit_source) }));
-      if (d.info.source) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.source) + (d.info.checked ? ' · ' + new Intl.DateTimeFormat(st.locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(d.info.checked + 'T12:00:00Z')) : '') }));
+      if (d.info.source) kids.push(h('div', { class: 'muted', text: S('ui.sourceShort').replace('{source}', d.info.source) + (d.info.checked ? ' · ' + new Intl.DateTimeFormat(loc(), { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(d.info.checked + 'T12:00:00Z')) : '') }));
       return kids;
     }
 
@@ -226,7 +231,7 @@
       var opt = function (o) { return S('opt.' + o); };
       var c = d.info.contacts || {};
       var cur = h('input', { class: 'trek-input', name: 'currency', maxlength: '3', autocapitalize: 'characters' });
-      cur.value = d.currency || 'EUR';
+      cur.value = d.currency;
       var src = h('input', { class: 'trek-input', name: 'source', maxlength: '300' });
       if (d.info.source) src.value = d.info.source;
       var chk = h('input', { class: 'trek-input', name: 'checked', type: 'date' });
@@ -253,7 +258,7 @@
           field(S('ui.bookingRequired'), select('booking_required', ['unknown', 'yes', 'no'], d.info.booking_required === true ? 'yes' : d.info.booking_required === false ? 'no' : 'unknown', function (o) { return S('opt.' + o); })),
           field(S('ui.bookingUrl'), textInput('booking_url', d.info.booking_url, 'url', { autocomplete: 'off', inputmode: 'url', maxlength: '500' })),
           field(S('ui.tollAmount'), number('toll_amount', d.info.toll_amount)),
-          field(S('ui.tollCurrency'), textInput('toll_currency', d.info.toll_currency, 'text', { maxlength: '3', autocapitalize: 'characters', placeholder: d.currency || 'EUR' })),
+          field(S('ui.tollCurrency'), textInput('toll_currency', d.info.toll_currency, 'text', { maxlength: '3', autocapitalize: 'characters', placeholder: d.currency })),
         ]),
         field(S('ui.bookingNote'), textInput('booking_note', d.info.booking_note, 'text', { maxlength: '120', placeholder: S('ui.bookingNoteHint') })),
         h('div', { class: 'grid' }, [
@@ -286,7 +291,7 @@
     // The night's state, set from here: which evening, then one of the four states.
     // "Booked" and "Cancelled" ask for their optional number or reason before saving.
     function dayLabel(r) {
-      var date = r.date ? new Intl.DateTimeFormat(st.locale, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(r.date + 'T12:00:00Z')) : null;
+      var date = r.date ? new Intl.DateTimeFormat(loc(), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(r.date + 'T12:00:00Z')) : null;
       var t = date ? S('ui.dayOption').replace('{n}', String(r.day)).replace('{date}', date) : S('ui.dayOnly').replace('{n}', String(r.day));
       if (r.nights > 1) t += ' · ' + S('ui.nightsN').replace('{n}', String(r.nights));
       if (r.planned && !r.planned.mine) t += ' — ' + r.planned.name;
@@ -413,7 +418,10 @@
       if (contacts.languages) contacts.languages = contacts.languages.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
       set.contacts = contacts;
       ['price_amount', 'dog_fee', 'max_height_m', 'max_length_m', 'max_weight_t', 'visit_min_minutes', 'visit_max_minutes', 'toll_amount'].forEach(function (k) { set[k] = set[k] === '' ? null : Number(set[k]); });
-      set.currency = String(set.currency || 'EUR').toUpperCase();
+      set.currency = String(set.currency || st.data.currency).toUpperCase();
+      // The trip's currency shown by default is not written on the place: it would stay frozen
+      // there if the trip's currency changed. Only a currency the user picked is saved.
+      if (!st.data.placeCurrency && set.currency === st.data.currency) delete set.currency;
       // An empty unit or note means "not said".
       set.per = set.per ? set.per : null;
       set.price_note = String(set.price_note || '').trim() || null;

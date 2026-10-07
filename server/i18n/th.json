@@ -389,5 +389,19 @@
   "chip.closedFrom": "ปิดตั้งแต่ {from}",
   "chip.closedUntil": "ปิดถึง {until}",
   "place_closed": "“{name}” ปิดในวันนั้น (ปิด {from}–{until}): เลือกที่อื่น",
-  "s.place_closed": "ปิดในวันนั้น"
+  "s.place_closed": "ปิดในวันนั้น",
+  "night.none": "ไม่มีการพักค้างคืนที่วางแผนไว้ในวันนี้",
+  "night.unlinked": "การจอง “{title}” ไม่ได้ผูกกับคืนใดในแผน",
+  "night.dropped_note": "ยกเลิก: {reason}",
+  "resa_unlinked": "การจอง “{title}” (วันที่ {day}) ไม่ได้ผูกกับคืนใดในแผน: TREK แสดงว่าจองแล้ว แต่ในแผนไม่มีใครพักที่นั่น — ผูกกับคืนของเย็นวันนั้น หรือยกเลิก",
+  "resa_note_stale": "การจอง “{title}” ยืนยันแล้ว แต่บันทึกยังบอกว่ารอคำตอบอยู่: อัปเดตบันทึก",
+  "resa_price": "การจอง “{title}” ราคา {booked} แต่แผนคิด {planned}: อัปเดตราคาของสถานที่",
+  "budget.fuel_line": "น้ำมัน วันที่ {day} ({km} กม.)",
+  "budget.toll_line": "ค่าผ่านทาง วันที่ {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "สูงสุด {t} ตัน",
+  "src.auto": "(อัตโนมัติ)",
+  "s.resa_unlinked": "การจองที่ไม่มีคืนในแผน",
+  "s.resa_note_stale": "ยืนยันแล้ว แต่บันทึกยังเป็น “รอ”",
+  "s.resa_price": "ราคาที่จอง ≠ แผน"
 }

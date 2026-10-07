@@ -7,8 +7,8 @@
 // reads them; it stores nothing: TREK's description and notes stay the only copy, and an edit
 // of a field rewrites its line in the notes (setField). Nothing is dropped: a line it cannot
 // classify is kept as an "other note", free text as text.
-const { norm } = require('./util');
-const { isNightCategory, isHike } = require('./classify');
+const { norm, durationText, urlsIn } = require('./util');
+const { isNightCategory } = require('./classify');
 const { t, locale } = require('./i18n');
 const design = require('./design');
 
@@ -111,13 +111,6 @@ function fieldOf(rawKey) {
   return null;
 }
 
-const URL_RE = /https?:\/\/[^\s<>"'|]+/g;
-/** URLs in a text; a closing bracket or stop at the end is the sentence's, unless opened in the URL. */
-const urlsIn = (s) => (String(s || '').match(URL_RE) || []).map((u) => {
-  let x = u.replace(/[.,;:]+$/, '');
-  while (/[)\]]$/.test(x) && (x.split(x.endsWith(')') ? '(' : '[').length <= x.split(x.endsWith(')') ? ')' : ']').length - 1)) x = x.slice(0, -1).replace(/[.,;:]+$/, '');
-  return x;
-});
 const BULLET = /^\s*(?:[•●▪◦*]|-(?=\s)|–(?=\s)|\d+[.)](?=\s))\s*/;
 const SEPARATOR = /^[-—–=_\s]*(?:suite des notes|continued|fortsetzung|continua|continuacion)?[-—–=_\s]*$/i;
 
@@ -228,7 +221,7 @@ function typed(field, value, items) {
 function kindOf(place, { night = false } = {}) {
   const cat = (place && (place.categoryName || place.category_name)) || '';
   if (night || isNightCategory(cat)) return 'night';
-  if (isHike(cat)) return 'hike';
+  if (design.isHikePlace({ name: (place && place.name) || '', categoryName: cat })) return 'hike';
   return 'activity';
 }
 
@@ -351,12 +344,6 @@ const TAIL = ['doubts', 'sources', 'checked', 'contact'];
 const FIGURE_FIELDS = new Set(['distance_km', 'ascent_m', 'descent_m', 'duration', 'level', 'route_type', 'alt_max_m', 'alt_min_m', 'altitude_m', 'price', 'services_price', 'spots']);
 
 /** "4 h 10", "51 min". */
-function durationText(min) {
-  if (min == null) return null;
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return h ? `${h} h${m ? ` ${String(m).padStart(2, '0')}` : ''}` : `${m} min`;
-}
 
 /** The short value a key figure shows ("10.9 km", "+770 m", "Medium"); its full text stays the title. */
 function figure(field, v, L) {
@@ -402,8 +389,11 @@ function row(field, v, L) {
  * field outside the kind's sections) and "other" (unclassified keys and free notes).
  * opts.trackUrl: the hike's track page (walks.hikeUrl), the reference link when known.
  */
-function view(sheet, L, { trackUrl = null } = {}) {
+function view(sheet, L, { trackUrl = null, visitMinutes = null } = {}) {
   const f = { ...sheet.fields };
+  // The time on site the plan counts (visit.js: the recorded duration first) is the one the
+  // card shows: the notes' figure would contradict the schedule and the day's load.
+  if (visitMinutes != null && (!f.duration || f.duration.minutes !== visitMinutes)) f.duration = { minutes: visitMinutes, text: durationText(visitMinutes) };
   if (trackUrl && (!f.website || f.website.fromTrek)) f.website = { url: trackUrl, text: trackUrl };
   const used = new Set();
   const sections = [];
@@ -475,5 +465,5 @@ function setField(description, notes, field, value, L = 'en') {
 module.exports = {
   FIELDS, SECTIONS, TAIL, FIELD_NAMES: Object.keys(FIELDS),
   typeOf, aliasesOf, keyForm, fieldOf, splitKey, lines, minutesOf, gradeOf, routeKindOf, dogOf, urlsIn,
-  parse, sheetOf, kindOf, view, setField, durationText, FIGURE_FIELDS,
+  parse, sheetOf, kindOf, view, setField, FIGURE_FIELDS,
 };

@@ -389,5 +389,19 @@
   "chip.closedFrom": "Suletud alates {from}",
   "chip.closedUntil": "Suletud kuni {until}",
   "place_closed": "„{name}” on sel päeval suletud (suletud {from}–{until}): vali muu koht",
-  "s.place_closed": "sel päeval suletud"
+  "s.place_closed": "sel päeval suletud",
+  "night.none": "sellel päeval pole ööbimist planeeritud",
+  "night.unlinked": "broneering „{title}“ pole seotud ühegi plaani ööga",
+  "night.dropped_note": "Loobutud: {reason}",
+  "resa_unlinked": "broneering „{title}“ (päev {day}) pole seotud ühegi plaani ööga: TREK näitab seda broneerituna, kuid plaanis seal keegi ei maga — seo see selle õhtu ööga või tühista",
+  "resa_note_stale": "broneering „{title}“ on kinnitatud, kuid märkmetes on endiselt kirjas, et see ootab vastust: uuenda märkmeid",
+  "resa_price": "broneering „{title}“ maksab {booked}, plaan arvestab {planned}: uuenda koha hinda",
+  "budget.fuel_line": "Kütus päev {day} ({km} km)",
+  "budget.toll_line": "Teemaks päev {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "max {t} t",
+  "src.auto": "(automaatne)",
+  "s.resa_unlinked": "broneering ilma ööta plaanis",
+  "s.resa_note_stale": "kinnitatud, märkmed ütlevad endiselt „ootel“",
+  "s.resa_price": "broneeritud hind ≠ plaan"
 }

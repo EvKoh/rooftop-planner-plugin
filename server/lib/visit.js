@@ -4,6 +4,8 @@
 // not a duration: a duration needs a word saying so next to it, or a "from … to …" span.
 // Nothing is guessed: no match, no duration.
 const { norm } = require('./util');
+const { isParkingCategory } = require('./classify');
+const { isHikePlace } = require('./design');
 
 // Words that make a number of hours a time on site (French, English, Italian, German).
 const CUE = /randonn|rando\b|balade|marche|promenade|boucle|aller.?retour|\ba\/r\b|sur place|visite|duree|compter|prevoir|hike|hiking|walk|trail|loop|round.?trip|return trip|on site|visit|duration|allow|takes|escursion|giro|passeggiata|andata e ritorno|durata|wanderung|rundweg|dauer|gehzeit|besuch/;
@@ -55,13 +57,27 @@ function parseVisit(text) {
 }
 
 /**
- * Minutes on site of one stop of a day: the duration recorded on the place first, then the
- * stop's own times in TREK that day, then TREK's duration field; null when none is known.
+ * Minutes on site of one stop of a day: the longer of the slot planned that day in TREK and
+ * the minimum recorded on the place (a minimum never shortens a longer planned slot, and a
+ * slot shorter than the minimum counts as the minimum); else TREK's duration field; null
+ * when none is known. The check's day load and the schedule both read it.
  */
 function stopMinutes(place, info) {
-  if (info && info.visit_min_minutes != null) return info.visit_min_minutes;
-  if (place.time != null && place.end != null && place.end > place.time) return place.end - place.time;
+  const slot = place.time != null && place.end != null && place.end > place.time ? place.end - place.time : null;
+  const min = info && info.visit_min_minutes != null ? info.visit_min_minutes : null;
+  if (slot != null || min != null) return Math.max(slot ?? 0, min ?? 0);
   return place.duration != null && place.duration > 0 ? place.duration : null;
 }
 
-module.exports = { parseVisit, stopMinutes, CUE };
+/**
+ * Minutes on site of a stop within its day, the one rule the check (day load) and the
+ * schedule share: a car park on a day with a hike is where the car waits during the hike,
+ * so its time is the hike's (0); any other stop reads stopMinutes. null when unknown.
+ */
+function dayStopMinutes(stop, info, stops) {
+  const hikeDay = stops.some((s) => isHikePlace(s.place));
+  if (hikeDay && isParkingCategory(stop.place.categoryName)) return 0;
+  return stopMinutes(stop.place, info);
+}
+
+module.exports = { parseVisit, stopMinutes, dayStopMinutes, CUE };

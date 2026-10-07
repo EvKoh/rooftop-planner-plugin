@@ -313,7 +313,7 @@ describe('hooks, route and lifecycle', () => {
     expect(trip.reservations.find((x) => x.id === 502)).toMatchObject({ status: 'confirmed', confirmation_number: 'EX-9' });
     expect(booked.body.nights[1]).toMatchObject({ status: 'booked', confirmation: 'EX-9' });
     await post('/night/set', { tripId: 1, placeId: 16, dayId: 102, status: 'dropped', reason: 'no tents' });
-    expect(trip.reservations.find((x) => x.id === 502)).toMatchObject({ status: 'cancelled', notes: 'Dropped: no tents' });
+    expect(trip.reservations.find((x) => x.id === 502)).toMatchObject({ status: 'cancelled', notes: '[vanlife] Dropped: no tents' });
     const update = vi.spyOn(h.ctx.reservations, 'update');
     const cleared = await post('/night/set', { tripId: 1, placeId: 16, dayId: 102, status: 'spotted' });
     expect(update).toHaveBeenLastCalledWith(1, 502, { accommodation_id: null });

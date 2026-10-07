@@ -389,5 +389,19 @@
   "chip.closedFrom": "{from}부터 휴업",
   "chip.closedUntil": "{until}까지 휴업",
   "place_closed": "“{name}”은(는) 그날 휴업입니다(휴업 {from}–{until}): 다른 곳을 고르세요",
-  "s.place_closed": "그날 휴업"
+  "s.place_closed": "그날 휴업",
+  "night.none": "이 날에는 계획된 숙박이 없습니다",
+  "night.unlinked": "예약 “{title}”이(가) 계획의 어떤 숙박에도 연결되어 있지 않습니다",
+  "night.dropped_note": "포기: {reason}",
+  "resa_unlinked": "예약 “{title}”({day}일차)이(가) 계획의 어떤 숙박에도 연결되어 있지 않습니다: TREK에는 예약됨으로 표시되지만 계획상 그곳에서 자는 사람이 없습니다 — 그날 밤 숙박에 연결하거나 취소하세요",
+  "resa_note_stale": "예약 “{title}”은(는) 확정되었지만 메모에는 아직 답변을 기다린다고 되어 있습니다: 메모를 업데이트하세요",
+  "resa_price": "예약 “{title}”의 가격은 {booked}인데 계획은 {planned}로 계산합니다: 장소의 가격을 업데이트하세요",
+  "budget.fuel_line": "연료 {day}일차 ({km} km)",
+  "budget.toll_line": "통행료 {day}일차 — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "최대 {t}t",
+  "src.auto": "(자동)",
+  "s.resa_unlinked": "계획에 숙박이 없는 예약",
+  "s.resa_note_stale": "확정됨, 메모는 아직 “대기 중”",
+  "s.resa_price": "예약 가격 ≠ 계획"
 }

@@ -17,8 +17,8 @@
 // one by one does not fit the short time TREK gives a planner column. The copy on the
 // place stays the reference; this one is rewritten on every save.
 // Every value may be "unknown": nothing is ever guessed.
-const { toNum, pmap } = require('./util');
-const { t, money, num, clock } = require('./i18n');
+const { toNum, pmap, durationText } = require('./util');
+const { t, money, num, clock, locale } = require('./i18n');
 const contacts = require('./contacts');
 
 const META_KEY = 'info.v1';
@@ -83,6 +83,12 @@ const INDEX_SQL = 'SELECT place_id FROM place_info_index WHERE trip_id = ?';
 const BACKFILL = 24;
 
 class InfoError extends Error {}
+
+// Source labels stored as language-neutral tokens and put in the reader's language when
+// shown (sourceText): a record filled in English reads in French for a French user.
+const SRC = { notes: '@src.notes', trek: '@src.trek', auto: '@src.auto' };
+/** A stored source text, its tokens in language L. */
+const sourceText = (s, L) => (s == null ? s : String(s).replace(/@(src\.[a-z]+)/g, (_, k) => t(L, k)));
 
 const blank = () => ({
   per: null,
@@ -417,14 +423,21 @@ function clearPatch(fields) {
 }
 
 /**
- * TREK's own website and phone fields of a place, filled from the contacts when they are
- * empty there (TREK has no e-mail field: the e-mail stays in the plugin's record).
+ * TREK's own website and phone fields of a place, kept in step with the contacts: filled
+ * when empty there, and emptied when the user erases a contact that TREK's field holds
+ * (readers fall back on TREK's field, so an erased phone would come back otherwise). TREK
+ * has no e-mail field: the e-mail stays in the plugin's record. `before` is the record as
+ * it was.
  */
-function nativeContacts(place, rec) {
+function nativeContacts(place, rec, before) {
   if (!place || !rec || !rec.contacts) return null;
   const out = {};
   if (rec.contacts.website && !place.website && !contacts.notOwnSite(rec.contacts.website)) out.website = rec.contacts.website;
   if (rec.contacts.phone && !place.phone) out.phone = rec.contacts.phone;
+  const was = (before && before.contacts) || {};
+  for (const k of ['website', 'phone']) {
+    if (rec.contacts[k] == null && was[k] && place[k] && String(place[k]) === String(was[k])) out[k] = null;
+  }
   return Object.keys(out).length ? out : null;
 }
 
@@ -444,16 +457,43 @@ function nativePrice(p) {
 }
 
 /**
- * Price of one night for the whole party, from TREK's price and the recorded details; null
- * when the unit cannot make a night price (per hour, per entry).
+ * What a stay costs the whole party, from TREK's price and the recorded details:
+ * { perNight, perStay }. Per person (or per person and night) x travellers, + the dog fee
+ * each night; a flat price ("flat": a lump sum) is paid once for the stay, so its night
+ * share is the sum divided by the nights. Both null when there is no price or the unit
+ * cannot make a night price (per hour, per entry). The one price rule of the plugin: the
+ * check, the budget, the night list, the night search and the host message all read it.
  */
-function nightTotal(price, info, settings) {
-  if (price == null) return null;
-  if (info && NOT_A_NIGHT_PRICE.includes(info.per)) return null;
+function nightCost(price, info, settings, nights = 1) {
+  const n = Math.max(1, nights || 1);
+  if (price == null) return { perNight: null, perStay: null };
+  if (info && NOT_A_NIGHT_PRICE.includes(info.per)) return { perNight: null, perStay: null };
   const people = info && PER_PERSON.includes(info.per) ? (settings.travellers || 2) : 1;
   const dog = settings.dog && info && info.amenities.dog === 'fee' && info.dog_fee != null ? info.dog_fee : 0;
-  return Math.round((price * people + dog) * 100) / 100;
+  const r2 = (x) => Math.round(x * 100) / 100;
+  if (info && info.per === 'flat') {
+    const perStay = r2(price + dog * n);
+    return { perNight: r2(perStay / n), perStay };
+  }
+  const perNight = r2(price * people + dog);
+  return { perNight, perStay: r2(perNight * n) };
 }
+
+// Units whose price reads as one night for the vehicle, like a campsite's posted charge.
+const VEHICLE_NIGHT_UNITS = [null, undefined, 'night', 'vehicle', 'day'];
+
+/**
+ * A planned night's price in the unit night candidates are quoted in (OSM `charge`,
+ * park4night: per night, for the vehicle): its TREK price + dog fee when the unit is per
+ * night; null when it is per person or a flat sum, since then the two do not compare.
+ */
+const comparableNightPrice = (night) => (night && VEHICLE_NIGHT_UNITS.includes(night.info && night.info.per) ? night.price : null);
+
+/** Price of one night for the whole party (see nightCost), or null. */
+const nightTotal = (price, info, settings) => nightCost(price, info, settings, 1).perNight;
+
+/** The currency of a place's price: its own, else the trip's, else EUR. The one fallback chain. */
+const currencyOf = (place, tripCurrency) => (place && place.currency) || tripCurrency || 'EUR';
 
 /** Does the free price note already state this amount ("5 €/h" for 5)? */
 function noteHasAmount(note, price) {
@@ -480,6 +520,24 @@ function priceText(price, currency, info, lang, { night = false } = {}) {
   return s;
 }
 
+/** "✗ élec.  ↕ 2,1 m  ↔ 6 m  3,5 t max": what a place lacks and its limits; one builder for every reader. */
+function limitsParts(info, lang) {
+  const parts = [];
+  const missing = Object.keys(AMENITIES).filter((k) => info.amenities[k] === 'no').map((k) => t(lang, `am.${k}`));
+  if (missing.length) parts.push(`✗ ${missing.join(' · ')}`);
+  if (info.max_height_m != null) parts.push(`↕ ${num(info.max_height_m, lang)} m`);
+  if (info.max_length_m != null) parts.push(`↔ ${num(info.max_length_m, lang)} m`);
+  if (info.max_weight_t != null) parts.push(t(lang, 'unit.maxWeight', { t: num(info.max_weight_t, lang) }));
+  return parts;
+}
+
+/** What the place lacks and its limits (the planner's "missing" chip), or null. */
+function lacksText(info, lang) {
+  if (!info) return null;
+  const parts = limitsParts(info, lang);
+  return parts.length ? parts.join('  ') : null;
+}
+
 /**
  * Compact amenities line, emoji-free (the host strips emoji from planner columns):
  * "✓ chien · eau · douche  ✗ élec.  ↕ 2,1 m". Unknown values are left out. null when empty.
@@ -487,30 +545,17 @@ function priceText(price, currency, info, lang, { night = false } = {}) {
 function amenitiesText(info, lang) {
   if (!info) return null;
   const yes = [];
-  const no = [];
   for (const k of Object.keys(AMENITIES)) {
     const v = info.amenities[k];
     if (v === 'yes') yes.push(t(lang, `am.${k}`));
     else if (v === 'fee') yes.push(`${t(lang, `am.${k}`)} (${t(lang, 'fee')})`);
-    else if (v === 'no') no.push(t(lang, `am.${k}`));
   }
-  const parts = [];
-  if (yes.length) parts.push(`✓ ${yes.join(' · ')}`);
-  if (no.length) parts.push(`✗ ${no.join(' · ')}`);
-  if (info.max_height_m != null) parts.push(`↕ ${num(info.max_height_m, lang)} m`);
-  if (info.max_length_m != null) parts.push(`↔ ${num(info.max_length_m, lang)} m`);
-  if (info.max_weight_t != null) parts.push(`${num(info.max_weight_t, lang)} t max`);
+  const parts = [...(yes.length ? [`✓ ${yes.join(' · ')}`] : []), ...limitsParts(info, lang)];
   return parts.length ? parts.join('  ') : null;
 }
 
-/** 210 → "3 h 30 min", 45 → "45 min", 120 → "2 h"; null for null. */
-function duration(m) {
-  if (m == null) return null;
-  const h = Math.floor(m / 60);
-  const mm = Math.round(m % 60);
-  if (!h) return `${mm} min`;
-  return mm ? `${h} h ${String(mm).padStart(2, '0')} min` : `${h} h`;
-}
+/** The visit's duration text (util.js durationText: the plugin's one format). */
+const duration = (m) => durationText(m);
 
 /** "3 h 30 min" or "2 h – 3 h 30 min" for a record's visit duration, or null. */
 function visitText(info) {
@@ -551,7 +596,7 @@ const tollCurrency = (info, fallback) => (info && info.toll_currency) || fallbac
 /** "2026-09-30" → "30/09" in the user's language (day and month only). */
 function shortDate(iso, L) {
   if (!iso) return '';
-  try { return new Intl.DateTimeFormat(L || 'en', { day: '2-digit', month: '2-digit', timeZone: 'UTC' }).format(new Date(`${iso}T12:00:00Z`)); } catch { return iso.slice(5); }
+  try { return new Intl.DateTimeFormat(locale(L), { day: '2-digit', month: '2-digit', timeZone: 'UTC' }).format(new Date(`${iso}T12:00:00Z`)); } catch { return iso.slice(5); }
 }
 
 /** Is the place closed on that day ("YYYY-MM-DD")? */
@@ -620,7 +665,7 @@ async function set(ctx, tripId, placeId, patch, { place } = {}) {
   delete rest.currency;
   const current = await get(ctx, placeId);
   const next = merge(current, rest);
-  const native = { ...(price || {}), ...(nativeContacts(place, next) || {}) };
+  const native = { ...(price || {}), ...(nativeContacts(place, next, current) || {}) };
   if (Object.keys(native).length) await ctx.places.update(Number(tripId), Number(placeId), native);
   await ctx.meta.set('place', Number(placeId), META_KEY, next);
   try {
@@ -675,4 +720,11 @@ async function getAll(ctx, tripId, placeIds) {
   return out;
 }
 
-module.exports = { closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+/** A record with its stored source tokens in language L, as a reader is shown it. */
+function localized(rec, L) {
+  if (!rec) return rec;
+  const cs = Object.fromEntries(Object.entries(rec.contact_sources || {}).map(([k, v]) => [k, sourceText(v, L)]));
+  return { ...rec, source: sourceText(rec.source, L), visit_source: sourceText(rec.visit_source, L), contact_sources: cs };
+}
+
+module.exports = { SRC, sourceText, localized, lacksText, nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

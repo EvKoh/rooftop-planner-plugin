@@ -15,7 +15,8 @@ const { t } = require('./i18n');
 const { fromOsmTags } = require('./contacts');
 const { highwayAllowed, fuelPerKm } = require('./settings');
 const { dayPlan } = require('./check');
-const { findDay } = require('./schedule');
+const { findDay } = require('./trip');
+const placeInfo = require('./place-info');
 
 const located = (p) => p && p.lat != null && p.lng != null;
 const ROUTE_TOP = 12; // candidates whose detour is measured on the road
@@ -35,7 +36,9 @@ function anchors(model, day) {
   return {
     evening: located(evening) ? { name: evening.name, lat: evening.lat, lng: evening.lng } : null,
     morning: located(morning) ? { name: morning.name, lat: morning.lat, lng: morning.lng } : null,
-    current: nuit ? { name: nuit.name, price: nuit.price, lat: nuit.lat, lng: nuit.lng, placeId: nuit.placeId } : null,
+    // `price`: the party's total for one night; `comparablePrice`: the same night in the unit
+    // candidates are quoted in (per night, for the vehicle), null when they do not compare.
+    current: nuit ? { name: nuit.name, price: nuit.price, comparablePrice: placeInfo.comparableNightPrice(nuit), currency: nuit.currency, lat: nuit.lat, lng: nuit.lng, placeId: nuit.placeId } : null,
   };
 }
 
@@ -96,6 +99,8 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
   let park4nightError = null;
   if (sources.includes('park4night') && network !== false) {
     try {
+      // No dog filter: a spot that does not list dogs is unknown, not refused (as for OSM,
+      // where only dog=no blocks); "dog accepted" is then listed to verify.
       const r = await park4night.search({ lat: center[0], lng: center[1], radius_km: radiusKm, vehicle, dog: false, limit: 30, lang: 'en' });
       p4n = r.places;
     } catch (e) {
@@ -142,6 +147,8 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     if (seen.has(key)) continue; // OSM already has it: keep one row
     seen.add(key);
     const legal = rules.nightLegality({ categoryName: KIND_CATEGORY[p.kind] || '', placeName: p.name, lat: p.lat, lng: p.lng, vehicle });
+    // The same exclusions as the OSM results: a motorhome area is no night for a rooftop tent.
+    if (p.kind === 'aire' && vehicle === 'rooftop_tent') { excluded++; continue; }
     cands.push({
       name: p.name, kind: p.kind, source: 'park4night', lat: p.lat, lng: p.lng, page: p.page,
       price: p.priceHint, priceText: null, rating: p.rating, reviews: p.reviews,
@@ -204,6 +211,24 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
   };
 }
 
+/**
+ * The cheaper night worth proposing, the one rule the check and the planner share: legal,
+ * not blocked, not closed that night, within 20 min of detour, cheaper than the current
+ * night in the same unit, and still cheaper once the detour's fuel is paid. The best net
+ * saving first; null when none.
+ */
+function cheaperNight(res, settings) {
+  const cur = res.currentNight && res.currentNight.comparablePrice;
+  if (cur == null) return null;
+  const perKm = fuelPerKm(settings);
+  const best = res.candidates
+    .filter((c) => !c.blocked.length && !c.legalRisk && c.openOnDate !== 'closed' && c.price != null && c.price < cur && c.detourMinutes != null && c.detourMinutes <= 20)
+    .map((c) => ({ candidate: c, net: Math.round((cur - c.price - Math.max(0, c.detourKm || 0) * perKm) * 100) / 100 }))
+    .filter((x) => x.net > 0)
+    .sort((a, b) => b.net - a.net)[0];
+  return best || null;
+}
+
 /** Night search for a planned trip night: anchors read from the trip. */
 async function findNightsForDay(ctx, model, ref, opts) {
   const day = findDay(model, ref);
@@ -215,11 +240,12 @@ async function findNightsForDay(ctx, model, ref, opts) {
   });
   res.day = { id: day.id, number: day.n, date: day.date };
   res.currentNight = a.current;
-  if (a.current && a.current.price != null) {
-    for (const c of res.candidates) if (c.price != null) c.savingVsCurrent = Math.round((a.current.price - c.price) * 100) / 100;
+  if (a.current && a.current.comparablePrice != null) {
+    for (const c of res.candidates) if (c.price != null) c.savingVsCurrent = Math.round((a.current.comparablePrice - c.price) * 100) / 100;
   }
+  res.cheaper = cheaperNight(res, opts.settings);
   res.sunsetNote = day.date && a.current ? `arrive by sunset - ${opts.settings.sunset_margin_min} min` : null;
   return res;
 }
 
-module.exports = { findNights, findNightsForDay, anchors, parsePrice, kindOf, overpassBody };
+module.exports = { findNights, findNightsForDay, cheaperNight, anchors, parsePrice, kindOf, overpassBody };

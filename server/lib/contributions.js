@@ -30,26 +30,21 @@ function amenityChips(rec, L) {
   return out;
 }
 
-/** "✗ dog · roof tent  ↕ 2.1 m": what the place lacks and its limits, or null. */
-function missingText(rec, L) {
-  const no = Object.keys(placeInfo.AMENITIES).filter((k) => rec.amenities[k] === 'no').map((k) => t(L, `am.${k}`));
-  const parts = [];
-  if (no.length) parts.push(`✗ ${no.join(' · ')}`);
-  if (rec.max_height_m != null) parts.push(`↕ ${num(rec.max_height_m, L)} m`);
-  if (rec.max_length_m != null) parts.push(`↔ ${num(rec.max_length_m, L)} m`);
-  if (rec.max_weight_t != null) parts.push(`${num(rec.max_weight_t, L)} t max`);
-  return parts.length ? parts.join('  ') : null;
-}
+/** "✗ dog · roof tent  ↕ 2.1 m": what the place lacks and its limits, or null (place-info.js). */
+const missingText = (rec, L) => placeInfo.lacksText(rec, L);
 
 async function placeColumns(ctx, tripId, settings) {
   const L = settings.language;
   // Places and bookings in parallel: one request each, under the columns' short time limit.
-  const [places, resas, accs, cats] = await Promise.all([
+  const [places, resas, accs, cats, trip] = await Promise.all([
     ctx.trips.getPlaces(Number(tripId)),
     ctx.trips.getReservations(Number(tripId)).catch(() => []),
     ctx.trips.getAccommodations(Number(tripId)).catch(() => []),
     ctx.categories.list().catch(() => []),
+    ctx.trips.getById(Number(tripId)).catch(() => null),
   ]);
+  // The place's currency, else the trip's (place-info.js currencyOf), as every other reader.
+  const currencyOf = (p) => placeInfo.currencyOf(p, trip && trip.currency);
   const status = nightStatus.statusByPlace(resas);
   // A night place (a lodging in the trip, or a night category) reads "/night" when no unit is
   // recorded; any other place (lake, museum, car park) shows the amount alone.
@@ -65,12 +60,12 @@ async function placeColumns(ctx, tripId, settings) {
     // First, so the host's cap of 20 columns per place never drops it.
     const st = status.get(p.id);
     if (NIGHT_STATUS[st]) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-night', label: t(L, 'col.night'), value: t(L, `st.chip.${st}`), ...NIGHT_STATUS[st] });
-    const price = placeInfo.priceText(p.price == null ? null : +p.price, p.currency || 'EUR', rec, L, { night: isNight(p) });
+    const price = placeInfo.priceText(p.price == null ? null : +p.price, currencyOf(p), rec, L, { night: isNight(p) });
     // A free stop (lunch break, viewpoint) is not a night: no "0,00 €/night" on it.
     if (price && !(+p.price === 0 && !rec)) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-price', label: t(L, 'col.price'), value: price.slice(0, 256), ...CHIP.price });
     if (!rec) continue;
     // Timed access, booking, toll: one small chip each, only when recorded.
-    for (const c of placeInfo.accessChips(rec, L, p.currency || 'EUR')) {
+    for (const c of placeInfo.accessChips(rec, L, currencyOf(p))) {
       out.push({ kind: 'column', entityId: p.id, id: `vanlife-${c.key}`, label: c.label, value: c.value.slice(0, 256), icon: c.icon, tone: c.tone });
     }
     // Time on site of a visit: "3 h 30 min" (the host strips emoji: a lucide icon instead).

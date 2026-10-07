@@ -20,8 +20,6 @@ const park4night = require('./park4night');
 const placeInfo = require('./place-info');
 const contacts = require('./contacts');
 const { distKm } = require('./util');
-const i18n = require('./i18n');
-const { t } = i18n;
 const { parseVisit } = require('./visit');
 
 const OSM_RADIUS_M = 150;
@@ -129,13 +127,13 @@ function incomplete(r) {
  * Contacts a place states itself: TREK's own website and phone fields, and what its notes
  * or description quote. → [{ values: {email, phone, website}, source }], best first.
  */
-function ownContacts(place, L) {
+function ownContacts(place) {
   const out = [];
   const trek = contacts.fromOsmTags({ website: place.website && !contacts.notOwnSite(place.website) ? place.website : null, phone: place.phone });
-  if (trek.website || trek.phone) out.push({ values: trek, source: t(L, 'src.trek') });
+  if (trek.website || trek.phone) out.push({ values: trek, source: placeInfo.SRC.trek });
   const x = contacts.extract(`${place.notes || ''}\n${place.description || ''}`);
   const fromText = { email: x.emails[0] || null, phone: x.phones[0] || null, website: x.urls[0] || null };
-  if (fromText.email || fromText.phone || fromText.website) out.push({ values: fromText, source: t(L, 'src.notes') });
+  if (fromText.email || fromText.phone || fromText.website) out.push({ values: fromText, source: placeInfo.SRC.notes });
   return out;
 }
 
@@ -205,7 +203,7 @@ async function fill(ctx, tripId, opts = {}) {
     const found = {};
     const sources = [];
     // Contact candidates, best first: the place itself, OSM, park4night.
-    const contactFrom = ownContacts(place, opts.language);
+    const contactFrom = ownContacts(place);
     const camp = nearest(place, osm, OSM_RADIUS_M);
     if (camp) {
       for (const [k, v] of Object.entries(fromOsm(camp.tags))) if (v) found[k] = v;
@@ -251,13 +249,21 @@ async function fill(ctx, tripId, opts = {}) {
     // Time on site, from what the place's own notes or description say; never over a typed one.
     const visit = (!current || current.visit_min_minutes == null) ? parseVisit(`${place.notes || ''}\n${place.description || ''}`) : null;
     if (visit) {
-      Object.assign(patch, { visit_min_minutes: visit.min, visit_max_minutes: visit.max, visit_source: `${i18n.t(opts.language, 'src.notes')}: "${visit.quote}"` });
+      Object.assign(patch, { visit_min_minutes: visit.min, visit_max_minutes: visit.max, visit_source: `${placeInfo.SRC.notes}: "${visit.quote}"` });
       res.visits++;
     }
     if (!amenitiesFound && !visit && !Object.keys(cpatch).length) { res.nothing++; continue; }
     if (Object.keys(cpatch).length) { patch.contacts = cpatch; patch.contact_sources = csources; res.contacts++; }
-    if (amenitiesFound && (!current || !current.source)) patch.source = `${sources.join(' · ')} (auto)`.slice(0, 300);
-    if (amenitiesFound && (!current || !current.checked)) patch.checked = new Date().toISOString().slice(0, 10);
+    // The sources say where every amenity came from: a new one is added to those already
+    // named. The check date is this fill's when the record was filled automatically; a date
+    // the user gave (a host's answer) is theirs and stays.
+    if (amenitiesFound) {
+      const named = (current && current.source) || '';
+      const added = sources.filter((x) => !named.includes(x));
+      if (!named) patch.source = `${sources.join(' · ')} ${placeInfo.SRC.auto}`.slice(0, 300);
+      else if (added.length) patch.source = `${named} · ${added.join(' · ')}`.slice(0, 300);
+      if (!current || !current.checked || !named || named.includes(placeInfo.SRC.auto)) patch.checked = new Date().toISOString().slice(0, 10);
+    }
     await placeInfo.set(ctx, tripId, place.id, patch, { place });
     res.filled++;
   }

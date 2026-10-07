@@ -4,6 +4,8 @@
 // Nothing here sends anything: the plugin never writes to a host, it records what the
 // user declares and drafts messages for the user to send.
 
+const { urlsIn } = require('./util');
+
 const CHANNELS = ['email', 'phone', 'whatsapp', 'website_form'];
 const LOG_CHANNELS = ['email', 'phone', 'whatsapp', 'website_form', 'sms', 'in_person', 'other'];
 const DIRECTIONS = ['sent', 'received'];
@@ -142,8 +144,9 @@ function extract(txt) {
   for (const m of s.matchAll(/(?:\+|\b00)\d{1,3}[\d .\-/()]{5,17}\d/g)) push(m[0]);
   for (const m of s.matchAll(/(?:t[ée]l(?:[ée]phone)?|phone|tel\.|telefono|telefon|cell|mobile|handy|whatsapp)\s*[:.]?\s*([+0-9][0-9 .\-/()]{5,18}\d)/gi)) push(m[1]);
   const urls = [];
-  for (const m of s.matchAll(/\bhttps?:\/\/[^\s<>"')]+|\bwww\.[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s<>"')]*/gi)) {
-    const u = m[0].replace(/[.,;:!?]+$/, '');
+  // http(s) addresses through the shared extractor; a bare "www." address completed after.
+  const bare = [...s.matchAll(/(?<![/\w.])www\.[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s<>"')]*/gi)].map((m) => m[0].replace(/[.,;:!?]+$/, ''));
+  for (const u of [...urlsIn(s), ...bare]) {
     if (notOwnSite(u)) continue;
     try { const w = website(u); if (!urls.includes(w)) urls.push(w); } catch { /* not a web address */ }
   }
@@ -175,9 +178,21 @@ function channels(c) {
   return all;
 }
 
-const hasContact = (c) => !!(c && (c.email || c.phone || c.whatsapp));
+/**
+ * The host's ways in, as every reader shows and uses them: the plugin's record first, then
+ * TREK's own phone and website fields (a platform page is never the host's site). The one
+ * merge of the two sources: the widget, the night list, the check and the host message.
+ */
+function reachOf(info, raw) {
+  const c = { ...blankContacts(), ...((info && info.contacts) || {}) };
+  const site = c.website || (raw && raw.website) || null;
+  return { ...c, phone: c.phone || (raw && raw.phone) || null, website: site && !notOwnSite(site) ? site : null };
+}
+
+/** Can the host be asked anything: an e-mail, a phone, WhatsApp or its own website (a contact form)? */
+const hasContact = (c) => !!(c && (c.email || c.phone || c.whatsapp || (c.website && !notOwnSite(c.website))));
 
 module.exports = {
-  CHANNELS, LOG_CHANNELS, DIRECTIONS, LOG_MAX, FIELDS, ContactError, NOT_OWN_SITE, notOwnSite,
-  blankContacts, email, phone, website, field, patchContacts, logEntry, addLog, extract, fromOsmTags, channels, hasContact,
+  CHANNELS, LOG_CHANNELS, DIRECTIONS, LOG_MAX, FIELDS, ContactError, notOwnSite,
+  blankContacts, email, phone, website, field, patchContacts, logEntry, addLog, extract, fromOsmTags, channels, hasContact, reachOf,
 };

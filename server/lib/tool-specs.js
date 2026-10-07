@@ -9,7 +9,8 @@
 // place edits, assignments and trip summaries are core tools (create_budget_item,
 // update_place, update_assignment_time, get_trip_summary...); these tools return the core
 // calls to make instead of re-implementing them.
-const { KINDS } = require('./design');
+const { KINDS, NIGHT_STATUSES } = require('./design');
+const { CODES: LANGUAGES } = require('./i18n');
 const SAFETY = 'Never book, pay or send a message to a host for the user: show them the exact text first and act only on their explicit validation.';
 const TRIP = { type: 'integer', minimum: 1, description: 'TREK trip id (list_trips gives it).' };
 const DAY = { type: 'integer', minimum: 1, maximum: 400, description: 'Day number in the trip (1 = first day).' };
@@ -50,7 +51,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_check_trip',
     title: 'Check a vanlife trip for problems',
-    description: `Read-only check of a trip, by day for the user's vehicle. Levels: blocking (arrival after sunset minus margin; stop outside its hours; arrival after a place's access_before; check-in window or minimum stay missed; a night the vehicle may not use: motorhome area or car park for a rooftop tent, tent or dog refused, size limit; booking confirmed with no number), fix (impossible times, overlaps, arrival before access_after or in closed hours; route place missing/not first/not joined; long shopping detour; dry nights in a row; stale lines; overloaded day; over one big or two small activities a day), verify (booking required, none recorded, with link; no host contact or host silent 3 days; farm zone; van night off-site; closure in the notes; after sunset; price above the ceiling or unknown; visit duration unknown; cheaper legal night within 20 min; back to the same camp against the next day's route), info (sunset margins). Fix what is certain; ask the user about choices. Never book, pay or message a host for them.`,
+    description: `Read-only check of a trip, by day, for the user's vehicle. blocking: arrival after sunset minus margin or unknown, stop outside its hours, access closed, place closed, check-in window or minimum stay missed, night the vehicle may not use (aire for a rooftop tent, tent/dog refused, size). fix: impossible times, overlaps, route place, shopping detour, dry nights, overloaded day, hike walk not from one car park; bookings tied to no night, cancelled night still planned, booked price unlike the plan, "waiting" notes on a confirmed booking; stale budget lines or to-dos, lodging budget unlike the nights' total. verify: booking required, none recorded; confirmed with no number; no way to reach the host or host silent 3 days; private/wild/unknown ground; closure in the notes; after sunset; price over the ceiling or unknown; visit duration unknown; cheaper legal night; backtracking to camp. info: margins, price over target, farm zone. Fix what is certain; ask about choices. Never book, pay or message a host.`,
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -58,7 +59,7 @@ const TOOL_SPECS = [
       properties: {
         tripId: TRIP,
         levels: { type: 'array', uniqueItems: true, items: { type: 'string', enum: ['blocking', 'fix', 'verify', 'info'] }, description: 'Levels to return (default all).' },
-        language: { type: 'string', enum: ['en', 'fr'], description: 'Message language (default: the user setting).' },
+        language: { type: 'string', enum: LANGUAGES, description: 'Message language, TREK code (default: the user setting).' },
         sun: { type: 'boolean', default: false, description: 'Also return sunrise, sunset and latest arrival for each night.' },
       },
     },
@@ -100,7 +101,7 @@ const TOOL_SPECS = [
         dayNumbers: { type: 'array', maxItems: 60, uniqueItems: true, items: DAY, description: 'routes: days to route (default all).' },
         apply: { type: 'boolean', default: false, description: 'routes: false = propose only (default); true = write the route places.' },
         startAt: { type: 'integer', minimum: 0, maximum: 400, default: 0, description: 'routes: resume index from a previous continuation.' },
-        departure: { ...HHMM, description: 'schedule: departure from last night\'s place (default: keep the current plan, else 09:00).' },
+        departure: { ...HHMM, description: 'schedule: departure from last night\'s place (default: keep the current plan, else the day_start setting).' },
         stays: {
           type: 'array',
           maxItems: 40,
@@ -181,7 +182,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_night',
     title: 'Status of each night: spotted, contacted, booked, dropped',
-    description: `Where each night of the trip stands, kept in TREK's own bookings. Statuses: spotted (a place with no booking), contacted (booking "pending": the host was asked), booked (booking "confirmed", with its confirmation number when there is one), dropped (booking "cancelled", with a short reason). action "list": one line per night (day, place, status, contact, last exchange, price, days waiting for an answer). action "set": placeId + dayNumber (the evening) + status: creates or updates the hotel booking tied to that place and day (and plans the night if the day has none). Use it after the user says they asked, booked or gave up a place. This only records what the user declares: it never books, pays or contacts anyone; never set "booked" unless the user says the host confirmed.`,
+    description: `Where each night of the trip stands, kept in TREK's own bookings. Statuses: spotted (a place with no booking), contacted (booking "pending": the host was asked), booked (booking "confirmed", with its confirmation number when there is one), dropped (booking "cancelled", with a short reason). action "list": one line per evening (status, contact, last exchange, party price per night and per stay, days waiting); later evenings of a stay carry "continues", so counts are nights; "unlinked" = a booking tied to no night of the plan. action "set": placeId + dayNumber (or date) + status: creates or updates the hotel booking of that place and evening; an evening with no stay gets one (nights, default 1), and an unlinked booking of the place is tied to it. "notes" replaces the free notes. Use it after the user says they asked, booked or gave up a place. This only records what the user declares: it never books, pays or contacts anyone; never set "booked" unless the user says the host confirmed.`,
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -192,7 +193,8 @@ const TOOL_SPECS = [
         placeId: { type: 'integer', minimum: 1, description: 'set: the place of the night.' },
         dayNumber: { ...DAY, description: 'set: the day whose evening the night starts.' },
         dayId: { type: 'integer', minimum: 1, description: 'set: TREK day id, instead of dayNumber.' },
-        status: { type: 'string', enum: ['spotted', 'contacted', 'booked', 'dropped'], description: 'set: the new status.' },
+        date: { type: 'string', format: 'date', description: 'set: the date of that evening, instead of dayNumber.' },
+        status: { type: 'string', enum: NIGHT_STATUSES, description: 'set: the new status.' },
         kind: { type: 'string', maxLength: 32, description: 'set: also give the place its kind in plain words (e.g. "farm" for an agricamping, "campsite", "aire", "hotel", "wild"; the full list is in vanlife_place): the plugin moves it to the trip category for that kind, so its pictogram and colour follow. "A farm we booked" = kind farm + status booked.' },
         confirmation: { type: 'string', maxLength: 100, description: 'set booked: the host\'s confirmation number or reference.' },
         reason: { type: 'string', maxLength: 200, description: 'set dropped: why, in a few words (full, no tents, too expensive...).' },
@@ -217,7 +219,7 @@ const TOOL_SPECS = [
         nights: { type: 'integer', minimum: 1, maximum: 30, description: 'Number of nights (default: the planned ones, else 1).' },
         arrival: { ...HHMM, description: 'Estimated arrival (default: the planned time of the night in the day).' },
         extra_questions: { type: 'array', maxItems: 5, items: { type: 'string', maxLength: 200 }, description: 'Further questions, in English.' },
-        language_extra: { type: 'string', enum: ['ar', 'az', 'br', 'ca', 'cs', 'de', 'en', 'es', 'et', 'fr', 'gr', 'hu', 'id', 'it', 'ja', 'ko', 'nl', 'pl', 'ru', 'sk', 'sv', 'th', 'tr', 'uk', 'vi', 'zh', 'zh-TW'], description: 'Add the host\'s language after the user\'s (TREK language code).' },
+        language_extra: { type: 'string', enum: LANGUAGES, description: 'Add the host\'s language after the user\'s (TREK language code).' },
         signature: { type: 'string', maxLength: 80, description: 'Name to sign with, if the user gives one.' },
       },
     },

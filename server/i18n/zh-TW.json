@@ -389,5 +389,19 @@
   "chip.closedFrom": "{from}起停業",
   "chip.closedUntil": "停業至{until}",
   "place_closed": "「{name}」當天停業（停業 {from}–{until}）：請另選地點",
-  "s.place_closed": "當天停業"
+  "s.place_closed": "當天停業",
+  "night.none": "這一天沒有安排過夜",
+  "night.unlinked": "預訂「{title}」未連結到計畫中的任何一晚",
+  "night.dropped_note": "已放棄：{reason}",
+  "resa_unlinked": "預訂「{title}」（第 {day} 天）未連結到計畫中的任何一晚：TREK 顯示已預訂，但計畫中沒有人在那裡過夜——請將其連結到當晚的住宿，或取消",
+  "resa_note_stale": "預訂「{title}」已確認，但備註仍寫著在等待回覆：請更新備註",
+  "resa_price": "預訂「{title}」的價格是 {booked}，計畫按 {planned} 計算：請更新地點的價格",
+  "budget.fuel_line": "燃油 第 {day} 天（{km} 公里）",
+  "budget.toll_line": "通行費 第 {day} 天 — {name}",
+  "ui.labelValue": "{label}：{value}",
+  "unit.maxWeight": "最大 {t} 噸",
+  "src.auto": "（自動）",
+  "s.resa_unlinked": "計畫中無對應過夜的預訂",
+  "s.resa_note_stale": "已確認，備註仍為「等待中」",
+  "s.resa_price": "預訂價格 ≠ 計畫"
 }

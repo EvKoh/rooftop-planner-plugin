@@ -389,5 +389,19 @@
   "chip.closedFrom": "Fechado a partir de {from}",
   "chip.closedUntil": "Fechado até {until}",
   "place_closed": "“{name}” está fechado nesse dia (fechado de {from} a {until}): escolha outro lugar",
-  "s.place_closed": "fechado nesse dia"
+  "s.place_closed": "fechado nesse dia",
+  "night.none": "nenhuma noite planejada neste dia",
+  "night.unlinked": "a reserva “{title}” não está ligada a nenhuma noite do plano",
+  "night.dropped_note": "Descartada: {reason}",
+  "resa_unlinked": "a reserva “{title}” (dia {day}) não está ligada a nenhuma noite do plano: o TREK a mostra como reservada, mas ninguém dorme lá no plano — ligue-a à noite daquele dia ou cancele-a",
+  "resa_note_stale": "a reserva “{title}” está confirmada, mas as notas ainda dizem que aguarda resposta: atualize as notas",
+  "resa_price": "a reserva “{title}” custa {booked}, o plano conta {planned}: atualize o preço do local",
+  "budget.fuel_line": "Combustível dia {day} ({km} km)",
+  "budget.toll_line": "Pedágio dia {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "{t} t máx.",
+  "src.auto": "(automático)",
+  "s.resa_unlinked": "reserva sem noite no plano",
+  "s.resa_note_stale": "confirmada, notas ainda “aguardando”",
+  "s.resa_price": "preço reservado ≠ plano"
 }

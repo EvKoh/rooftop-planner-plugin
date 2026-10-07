@@ -66,7 +66,9 @@ describe('contact fields', () => {
     expect(c.channels(all).map((x) => x.channel)).toEqual(['email', 'whatsapp', 'phone', 'website_form']);
     expect(c.channels({ ...all, preferred_channel: 'phone' })[0]).toEqual({ channel: 'phone', address: '+390000000001' });
     expect(c.channels(null)).toEqual([]);
-    expect(c.hasContact({ website: 'https://example.com' })).toBe(false);
+    // An own website is a way in (a contact form), as the host message uses it; a platform page is not.
+    expect(c.hasContact({ website: 'https://example.com' })).toBe(true);
+    expect(c.hasContact({ website: 'https://park4night.com/fr/place/1' })).toBe(false);
     expect(c.hasContact({ whatsapp: '+390000000002' })).toBe(true);
   });
 
@@ -198,7 +200,8 @@ describe('contacts filled from the place itself and open sources', () => {
     expect(r.contacts).toBe(2);
     const rec = await pi.get(h.ctx, 13);
     expect(rec.contacts).toMatchObject({ email: 'booking@camping.example.com', phone: '+390009999999', website: 'https://camp.example.com' });
-    expect(rec.contact_sources).toEqual({ email: 'notes du lieu', website: 'OpenStreetMap https://www.openstreetmap.org/node/70' });
+    expect(rec.contact_sources).toEqual({ email: '@src.notes', website: 'OpenStreetMap https://www.openstreetmap.org/node/70' });
+    expect(pi.localized(rec, 'fr').contact_sources.email).toBe('notes du lieu');
     expect(camping.website).toBe('https://camp.example.com'); // copied into TREK's empty field
     const aire = await pi.get(h.ctx, 16);
     expect(aire.contacts.phone).toBe('+390007777777');
@@ -213,7 +216,8 @@ describe('contacts filled from the place itself and open sources', () => {
     const h = makeHost({ trip });
     await fillLib.fill(h.ctx, 1, { park4night: false, language: 'en', placeIds: [14] });
     const rec = await pi.get(h.ctx, 14);
-    expect(rec.contact_sources).toEqual({ website: 'TREK place fields', phone: 'TREK place fields' });
+    expect(rec.contact_sources).toEqual({ website: '@src.trek', phone: '@src.trek' });
+    expect(pi.localized(rec, 'en').contact_sources.phone).toBe('TREK place fields');
     expect(fillLib.incomplete(rec)).toBe(true); // no e-mail yet
     const full = pi.merge(null, { ...Object.fromEntries(Object.keys(pi.AMENITIES).map((k) => [k, 'no'])), contacts: { email: 'a@example.com', phone: '+390000000001', website: 'https://example.com' } });
     expect(fillLib.incomplete(full)).toBe(false);
@@ -309,8 +313,12 @@ describe('vanlife_night', () => {
     expect(booked.warnings).toBeUndefined();
     expect(trip.reservations[0]).toMatchObject({ status: 'confirmed', confirmation_number: 'EX-123' });
     const dropped = await call(h, 'vanlife_night', { tripId: 1, action: 'set', placeId: 16, dayNumber: 2, status: 'dropped', reason: 'no tents' });
-    expect(trip.reservations[1]).toMatchObject({ status: 'cancelled', notes: 'Dropped: no tents' });
+    expect(trip.reservations[1]).toMatchObject({ status: 'cancelled', notes: '[vanlife] Dropped: no tents' });
     expect(dropped.trekStatus).toBe('cancelled');
+    // Back to "contacted": the plugin's own "dropped" line goes, the user's notes stay.
+    trip.reservations[1].notes = 'Called the owner\n[vanlife] Dropped: no tents';
+    await call(h, 'vanlife_night', { tripId: 1, action: 'set', placeId: 16, dayNumber: 2, status: 'contacted' });
+    expect(trip.reservations[1]).toMatchObject({ status: 'pending', notes: 'Called the owner' });
     const h2 = makeHost();
     const noNumber = await call(h2, 'vanlife_night', { tripId: 1, action: 'set', placeId: 16, dayNumber: 2, status: 'booked' });
     expect(noNumber.warnings[0]).toMatch(/No confirmation number/);
@@ -536,7 +544,7 @@ describe('vanlife_day, columns, widget and catalogues', () => {
     const drv = h.run(plugin);
     const post = (path, body) => drv.route({ method: 'POST', path }, { body });
     const d = JSON.parse((await post('/amenities', { tripId: 1, placeId: 16, locale: 'fr' })).body);
-    expect(d).toMatchObject({ nightStatus: 'contacted', trek: { phone: '+39 000 000 0016', website: null }, channels: ['email', 'phone', 'whatsapp', 'website_form'] });
+    expect(d).toMatchObject({ nightStatus: 'contacted', reach: { phone: '+39 000 000 0016', website: null }, channels: ['email', 'phone', 'whatsapp', 'website_form'] });
     expect(d.info.contacts).toEqual(c.blankContacts());
     expect(d.strings).toMatchObject({ 'ui.contacts': "Contact de l'hôte", 'st.contacted': 'En discussion', 'ch.whatsapp': 'WhatsApp' });
     const bad = await post('/amenities/save', { tripId: 1, placeId: 16, set: { contacts: { email: 'nope' } } });
@@ -553,7 +561,7 @@ describe('vanlife_day, columns, widget and catalogues', () => {
   it('has every new string in all 27 languages, translated', () => {
     const fresh = Object.keys(MESSAGES.en).filter((k) => /^(st\.|ch\.|src\.)/.test(k) || ['night_no_contact', 's.night_no_contact', 'contact_stale', 's.contact_stale', 'col.night',
       'ui.contacts', 'ui.email', 'ui.phone', 'ui.whatsapp', 'ui.website', 'ui.contactName', 'ui.languages', 'ui.preferredChannel', 'ui.contactNotes', 'ui.noContact', 'ui.night', 'ui.lastExchange', 'ui.noPreference'].includes(k));
-    expect(fresh).toHaveLength(31);
+    expect(fresh).toHaveLength(32);
     expect(CODES).toHaveLength(27);
     for (const code of CODES) {
       for (const k of fresh) expect(MESSAGES[code][k], `${code} ${k}`).toBeTruthy();

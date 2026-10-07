@@ -17,8 +17,9 @@
 // computes what is missing only while its 5 s budget allows; the place tool fills it.
 
 const { activityKind, WALK_LINE, TONE } = require('./design');
-const { distKm, roundPt, pmap } = require('./util');
+const { distKm, roundPt, pmap, durationText, urlsIn, shortName } = require('./util');
 const { parkingFromNotes, isTrace } = require('./classify');
+const { stayOn, stayBefore } = require('./trip');
 const routing = require('./routing');
 const cache = require('./cache');
 const { t, num } = require('./i18n');
@@ -34,14 +35,20 @@ const MAX_WALKS = 60;
 
 const pt = (p) => [p.lat, p.lng];
 
-/** Located, non-night, non-route stops of the plan: { place, day, i, kind }. */
+/**
+ * Located stops of the plan that are neither a route place nor that day's night (its
+ * stay's own stop, the rule the schedule and the check use): { place, day, i, kind }. A
+ * car park slept in on day 5 is still a hike's car park on day 2.
+ */
 function plannedStops(model) {
-  const nightIds = new Set(model.nights.map((n) => n.placeId));
   const out = [];
   for (const d of model.days) {
+    const tonight = stayOn(model, d);
+    const before = stayBefore(model, d);
     d.assignments.forEach((a, i) => {
       const p = a.place;
-      if (p.lat == null || p.lng == null || nightIds.has(p.id) || isTrace(p.categoryName, p)) return;
+      const isNight = (tonight && a.accommodationId === tonight.id) || (before && a.accommodationId === before.id);
+      if (p.lat == null || p.lng == null || isNight || isTrace(p.categoryName, p)) return;
       out.push({ place: p, day: d, i, kind: activityKind(p) });
     });
   }
@@ -243,16 +250,10 @@ function walkMinutes(geo) {
   return Math.round((Math.max(flat, vert) + Math.min(flat, vert) / 2) * 60);
 }
 
-const hmText = (min) => {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return h ? `${h} h${m ? ` ${String(m).padStart(2, '0')}` : ''}` : `${m} min`;
-};
-
 /** "4.4 km · 1 h 20 on foot · +410 m", or null without a computed route. */
 function statsText(geo, L, { climb: withClimb = true } = {}) {
   if (!geo) return null;
-  const s = t(L, 'walk.stats', { km: num(geo.km, L, 1), time: hmText(walkMinutes(geo)) });
+  const s = t(L, 'walk.stats', { km: num(geo.km, L, 1), time: durationText(walkMinutes(geo)) });
   return withClimb && geo.up != null ? `${s} · +${geo.up} m` : s;
 }
 
@@ -268,19 +269,12 @@ function hikeUrl(place, info) {
   if (info && info.hike_url) return info.hike_url;
   const raw = (place && place.raw) || {};
   const text = [raw.website, place && place.description, place && place.notes, raw.description, raw.notes].filter(Boolean).join('\n');
-  const urls = (text.match(/https?:\/\/[^\s<>"')\]]+/g) || []).map((u) => u.replace(/[.,;:]+$/, ''));
+  const urls = urlsIn(text);
   for (const host of TRACK_HOSTS) {
     const hit = urls.find((u) => { try { return host.test(new URL(u).hostname); } catch { return false; } });
     if (hit) return hit;
   }
   return null;
-}
-
-/** The first part of a place name that says something (not a 1-word prefix), at most `max` characters. */
-function shortName(name, max) {
-  const parts = String(name || '').split(/\s+[—–-]\s+|\s+→\s+/).map((x) => x.trim()).filter(Boolean);
-  const s = parts.find((x) => x.length > 6) || parts[0] || '';
-  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
 }
 
 /** The map layer: one dotted polyline per walk (the straight line until the route is computed). */

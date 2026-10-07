@@ -389,5 +389,19 @@
   "chip.closedFrom": "{from} tarixindən bağlıdır",
   "chip.closedUntil": "{until} tarixinədək bağlıdır",
   "place_closed": "“{name}” o gün bağlıdır ({from}–{until} bağlıdır): başqa yer seçin",
-  "s.place_closed": "o gün bağlıdır"
+  "s.place_closed": "o gün bağlıdır",
+  "night.none": "bu gün üçün planlaşdırılmış gecələmə yoxdur",
+  "night.unlinked": "“{title}” rezervasiyası planın heç bir gecəsinə bağlı deyil",
+  "night.dropped_note": "İmtina edildi: {reason}",
+  "resa_unlinked": "“{title}” rezervasiyası ({day}-ci gün) planın heç bir gecəsinə bağlı deyil: TREK onu rezerv edilmiş göstərir, amma planda orada heç kim gecələmir — onu həmin axşamın gecəsinə bağlayın və ya ləğv edin",
+  "resa_note_stale": "“{title}” rezervasiyası təsdiqlənib, amma qeydlərində hələ də cavab gözlədiyi yazılıb: qeydləri yeniləyin",
+  "resa_price": "“{title}” rezervasiyasının qiyməti {booked}, plan {planned} hesablayır: yerin qiymətini yeniləyin",
+  "budget.fuel_line": "Yanacaq {day}-ci gün ({km} km)",
+  "budget.toll_line": "Yol haqqı {day}-ci gün — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "maks. {t} t",
+  "src.auto": "(avtomatik)",
+  "s.resa_unlinked": "planda gecəsi olmayan rezervasiya",
+  "s.resa_note_stale": "təsdiqlənib, qeydlər hələ “gözləyir”",
+  "s.resa_price": "rezervasiya qiyməti ≠ plan"
 }

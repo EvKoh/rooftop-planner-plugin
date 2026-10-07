@@ -389,5 +389,19 @@
   "chip.closedFrom": "مغلق ابتداءً من {from}",
   "chip.closedUntil": "مغلق حتى {until}",
   "place_closed": "«{name}» مغلق في ذلك اليوم (مغلق {from}–{until}): اختر مكانًا آخر",
-  "s.place_closed": "مغلق في ذلك اليوم"
+  "s.place_closed": "مغلق في ذلك اليوم",
+  "night.none": "لا توجد ليلة مخططة في هذا اليوم",
+  "night.unlinked": "الحجز «{title}» غير مرتبط بأي ليلة في الخطة",
+  "night.dropped_note": "أُلغيت: {reason}",
+  "resa_unlinked": "الحجز «{title}» (اليوم {day}) غير مرتبط بأي ليلة في الخطة: يعرضه TREK محجوزًا، لكن لا أحد ينام هناك في الخطة — اربطه بليلة ذلك المساء أو ألغه",
+  "resa_note_stale": "الحجز «{title}» مؤكد لكن ملاحظاته لا تزال تقول إنه ينتظر ردًا: حدّث الملاحظات",
+  "resa_price": "سعر الحجز «{title}» هو {booked}، والخطة تحتسب {planned}: حدّث سعر المكان",
+  "budget.fuel_line": "وقود اليوم {day} ({km} كم)",
+  "budget.toll_line": "رسوم الطريق اليوم {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "{t} طن كحد أقصى",
+  "src.auto": "(تلقائي)",
+  "s.resa_unlinked": "حجز بلا ليلة في الخطة",
+  "s.resa_note_stale": "مؤكد، والملاحظات لا تزال «بانتظار»",
+  "s.resa_price": "سعر الحجز ≠ الخطة"
 }
