@@ -253,7 +253,7 @@ function walkMinutes(geo) {
 /** "4.4 km · 1 h 20 on foot · +410 m", or null without a computed route. */
 function statsText(geo, L, { climb: withClimb = true } = {}) {
   if (!geo) return null;
-  const s = t(L, 'walk.stats', { km: num(geo.km, L, 1), time: durationText(walkMinutes(geo)) });
+  const s = t(L, 'walk.stats', { km: num(geo.km, L, 1), time: durationText(walkMinutes(geo), L) });
   return withClimb && geo.up != null ? `${s} · +${geo.up} m` : s;
 }
 

@@ -77,7 +77,7 @@ async function placeColumns(ctx, tripId, settings) {
       out.push({ kind: 'column', entityId: p.id, id: `vanlife-${c.key}`, label: c.label, value: c.value.slice(0, 256), icon: c.icon, tone: c.tone });
     }
     // Time on site of a visit: "3 h 30" (the host strips emoji: a lucide icon instead).
-    const visit = placeInfo.visitText(rec);
+    const visit = placeInfo.visitText(rec, L);
     const parking = placeInfo.parkingText(rec, L);
     if (parking) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-parking', label: t(L, 'col.parking'), value: parking.slice(0, 256), ...CHIP.parking });
     if (visit) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-visit', label: t(L, 'col.visit'), value: visit, ...CHIP.visit });

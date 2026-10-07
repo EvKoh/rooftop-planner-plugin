@@ -400,5 +400,8 @@
   "ui.failed": "لم ينجح ذلك. حاول مرة أخرى بعد قليل.",
   "sheet_refusal": "«{name}»: تقول الملاحظات «{quote}» بشأن {what}: تأكد من المضيف أن المبيت ممكن",
   "s.sheet_refusal": "{what}: الملاحظات تقول لا",
-  "ui.notesSay": "الملاحظات: {list} — للتحقق"
+  "ui.notesSay": "الملاحظات: {list} — للتحقق",
+  "unit.durHM": "{h} س {mm} د",
+  "unit.durH": "{h} س",
+  "unit.durM": "{m} د"
 }

@@ -400,5 +400,8 @@
   "ui.failed": "Nem sikerült. Próbálja újra egy perc múlva.",
   "sheet_refusal": "„{name}”: a jegyzetek szerint {what}: „{quote}” — erősítse meg a szállásadóval, hogy lehetséges-e az éjszaka",
   "s.sheet_refusal": "{what}: a jegyzet szerint nem",
-  "ui.notesSay": "Jegyzetek: {list} — ellenőrizendő"
+  "ui.notesSay": "Jegyzetek: {list} — ellenőrizendő",
+  "unit.durHM": "{h} ó {mm} p",
+  "unit.durH": "{h} ó",
+  "unit.durM": "{m} perc"
 }

@@ -86,12 +86,17 @@ function toNum(v) {
   return Number.isFinite(n) ? n : null;
 }
 
-/** 45 → "45 min", 120 → "2 h", 210 → "3 h 30": the one duration format of the plugin; null for null. */
-function durationText(min) {
+/** 45 → "45 min", 120 → "2 h", 210 → "3 h 30" (in language L when given): the one duration format of the plugin; null for null. */
+function durationText(min, L) {
   if (min == null || !Number.isFinite(+min)) return null;
   const total = Math.round(+min);
   const h = Math.floor(total / 60);
   const m = total % 60;
+  // In language L, with its own unit words (ч, мин, 時間...); English form without it.
+  if (L) {
+    const { t } = require('./i18n');
+    return h ? (m ? t(L, 'unit.durHM', { h, mm: String(m).padStart(2, '0') }) : t(L, 'unit.durH', { h })) : t(L, 'unit.durM', { m });
+  }
   return h ? `${h} h${m ? ` ${String(m).padStart(2, '0')}` : ''}` : `${m} min`;
 }
 

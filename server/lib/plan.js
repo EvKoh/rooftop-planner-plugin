@@ -97,7 +97,8 @@ async function planTrip(ctx, model, o, opts) {
           const r = await scheduleDay(ctx, model, { dayId: d.id }, opts);
           out.results.schedule.push({ day: d.n, departure: r.departure, departureMovedForAccess: r.departureMovedForAccess, access: r.access, night: r.night, conflicts: r.conflicts, stays: r.stops.map((x) => ({ name: x.name, minutes: x.stayMinutes })) });
           if (r.night && r.night.ok === false) out.actions.push({ priority: 1, action: `Day ${d.n}: arrival ${r.night.arrival} at "${r.night.name}" is ${r.night.lateByMinutes} min too late (latest ${r.night.latestArrival}) — ${r.night.fixes[0]}` });
-          for (const c of r.conflicts) out.actions.push({ priority: 1, action: `Day ${d.n}: "${c.name}" ${c.reason}` });
+          // A conflict read from free notes is a point to verify, after the certain ones.
+          for (const c of r.conflicts) out.actions.push({ priority: c.level === 'verify' ? 3 : 1, action: `Day ${d.n}: "${c.name}" ${c.reason}` });
           if (r.departureMovedForAccess) out.actions.push({ priority: 2, action: `Day ${d.n}: leave at ${r.departure} to meet the timed access of ${r.access.map((x) => `"${x.name}"`).join(', ')}` });
           out.coreCalls.push(...r.coreCalls);
         } catch (e) {

@@ -364,6 +364,8 @@ function parse(description, notes, { kind = 'activity' } = {}) {
 function factsOf(place) {
   if (!place) return { visitMinutes: null, dogAllowed: null, tentAllowed: null, arrivalWindows: [] };
   const f = sheetOf(place).fields;
+  const raw = (place && place.raw) || place;
+  const tentBan = require('./rules').tentBanned(`${raw.description || ''}\n${raw.notes || ''}`);
   // Every line of the arrival field (its value and its bullets): a window on any line counts.
   const windows = f.arrival ? f.arrival.text.split('\n').flatMap((l) => require('./rules').windowsIn(l.replace(/^\s*[•\-*]\s*/, ''))) : [];
   return {
@@ -371,10 +373,13 @@ function factsOf(place) {
     // The upper end of a range ("1h30-2h"), as parseVisit keeps it.
     visitMax: f.duration ? maxMinutesOf(f.duration.text) : null,
     dogText: f.dog ? f.dog.text : null,
-    tentText: f.rooftop_tent ? f.rooftop_tent.text : null,
+    tentText: f.rooftop_tent ? f.rooftop_tent.text : tentBan,
     visitQuote: f.duration ? f.duration.text : null,
     dogAllowed: f.dog ? (f.dog.allowed ?? null) : null,
-    tentAllowed: f.rooftop_tent ? (f.rooftop_tent.allowed ?? null) : null,
+    // The sheet's own answer, else a ban the free notes quote ("No tents."), so every surface
+    // that shows a no from the notes shows this one too.
+    tentAllowed: f.rooftop_tent && f.rooftop_tent.allowed != null ? f.rooftop_tent.allowed : (tentBan ? false : null),
+    tentFromSheet: !!(f.rooftop_tent && f.rooftop_tent.allowed != null),
     arrivalWindows: windows,
   };
 }
@@ -428,7 +433,7 @@ function figure(field, v, L) {
   if (field === 'descent_m' && v.value != null) return `−${n(Math.abs(v.value))} m`;
   if (/^alt/.test(field) && v.value != null) return `${n(v.value)} m`;
   if (field === 'spots' && v.value != null) return n(v.value);
-  if (field === 'duration' && v.minutes != null) return durationText(v.minutes);
+  if (field === 'duration' && v.minutes != null) return durationText(v.minutes, L);
   if (field === 'level' && v.grade) return t(L, `sh.v.${v.grade}`);
   if (field === 'route_type' && v.kind) return t(L, `sh.v.${v.kind}`);
   // A price: its leading amount and unit ("44,60 €/nuit"), the rest stays its detail.
@@ -468,7 +473,7 @@ function view(sheet, L, { trackUrl = null, visitMinutes = null } = {}) {
   const f = { ...sheet.fields };
   // The time on site the plan counts (visit.js: the recorded duration first) is the one the
   // card shows: the notes' figure would contradict the schedule and the day's load.
-  if (visitMinutes != null && (!f.duration || f.duration.minutes !== visitMinutes)) f.duration = { minutes: visitMinutes, text: durationText(visitMinutes) };
+  if (visitMinutes != null && (!f.duration || f.duration.minutes !== visitMinutes)) f.duration = { minutes: visitMinutes, text: durationText(visitMinutes, L) };
   if (trackUrl && (!f.website || f.website.fromTrek)) f.website = { url: trackUrl, text: trackUrl };
   const used = new Set();
   const sections = [];

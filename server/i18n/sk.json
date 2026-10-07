@@ -400,5 +400,8 @@
   "ui.failed": "Nepodarilo sa. Skúste to o chvíľu znova.",
   "sheet_refusal": "„{name}“: poznámky k {what} hovoria „{quote}“: potvrďte u hostiteľa, že je noc možná",
   "s.sheet_refusal": "{what}: poznámky hovoria nie",
-  "ui.notesSay": "Poznámky: {list} — overiť"
+  "ui.notesSay": "Poznámky: {list} — overiť",
+  "unit.durHM": "{h} h {mm}",
+  "unit.durH": "{h} h",
+  "unit.durM": "{m} min"
 }

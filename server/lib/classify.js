@@ -23,16 +23,23 @@ const RE = {
 const test = (re, ...texts) => re.test(norm(texts.filter(Boolean).join(' \n ')));
 
 /** Kind of ground a night is spent on: 'campsite' | 'farm' | 'aire' | 'parking' | 'private' | 'hut' | 'unknown'. */
-function nightKind(categoryName, placeName) {
+/** The kind of ground the category alone names, or null (the user's own filing). */
+function categoryKind(categoryName) {
   const cat = norm(categoryName);
-  const name = norm(placeName);
-  // The category is the user's own decision, so it wins over words in the name.
   if (RE.aire.test(cat)) return 'aire';
   if (RE.parking.test(cat)) return 'parking';
   if (RE.farm.test(cat)) return 'farm';
   if (RE.campsite.test(cat)) return 'campsite';
   if (RE.privateGround.test(cat)) return 'private';
   if (RE.hut.test(cat)) return 'hut';
+  return null;
+}
+
+function nightKind(categoryName, placeName) {
+  const name = norm(placeName);
+  // The category is the user's own decision, so it wins over words in the name.
+  const byCat = categoryKind(categoryName);
+  if (byCat) return byCat;
   if (RE.aire.test(name) && !RE.campsite.test(name)) return 'aire';
   if (RE.parking.test(name) && !RE.campsite.test(name)) return 'parking';
   if (RE.campsite.test(name)) return 'campsite';
@@ -57,4 +64,4 @@ function parkingFromNotes(...texts) {
   return m ? [+m[1], +m[2]] : null;
 }
 
-module.exports = { nightKind, isNightCategory, isShopping, isTrace, parkingFromNotes, RE };
+module.exports = { categoryKind, nightKind, isNightCategory, isShopping, isTrace, parkingFromNotes, RE };

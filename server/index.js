@@ -187,7 +187,7 @@ module.exports = definePlugin({
             // The price as the planner chip shows it (unit, free note, dog fee).
             priceText: placeInfo.priceText(place.price == null ? null : +place.price, currency, info, L, { night }),
             units: placeInfo.PER,
-            visitText: placeInfo.visitText(info),
+            visitText: placeInfo.visitText(info, L),
             // A car park's hours, payment, motorhomes and overnight rules, notes.
             parkingText: placeInfo.parkingText(info, L),
             // Timed access, booking, toll: the planner's chips, as text.

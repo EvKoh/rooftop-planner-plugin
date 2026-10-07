@@ -400,5 +400,8 @@
   "ui.failed": "操作未成功，請稍後重試。",
   "sheet_refusal": "「{name}」：備註中關於{what}寫著「{quote}」：請與房東確認能否過夜",
   "s.sheet_refusal": "{what}：備註說不行",
-  "ui.notesSay": "備註：{list} — 待確認"
+  "ui.notesSay": "備註：{list} — 待確認",
+  "unit.durHM": "{h} 小時 {mm} 分",
+  "unit.durH": "{h} 小時",
+  "unit.durM": "{m} 分鐘"
 }

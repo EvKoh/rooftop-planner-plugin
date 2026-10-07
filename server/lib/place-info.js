@@ -555,13 +555,13 @@ function amenitiesText(info, lang) {
 }
 
 /** The visit's duration text (util.js durationText: the plugin's one format). */
-const duration = (m) => durationText(m);
+const duration = (m, L) => durationText(m, L);
 
 /** "3 h 30" or "2 h – 3 h 30" for a record's visit duration, or null. */
-function visitText(info) {
+function visitText(info, L) {
   if (!info || (info.visit_min_minutes == null && info.visit_max_minutes == null)) return null;
-  const a = duration(info.visit_min_minutes ?? info.visit_max_minutes);
-  return info.visit_max_minutes != null && info.visit_min_minutes != null && info.visit_max_minutes > info.visit_min_minutes ? `${a} – ${duration(info.visit_max_minutes)}` : a;
+  const a = duration(info.visit_min_minutes ?? info.visit_max_minutes, L);
+  return info.visit_max_minutes != null && info.visit_min_minutes != null && info.visit_max_minutes > info.visit_min_minutes ? `${a} – ${duration(info.visit_max_minutes, L)}` : a;
 }
 
 const hmOf = (s) => (s ? +s.slice(0, 2) * 60 + +s.slice(3) : null);

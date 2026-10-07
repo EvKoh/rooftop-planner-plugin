@@ -825,3 +825,45 @@ describe('the 0.6.10 audit', () => {
     } finally { vi.unstubAllGlobals(); }
   });
 });
+
+describe('the 0.6.11 audit', () => {
+  const rules = require('../server/lib/rules.js');
+  it('hours from the notes: every range counts, a neighbour\'s are info, outside is only to verify', () => {
+    expect(rules.closures('Accueil — lundi : 8h00-12h00 / 14h00-19h00', 1, 1020, 1020, { isNight: true })).toEqual([]);
+    expect(rules.closures('Pizzeria — lundi : 19h00-22h00', 1, 1020, 1020, { isNight: true })[0]).toMatchObject({ key: 'closure_neighbour', level: 'info' });
+    expect(rules.closures('Accueil — lundi : 8h00-12h00', 1, 1020, 1020, { isNight: true })[0]).toMatchObject({ key: 'outside_hours', level: 'verify' });
+  });
+
+  it('an aire guessed from the name only is to verify; filed as one, it blocks', () => {
+    expect(rules.nightLegality({ categoryName: '', placeName: 'Agriturismo Example — area camper', vehicle: 'rooftop_tent' }).level).toBe('verify');
+    expect(rules.nightLegality({ categoryName: 'Night – Motorhome area', placeName: 'X', vehicle: 'rooftop_tent' }).level).toBe('blocking');
+  });
+
+  it('the check and the schedule read a night\'s hours from the same text, on its first evening', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      trip.accommodations[0].notes = 'Accueil — lundi : 8h00-12h00';
+      const h = makeHost({ trip });
+      const checkSays = keys(await check(h), 'outside_hours').some((f) => f.dayNumber === 1);
+      const r = await call(h, 'vanlife_day', { tripId: 1, action: 'schedule', dayNumber: 1 });
+      expect(checkSays).toBe(true);
+      expect(r.conflicts.some((c) => /opening hours/.test(c.reason) && c.level === 'verify')).toBe(true);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('a tent ban written as a free sentence shows on the amber chip too', async () => {
+    const trip = build();
+    trip.places.find((p) => p.id === 13).notes = 'No tents.';
+    const w = JSON.parse((await makeHost({ trip }).run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13 } })).body);
+    expect(w.notesRefusedText).toBe('Notes: ✗ roof tent — to verify');
+  });
+
+  it('durations speak the reader\'s language', () => {
+    const { durationText } = require('../server/lib/util.js');
+    expect(durationText(210, 'ru')).toBe('3 ч 30');
+    expect(durationText(45, 'ja')).toBe('45分');
+    expect(durationText(210, 'en')).toBe('3 h 30');
+    expect(pi.visitText(pi.merge(null, { visit_min_minutes: 90 }), 'ru')).toBe('1 ч 30');
+  });
+});

@@ -93,7 +93,7 @@ function placeView(model, p, info, settings, { full = false } = {}) {
     stayTotal: stay ? cost.perStay : null,
     amenities: placeInfo.amenitiesText(info, L),
     parking: placeInfo.parkingText(info, L),
-    visit: placeInfo.visitText(info),
+    visit: placeInfo.visitText(info, L),
     // Timed access, booking and toll: "Before 09:00 · Booking · Toll €40.00", or null.
     access: placeInfo.accessText(info, L, currency),
     bookingUrl: (info && info.booking_url) || null,
@@ -109,7 +109,7 @@ function placeView(model, p, info, settings, { full = false } = {}) {
     // card shows; edit a field with sheet_set, which rewrites its line in the notes.
     const sh = placeSheet.sheetOf(p, { night });
     // The time on site the plan counts wins over the notes' figure, as on the panel's card.
-    const fields = info && info.visit_min_minutes != null ? { ...sh.fields, duration: { minutes: info.visit_min_minutes, text: durationText(info.visit_min_minutes) } } : sh.fields;
+    const fields = info && info.visit_min_minutes != null ? { ...sh.fields, duration: { minutes: info.visit_min_minutes, text: durationText(info.visit_min_minutes, L) } } : sh.fields;
     out.sheet = { kind: sh.kind, fields, otherNotes: sh.other, about: sh.about, freeNotes: sh.text };
   }
   return out;

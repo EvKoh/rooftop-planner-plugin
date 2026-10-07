@@ -10,7 +10,7 @@ const { LOCALES } = require('./i18n');
 //    zone with local restrictions (protected areas, municipal rules) is a point to check;
 //  - nights without water in a row need a refill plan; shopping detours stay short.
 const { norm, hm } = require('./util');
-const { nightKind } = require('./classify');
+const { nightKind, categoryKind } = require('./classify');
 const { zoneAt } = require('./zones');
 
 // Weekday names, accent-stripped, Sunday first: the four languages hosts write most in
@@ -65,12 +65,15 @@ function closures(text, wd, from, to, { placeName = '', isNight = false } = {}) 
       if (neighbour) out.push({ key: 'closure_neighbour', level: 'info', params: { quote: quote(tn, i, 50, 25) } });
       else if (!isNight) out.push({ key: 'closure_cited', level: 'verify', params: { quote: quote(tn, i) } });
     }
-    // "Monday : 8h00–21h00", "lundi : 9:00-12:00".
-    const h = tn.match(new RegExp(`\\b${day}\\s*:\\s*(\\d{1,2})[h:](\\d{2})?\\s*[–-]\\s*(\\d{1,2})[h:](\\d{2})?`));
-    if (h && from != null) {
-      const open = +h[1] * 60 + +(h[2] || 0);
-      const close = +h[3] * 60 + +(h[4] || 0);
-      if (from < open || (to ?? from) > close) out.push({ key: 'outside_hours', level: 'blocking', params: { open, close } });
+    // "Monday : 8h00–21h00", "lundi : 9:00-12:00 / 14:00-19:00": every range of the day counts
+    // (windowsIn, the one time-range reader). Hours quoted from free notes are a point to verify,
+    // never a block, and a neighbour's hours ("Pizzeria — lundi : 19h-22h") are only info.
+    const h = new RegExp(`\\b${day}\\s*:\\s*([^\\n]*)`).exec(tn);
+    const ranges = h ? windowsIn(h[1]) : [];
+    if (ranges.length && from != null && !ranges.some(([o, c]) => from >= o && (to ?? from) <= c)) {
+      const neighbour = new RegExp(`${NEIGHBOUR.source}\\b[^.;\\n]*$`).test(tn.slice(Math.max(0, h.index - 70), h.index)) && !NEIGHBOUR.test(norm(placeName));
+      const [open, close] = ranges[0];
+      out.push({ key: neighbour ? 'closure_neighbour' : 'outside_hours', level: neighbour ? 'info' : 'verify', params: neighbour ? { quote: quote(tn, h.index, 50, 40) } : { open, close } });
     }
   }
   return out;
@@ -171,7 +174,9 @@ function nightLegality({ categoryName, placeName, lat, lng, text = '', vehicle =
     if ((kind === 'aire' || kind === 'parking') && PRIVATE_GROUND.test(norm(`${placeName || ''} ${text}`)) && !PUBLIC_GROUND.test(norm(`${placeName || ''} ${text}`))) {
       return { key: 'night_private', level: 'verify', params: {}, kind };
     }
-    if (kind === 'aire' || kind === 'parking') return { key: 'night_aire', level: 'blocking', params: {}, kind };
+    // Blocking when the category says so (the user's own filing); guessed from the name only, a
+    // point to verify.
+    if (kind === 'aire' || kind === 'parking') return { key: 'night_aire', level: categoryKind(categoryName) ? 'blocking' : 'verify', params: {}, kind };
     const authorised = /autoris|authori[sz]ed|agricampeggio|campingplatz|licen[cs]ed/.test(norm(text));
     if (kind === 'farm' && zone && zone.farm === 'check' && !authorised) {
       return { key: 'night_farm_zone', level: 'info', params: { ...zp, rule: 'farm' }, kind, zone: zone.id };

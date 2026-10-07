@@ -400,5 +400,8 @@
   "ui.failed": "Не получилось. Попробуйте ещё раз чуть позже.",
   "sheet_refusal": "«{name}»: в заметках о {what} сказано «{quote}»: уточните у хозяина, возможна ли ночёвка",
   "s.sheet_refusal": "{what}: в заметках «нет»",
-  "ui.notesSay": "Заметки: {list} — проверить"
+  "ui.notesSay": "Заметки: {list} — проверить",
+  "unit.durHM": "{h} ч {mm}",
+  "unit.durH": "{h} ч",
+  "unit.durM": "{m} мин"
 }

@@ -400,5 +400,8 @@
   "ui.failed": "Dat is niet gelukt. Probeer het zo opnieuw.",
   "sheet_refusal": "“{name}”: de notities zeggen “{quote}” over {what}: bevestig bij de gastheer dat de overnachting kan",
   "s.sheet_refusal": "{what}: notities zeggen nee",
-  "ui.notesSay": "Notities: {list} — te controleren"
+  "ui.notesSay": "Notities: {list} — te controleren",
+  "unit.durHM": "{h} u {mm}",
+  "unit.durH": "{h} u",
+  "unit.durM": "{m} min"
 }
