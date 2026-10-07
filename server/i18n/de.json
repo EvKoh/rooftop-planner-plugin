@@ -397,5 +397,7 @@
   "resa_note_stale": "Buchung „{title}“ ist bestätigt, aber ihre Notizen sagen noch, dass sie auf eine Antwort wartet: Notizen aktualisieren",
   "resa_price": "Buchung „{title}“ kostet {booked}, der Plan rechnet mit {planned}: Preis des Ortes aktualisieren",
   "budget.fuel_line": "Kraftstoff Tag {day} ({km} km)",
-  "budget.toll_line": "Maut Tag {day} — {name}"
+  "budget.toll_line": "Maut Tag {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "max. {t} t"
 }

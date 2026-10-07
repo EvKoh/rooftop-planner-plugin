@@ -542,7 +542,7 @@ describe('vanlife_day, columns, widget and catalogues', () => {
     const drv = h.run(plugin);
     const post = (path, body) => drv.route({ method: 'POST', path }, { body });
     const d = JSON.parse((await post('/amenities', { tripId: 1, placeId: 16, locale: 'fr' })).body);
-    expect(d).toMatchObject({ nightStatus: 'contacted', trek: { phone: '+39 000 000 0016', website: null }, channels: ['email', 'phone', 'whatsapp', 'website_form'] });
+    expect(d).toMatchObject({ nightStatus: 'contacted', reach: { phone: '+39 000 000 0016', website: null }, channels: ['email', 'phone', 'whatsapp', 'website_form'] });
     expect(d.info.contacts).toEqual(c.blankContacts());
     expect(d.strings).toMatchObject({ 'ui.contacts': "Contact de l'hôte", 'st.contacted': 'En discussion', 'ch.whatsapp': 'WhatsApp' });
     const bad = await post('/amenities/save', { tripId: 1, placeId: 16, set: { contacts: { email: 'nope' } } });

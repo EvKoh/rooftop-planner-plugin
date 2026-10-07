@@ -397,5 +397,7 @@
   "resa_note_stale": "booking “{title}” is confirmed but its notes still say it is waiting for an answer: update the notes",
   "resa_price": "booking “{title}” is priced {booked}, the plan counts {planned}: update the place’s price",
   "budget.fuel_line": "Fuel day {day} ({km} km)",
-  "budget.toll_line": "Toll day {day} — {name}"
+  "budget.toll_line": "Toll day {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "{t} t max"
 }

@@ -397,5 +397,7 @@
   "resa_note_stale": "“{title}” rezervasiyası təsdiqlənib, amma qeydlərində hələ də cavab gözlədiyi yazılıb: qeydləri yeniləyin",
   "resa_price": "“{title}” rezervasiyasının qiyməti {booked}, plan {planned} hesablayır: yerin qiymətini yeniləyin",
   "budget.fuel_line": "Yanacaq {day}-ci gün ({km} km)",
-  "budget.toll_line": "Yol haqqı {day}-ci gün — {name}"
+  "budget.toll_line": "Yol haqqı {day}-ci gün — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "maks. {t} t"
 }

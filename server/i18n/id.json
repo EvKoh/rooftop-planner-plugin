@@ -397,5 +397,7 @@
   "resa_note_stale": "pemesanan “{title}” sudah dikonfirmasi tetapi catatannya masih menyebut menunggu jawaban: perbarui catatan",
   "resa_price": "pemesanan “{title}” seharga {booked}, rencana menghitung {planned}: perbarui harga tempat",
   "budget.fuel_line": "Bahan bakar hari {day} ({km} km)",
-  "budget.toll_line": "Tol hari {day} — {name}"
+  "budget.toll_line": "Tol hari {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "maks. {t} t"
 }

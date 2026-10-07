@@ -63,9 +63,9 @@ describe('visit duration on the record', () => {
   it('validates, rounds, keeps max over min, and formats', () => {
     const r = pi.merge(null, { visit_min_minutes: 120.4, visit_max_minutes: '210' });
     expect(r).toMatchObject({ visit_min_minutes: 120, visit_max_minutes: 210 });
-    expect(pi.visitText(r)).toBe('2 h – 3 h 30 min');
+    expect(pi.visitText(r)).toBe('2 h – 3 h 30');
     expect(pi.visitText(pi.merge(null, { visit_min_minutes: 45 }))).toBe('45 min');
-    expect(pi.visitText(pi.merge(null, { visit_max_minutes: 90 }))).toBe('1 h 30 min');
+    expect(pi.visitText(pi.merge(null, { visit_max_minutes: 90 }))).toBe('1 h 30');
     expect(pi.visitText(pi.merge(null, { visit_min_minutes: 60, visit_max_minutes: 60 }))).toBe('1 h');
     expect(pi.visitText(pi.blank())).toBeNull();
     expect(pi.visitText(null)).toBeNull();
@@ -103,12 +103,12 @@ describe('visit duration through the plugin', () => {
   it('vanlife_place sets and reads it; the planner shows a Timer chip; the widget gets it', async () => {
     const h = makeHost({ userSettings: { language: 'fr' }, queryResults: { [pi.INDEX_SQL]: [{ place_id: 11 }] } });
     const saved = await call(h, 'vanlife_place', { tripId: 1, placeId: 11, set: { visit_min_minutes: 210, visit_max_minutes: 240 } });
-    expect(saved).toMatchObject({ visit: '3 h 30 min – 4 h', record: { visit_min_minutes: 210, visit_max_minutes: 240 } });
+    expect(saved).toMatchObject({ visit: '3 h 30 – 4 h', record: { visit_min_minutes: 210, visit_max_minutes: 240 } });
     await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 11, set: { visit_min_minutes: 5000 } })).rejects.toThrow(/visit_min_minutes/);
     const cols = await h.run(plugin).hook('tableContributor', 'getContributions', 'places', 1);
-    expect(cols.find((x) => x.entityId === 11 && x.id === 'vanlife-visit')).toMatchObject({ label: 'Visite', value: '3 h 30 min – 4 h', icon: 'Timer' });
+    expect(cols.find((x) => x.entityId === 11 && x.id === 'vanlife-visit')).toMatchObject({ label: 'Visite', value: '3 h 30 – 4 h', icon: 'Timer' });
     const w = JSON.parse((await h.run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 11 } })).body);
-    expect(w).toMatchObject({ visitText: '3 h 30 min – 4 h' });
+    expect(w).toMatchObject({ visitText: '3 h 30 – 4 h' });
     expect(w.strings).toMatchObject({ 'ui.visitMin': 'Durée minimale sur place (min)' });
     const spec = TOOL_SPECS.find((t) => t.name === 'vanlife_place').inputSchema.properties.set.properties;
     expect(spec.visit_min_minutes).toMatchObject({ type: 'integer', minimum: 5, maximum: 1440, nullable: true });
@@ -172,8 +172,8 @@ describe('the day\'s load in the check', () => {
     const r = await check(makeHost({ userSettings: { timezone: 'Europe/Rome' } }));
     const busy = of(r, 'too_many_activities');
     expect(busy.map((f) => [f.level, f.dayNumber])).toEqual([['fix', 1]]);
-    expect(busy[0].message).toContain('Lago di Braies (2 h 00), Mountain Museum Example (1 h 00)');
-    expect(busy[0].message).toContain('one big activity a day (from 2 h 30), or at most two small ones (up to 1 h 00)');
+    expect(busy[0].message).toContain('Lago di Braies (2 h), Mountain Museum Example (1 h)');
+    expect(busy[0].message).toContain('one big activity a day (from 2 h 30), or at most two small ones (up to 1 h)');
     // two big ones on day 2
     const h = makeHost({ userSettings: { timezone: 'Europe/Rome' }, queryResults: { [pi.INDEX_SQL]: [{ place_id: 14 }, { place_id: 15 }] } });
     await h.ctx.meta.set('place', 14, pi.META_KEY, pi.merge(null, { visit_min_minutes: 150 }));

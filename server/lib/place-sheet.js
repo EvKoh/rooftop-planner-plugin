@@ -7,7 +7,7 @@
 // reads them; it stores nothing: TREK's description and notes stay the only copy, and an edit
 // of a field rewrites its line in the notes (setField). Nothing is dropped: a line it cannot
 // classify is kept as an "other note", free text as text.
-const { norm } = require('./util');
+const { norm, durationText } = require('./util');
 const { isNightCategory, isHike } = require('./classify');
 const { t, locale } = require('./i18n');
 const design = require('./design');
@@ -351,12 +351,6 @@ const TAIL = ['doubts', 'sources', 'checked', 'contact'];
 const FIGURE_FIELDS = new Set(['distance_km', 'ascent_m', 'descent_m', 'duration', 'level', 'route_type', 'alt_max_m', 'alt_min_m', 'altitude_m', 'price', 'services_price', 'spots']);
 
 /** "4 h 10", "51 min". */
-function durationText(min) {
-  if (min == null) return null;
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return h ? `${h} h${m ? ` ${String(m).padStart(2, '0')}` : ''}` : `${m} min`;
-}
 
 /** The short value a key figure shows ("10.9 km", "+770 m", "Medium"); its full text stays the title. */
 function figure(field, v, L) {

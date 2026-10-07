@@ -17,7 +17,7 @@
 // computes what is missing only while its 5 s budget allows; the place tool fills it.
 
 const { activityKind, WALK_LINE, TONE } = require('./design');
-const { distKm, roundPt, pmap } = require('./util');
+const { distKm, roundPt, pmap, durationText } = require('./util');
 const { parkingFromNotes, isTrace } = require('./classify');
 const routing = require('./routing');
 const cache = require('./cache');
@@ -243,16 +243,10 @@ function walkMinutes(geo) {
   return Math.round((Math.max(flat, vert) + Math.min(flat, vert) / 2) * 60);
 }
 
-const hmText = (min) => {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return h ? `${h} h${m ? ` ${String(m).padStart(2, '0')}` : ''}` : `${m} min`;
-};
-
 /** "4.4 km · 1 h 20 on foot · +410 m", or null without a computed route. */
 function statsText(geo, L, { climb: withClimb = true } = {}) {
   if (!geo) return null;
-  const s = t(L, 'walk.stats', { km: num(geo.km, L, 1), time: hmText(walkMinutes(geo)) });
+  const s = t(L, 'walk.stats', { km: num(geo.km, L, 1), time: durationText(walkMinutes(geo)) });
   return withClimb && geo.up != null ? `${s} · +${geo.up} m` : s;
 }
 

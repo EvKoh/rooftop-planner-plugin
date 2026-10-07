@@ -397,5 +397,7 @@
   "resa_note_stale": "예약 “{title}”은(는) 확정되었지만 메모에는 아직 답변을 기다린다고 되어 있습니다: 메모를 업데이트하세요",
   "resa_price": "예약 “{title}”의 가격은 {booked}인데 계획은 {planned}로 계산합니다: 장소의 가격을 업데이트하세요",
   "budget.fuel_line": "연료 {day}일차 ({km} km)",
-  "budget.toll_line": "통행료 {day}일차 — {name}"
+  "budget.toll_line": "통행료 {day}일차 — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "최대 {t}t"
 }

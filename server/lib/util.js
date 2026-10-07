@@ -86,4 +86,13 @@ function toNum(v) {
   return Number.isFinite(n) ? n : null;
 }
 
-module.exports = { hm, hhmm, distKm, norm, roundPt, pmap, deadline, weekday, polylineKm, distToPolylineKm, thin, toNum };
+/** 45 → "45 min", 120 → "2 h", 210 → "3 h 30": the one duration format of the plugin; null for null. */
+function durationText(min) {
+  if (min == null || !Number.isFinite(+min)) return null;
+  const total = Math.round(+min);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return h ? `${h} h${m ? ` ${String(m).padStart(2, '0')}` : ''}` : `${m} min`;
+}
+
+module.exports = { durationText, hm, hhmm, distKm, norm, roundPt, pmap, deadline, weekday, polylineKm, distToPolylineKm, thin, toNum };

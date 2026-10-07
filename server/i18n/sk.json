@@ -397,5 +397,7 @@
   "resa_note_stale": "rezervácia „{title}“ je potvrdená, ale poznámky stále hovoria, že čaká na odpoveď: aktualizujte poznámky",
   "resa_price": "rezervácia „{title}“ stojí {booked}, plán počíta s {planned}: aktualizujte cenu miesta",
   "budget.fuel_line": "Palivo deň {day} ({km} km)",
-  "budget.toll_line": "Mýto deň {day} — {name}"
+  "budget.toll_line": "Mýto deň {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "max. {t} t"
 }

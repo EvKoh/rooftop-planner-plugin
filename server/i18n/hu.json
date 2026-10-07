@@ -397,5 +397,7 @@
   "resa_note_stale": "a(z) „{title}” foglalás megerősítve, de a jegyzetei szerint még válaszra vár: frissítse a jegyzeteket",
   "resa_price": "a(z) „{title}” foglalás ára {booked}, a terv {planned} összeggel számol: frissítse a hely árát",
   "budget.fuel_line": "Üzemanyag {day}. nap ({km} km)",
-  "budget.toll_line": "Útdíj {day}. nap — {name}"
+  "budget.toll_line": "Útdíj {day}. nap — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "max. {t} t"
 }

@@ -397,5 +397,7 @@
   "resa_note_stale": "予約「{title}」は確定済みですが、メモにはまだ返事待ちと書かれています：メモを更新してください",
   "resa_price": "予約「{title}」の料金は{booked}ですが、計画では{planned}で計算しています：場所の料金を更新してください",
   "budget.fuel_line": "燃料 {day}日目（{km} km）",
-  "budget.toll_line": "通行料 {day}日目 — {name}"
+  "budget.toll_line": "通行料 {day}日目 — {name}",
+  "ui.labelValue": "{label}：{value}",
+  "unit.maxWeight": "最大 {t} t"
 }

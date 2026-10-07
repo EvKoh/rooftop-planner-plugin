@@ -397,5 +397,7 @@
   "resa_note_stale": "la réservation « {title} » est confirmée mais ses notes disent encore qu’elle attend une réponse : mettre les notes à jour",
   "resa_price": "la réservation « {title} » est à {booked}, le plan compte {planned} : mettre à jour le prix du lieu",
   "budget.fuel_line": "Carburant jour {day} ({km} km)",
-  "budget.toll_line": "Péage jour {day} — {name}"
+  "budget.toll_line": "Péage jour {day} — {name}",
+  "ui.labelValue": "{label} : {value}",
+  "unit.maxWeight": "{t} t max"
 }

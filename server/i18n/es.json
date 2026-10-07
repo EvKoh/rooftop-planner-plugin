@@ -397,5 +397,7 @@
   "resa_note_stale": "la reserva «{title}» está confirmada pero sus notas aún dicen que espera respuesta: actualiza las notas",
   "resa_price": "la reserva «{title}» cuesta {booked}, el plan cuenta {planned}: actualiza el precio del lugar",
   "budget.fuel_line": "Combustible día {day} ({km} km)",
-  "budget.toll_line": "Peaje día {day} — {name}"
+  "budget.toll_line": "Peaje día {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "{t} t máx."
 }

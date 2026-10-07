@@ -397,5 +397,7 @@
   "resa_note_stale": "bokningen ”{title}” är bekräftad men anteckningarna säger fortfarande att den väntar på svar: uppdatera anteckningarna",
   "resa_price": "bokningen ”{title}” kostar {booked}, planen räknar med {planned}: uppdatera platsens pris",
   "budget.fuel_line": "Bränsle dag {day} ({km} km)",
-  "budget.toll_line": "Vägavgift dag {day} — {name}"
+  "budget.toll_line": "Vägavgift dag {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "max {t} t"
 }

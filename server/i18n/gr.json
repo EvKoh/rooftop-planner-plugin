@@ -397,5 +397,7 @@
   "resa_note_stale": "η κράτηση «{title}» είναι επιβεβαιωμένη αλλά οι σημειώσεις της λένε ακόμη ότι περιμένει απάντηση: ενημερώστε τις σημειώσεις",
   "resa_price": "η κράτηση «{title}» κοστίζει {booked}, το σχέδιο υπολογίζει {planned}: ενημερώστε την τιμή του τόπου",
   "budget.fuel_line": "Καύσιμα ημέρα {day} ({km} km)",
-  "budget.toll_line": "Διόδια ημέρα {day} — {name}"
+  "budget.toll_line": "Διόδια ημέρα {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "μέγ. {t} t"
 }

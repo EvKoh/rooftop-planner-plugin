@@ -397,5 +397,7 @@
   "resa_note_stale": "“{title}” rezervasyonu onaylandı ama notları hâlâ yanıt beklediğini söylüyor: notları güncelleyin",
   "resa_price": "“{title}” rezervasyonunun fiyatı {booked}, plan {planned} hesaplıyor: yerin fiyatını güncelleyin",
   "budget.fuel_line": "Yakıt {day}. gün ({km} km)",
-  "budget.toll_line": "Geçiş ücreti {day}. gün — {name}"
+  "budget.toll_line": "Geçiş ücreti {day}. gün — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "en fazla {t} t"
 }

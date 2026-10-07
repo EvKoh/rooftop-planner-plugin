@@ -397,5 +397,7 @@
   "resa_note_stale": "broneering „{title}“ on kinnitatud, kuid märkmetes on endiselt kirjas, et see ootab vastust: uuenda märkmeid",
   "resa_price": "broneering „{title}“ maksab {booked}, plaan arvestab {planned}: uuenda koha hinda",
   "budget.fuel_line": "Kütus päev {day} ({km} km)",
-  "budget.toll_line": "Teemaks päev {day} — {name}"
+  "budget.toll_line": "Teemaks päev {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "max {t} t"
 }

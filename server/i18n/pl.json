@@ -397,5 +397,7 @@
   "resa_note_stale": "rezerwacja „{title}” jest potwierdzona, ale notatki wciąż mówią, że czeka na odpowiedź: zaktualizuj notatki",
   "resa_price": "rezerwacja „{title}” kosztuje {booked}, plan liczy {planned}: zaktualizuj cenę miejsca",
   "budget.fuel_line": "Paliwo dzień {day} ({km} km)",
-  "budget.toll_line": "Opłata drogowa dzień {day} — {name}"
+  "budget.toll_line": "Opłata drogowa dzień {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "maks. {t} t"
 }

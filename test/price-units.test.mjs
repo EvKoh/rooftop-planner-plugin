@@ -147,7 +147,7 @@ describe('price units through the plugin', () => {
     const camp = await post({ tripId: 1, placeId: 13 });
     expect(camp).toMatchObject({ night: true, priceText: '€38.00/night' });
     const aire = await post({ tripId: 1, placeId: 16 });
-    expect(aire.trek.website).toBeNull(); // a park4night page is not the host's site
+    expect(aire.reach.website).toBeNull(); // a park4night page is not the host's site
     const saved = await drv.route({ method: 'POST', path: '/amenities/save' }, { body: { tripId: 1, placeId: 11, set: { per: 'entry', price_note: null } } });
     expect(JSON.parse(saved.body).info.per).toBe('entry');
     expect((await post({ tripId: 1, placeId: 11 })).priceText).toBe('€12.00/entry');

@@ -397,5 +397,7 @@
   "resa_note_stale": "boeking “{title}” is bevestigd, maar de notities zeggen nog dat ze op antwoord wacht: werk de notities bij",
   "resa_price": "boeking “{title}” kost {booked}, het plan rekent {planned}: werk de prijs van de plek bij",
   "budget.fuel_line": "Brandstof dag {day} ({km} km)",
-  "budget.toll_line": "Tol dag {day} — {name}"
+  "budget.toll_line": "Tol dag {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "max. {t} t"
 }

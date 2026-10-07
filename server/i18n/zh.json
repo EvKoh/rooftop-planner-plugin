@@ -397,5 +397,7 @@
   "resa_note_stale": "预订“{title}”已确认，但备注仍写着在等待答复：请更新备注",
   "resa_price": "预订“{title}”的价格是 {booked}，计划按 {planned} 计算：请更新地点的价格",
   "budget.fuel_line": "燃油 第 {day} 天（{km} 公里）",
-  "budget.toll_line": "通行费 第 {day} 天 — {name}"
+  "budget.toll_line": "通行费 第 {day} 天 — {name}",
+  "ui.labelValue": "{label}：{value}",
+  "unit.maxWeight": "最大 {t} 吨"
 }

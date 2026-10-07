@@ -397,5 +397,7 @@
   "resa_note_stale": "đặt chỗ “{title}” đã được xác nhận nhưng ghi chú vẫn nói đang chờ trả lời: hãy cập nhật ghi chú",
   "resa_price": "đặt chỗ “{title}” có giá {booked}, kế hoạch tính {planned}: hãy cập nhật giá của địa điểm",
   "budget.fuel_line": "Nhiên liệu ngày {day} ({km} km)",
-  "budget.toll_line": "Phí đường ngày {day} — {name}"
+  "budget.toll_line": "Phí đường ngày {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "tối đa {t} t"
 }

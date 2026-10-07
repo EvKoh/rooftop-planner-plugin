@@ -3,7 +3,7 @@
 // all read it). Two passes: first collect every drive leg the rules need and resolve them
 // in one batch (cache, then a Valhalla matrix), then evaluate the rules day by day.
 // It never writes anything. Levels: blocking > fix > verify > info.
-const { hhmm, hm, distKm, norm } = require('./util');
+const { hhmm, hm, distKm, norm, durationText } = require('./util');
 const { t, dayName, money, num, clock } = require('./i18n');
 const placeInfo = require('./place-info');
 const { sunset } = require('./sun');
@@ -23,7 +23,7 @@ function zoneText(L, p) {
   const id = p.zoneId || 'unknown';
   return { zone: t(L, `zone.${id}.name`), note: t(L, `zone.${id}.${p.rule}`) };
 }
-const fmtDur = (m) => (m == null ? '—' : `${Math.floor(m / 60)} h ${String(Math.round(m % 60)).padStart(2, '0')}`);
+const fmtDur = (m) => (m == null ? '—' : durationText(m));
 const located = (p) => p && p.lat != null && p.lng != null;
 const pos = (p) => [p.lat, p.lng];
 

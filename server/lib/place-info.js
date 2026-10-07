@@ -17,8 +17,8 @@
 // one by one does not fit the short time TREK gives a planner column. The copy on the
 // place stays the reference; this one is rewritten on every save.
 // Every value may be "unknown": nothing is ever guessed.
-const { toNum, pmap } = require('./util');
-const { t, money, num, clock } = require('./i18n');
+const { toNum, pmap, durationText } = require('./util');
+const { t, money, num, clock, locale } = require('./i18n');
 const contacts = require('./contacts');
 
 const META_KEY = 'info.v1';
@@ -507,6 +507,24 @@ function priceText(price, currency, info, lang, { night = false } = {}) {
   return s;
 }
 
+/** "✗ élec.  ↕ 2,1 m  ↔ 6 m  3,5 t max": what a place lacks and its limits; one builder for every reader. */
+function limitsParts(info, lang) {
+  const parts = [];
+  const missing = Object.keys(AMENITIES).filter((k) => info.amenities[k] === 'no').map((k) => t(lang, `am.${k}`));
+  if (missing.length) parts.push(`✗ ${missing.join(' · ')}`);
+  if (info.max_height_m != null) parts.push(`↕ ${num(info.max_height_m, lang)} m`);
+  if (info.max_length_m != null) parts.push(`↔ ${num(info.max_length_m, lang)} m`);
+  if (info.max_weight_t != null) parts.push(t(lang, 'unit.maxWeight', { t: num(info.max_weight_t, lang) }));
+  return parts;
+}
+
+/** What the place lacks and its limits (the planner's "missing" chip), or null. */
+function lacksText(info, lang) {
+  if (!info) return null;
+  const parts = limitsParts(info, lang);
+  return parts.length ? parts.join('  ') : null;
+}
+
 /**
  * Compact amenities line, emoji-free (the host strips emoji from planner columns):
  * "✓ chien · eau · douche  ✗ élec.  ↕ 2,1 m". Unknown values are left out. null when empty.
@@ -514,30 +532,17 @@ function priceText(price, currency, info, lang, { night = false } = {}) {
 function amenitiesText(info, lang) {
   if (!info) return null;
   const yes = [];
-  const no = [];
   for (const k of Object.keys(AMENITIES)) {
     const v = info.amenities[k];
     if (v === 'yes') yes.push(t(lang, `am.${k}`));
     else if (v === 'fee') yes.push(`${t(lang, `am.${k}`)} (${t(lang, 'fee')})`);
-    else if (v === 'no') no.push(t(lang, `am.${k}`));
   }
-  const parts = [];
-  if (yes.length) parts.push(`✓ ${yes.join(' · ')}`);
-  if (no.length) parts.push(`✗ ${no.join(' · ')}`);
-  if (info.max_height_m != null) parts.push(`↕ ${num(info.max_height_m, lang)} m`);
-  if (info.max_length_m != null) parts.push(`↔ ${num(info.max_length_m, lang)} m`);
-  if (info.max_weight_t != null) parts.push(`${num(info.max_weight_t, lang)} t max`);
+  const parts = [...(yes.length ? [`✓ ${yes.join(' · ')}`] : []), ...limitsParts(info, lang)];
   return parts.length ? parts.join('  ') : null;
 }
 
-/** 210 → "3 h 30 min", 45 → "45 min", 120 → "2 h"; null for null. */
-function duration(m) {
-  if (m == null) return null;
-  const h = Math.floor(m / 60);
-  const mm = Math.round(m % 60);
-  if (!h) return `${mm} min`;
-  return mm ? `${h} h ${String(mm).padStart(2, '0')} min` : `${h} h`;
-}
+/** The visit's duration text (util.js durationText: the plugin's one format). */
+const duration = (m) => durationText(m);
 
 /** "3 h 30 min" or "2 h – 3 h 30 min" for a record's visit duration, or null. */
 function visitText(info) {
@@ -578,7 +583,7 @@ const tollCurrency = (info, fallback) => (info && info.toll_currency) || fallbac
 /** "2026-09-30" → "30/09" in the user's language (day and month only). */
 function shortDate(iso, L) {
   if (!iso) return '';
-  try { return new Intl.DateTimeFormat(L || 'en', { day: '2-digit', month: '2-digit', timeZone: 'UTC' }).format(new Date(`${iso}T12:00:00Z`)); } catch { return iso.slice(5); }
+  try { return new Intl.DateTimeFormat(locale(L), { day: '2-digit', month: '2-digit', timeZone: 'UTC' }).format(new Date(`${iso}T12:00:00Z`)); } catch { return iso.slice(5); }
 }
 
 /** Is the place closed on that day ("YYYY-MM-DD")? */
@@ -702,4 +707,4 @@ async function getAll(ctx, tripId, placeIds) {
   return out;
 }
 
-module.exports = { nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { lacksText, nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

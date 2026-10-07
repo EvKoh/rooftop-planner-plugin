@@ -397,5 +397,7 @@
   "resa_note_stale": "الحجز «{title}» مؤكد لكن ملاحظاته لا تزال تقول إنه ينتظر ردًا: حدّث الملاحظات",
   "resa_price": "سعر الحجز «{title}» هو {booked}، والخطة تحتسب {planned}: حدّث سعر المكان",
   "budget.fuel_line": "وقود اليوم {day} ({km} كم)",
-  "budget.toll_line": "رسوم الطريق اليوم {day} — {name}"
+  "budget.toll_line": "رسوم الطريق اليوم {day} — {name}",
+  "ui.labelValue": "{label}: {value}",
+  "unit.maxWeight": "{t} طن كحد أقصى"
 }

@@ -397,5 +397,7 @@
   "resa_note_stale": "預訂「{title}」已確認，但備註仍寫著在等待回覆：請更新備註",
   "resa_price": "預訂「{title}」的價格是 {booked}，計畫按 {planned} 計算：請更新地點的價格",
   "budget.fuel_line": "燃油 第 {day} 天（{km} 公里）",
-  "budget.toll_line": "通行費 第 {day} 天 — {name}"
+  "budget.toll_line": "通行費 第 {day} 天 — {name}",
+  "ui.labelValue": "{label}：{value}",
+  "unit.maxWeight": "最大 {t} 噸"
 }
