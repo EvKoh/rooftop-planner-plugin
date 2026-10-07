@@ -167,15 +167,21 @@ const num = (s) => {
   return m ? Number(m[0].replace(',', '.')) : null;
 };
 
-/** "4 h 10", "0 h 51 (…)", "2h30", "90 min", "1.5 h" → minutes. */
+/**
+ * "4 h 10", "0 h 51 (…)", "2h30", "90 min", "1.5 h" → minutes; a range ("2-3 h", "45 min –
+ * 1 h") gives its lower end, the first amount written; a clock time alone ("10:30") is no
+ * duration. Between 5 min and 24 h, else null: what the time on site may be.
+ */
 function minutesOf(s) {
   const t = norm(s);
-  let m = t.match(/(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|hours?|heures?|std|stunden?|ore|horas?)(?![a-z])\s*(?:(\d{1,2})\s*(?:min|mn|m\b)?)?/);
-  if (m) return Math.round(Number(m[1].replace(',', '.')) * 60 + (m[2] ? Number(m[2]) : 0));
-  m = t.match(/(\d+)\s*(?:min|mn|minutes?|minuten|minuti|minutos)\b/);
-  if (m) return Number(m[1]);
-  m = t.match(/\b(\d{1,2}):(\d{2})\b/);
-  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+  if (/^\s*\d{1,2}:\d{2}\s*$/.test(t)) return null;
+  const H = 'h|hr|hrs|hours?|heures?|std|stunden?|ore|horas?';
+  const M = 'min|mn|minutes?|minuten|minuti|minutos';
+  const m = t.match(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:[-–]\\s*\\d+(?:[.,]\\d+)?\\s*)?(?:(${H})(?![a-z])\\s*(?:(\\d{1,2})(?!\\s*[-–]?\\s*\\d)\\s*(?:${M}|m\\b)?)?|(?:${M})\\b)`));
+  if (!m) return null;
+  const n = Number(m[1].replace(',', '.'));
+  const minutes = m[2] ? Math.round(n * 60 + (m[3] ? Number(m[3]) : 0)) : Math.round(n);
+  return minutes >= 5 && minutes <= 1440 ? minutes : null;
 }
 
 const GRADES = [
@@ -202,8 +208,11 @@ const YES_WORDS = ANSWER('opt.yes');
 // The whole answer only ("Non.", "Нет"): "non précisé" (not stated) is not a no.
 const isAnswer = (t, w) => t.replace(/[\s.!。！]+$/u, '') === w;
 /** Is it allowed: false / true / null, from a free answer ("not allowed", "Nein", "Да"). */
+// The answer is the first clause: "allowed on a leash, not in the pool" is a yes; "no, unless
+// agreed" is a no. What comes after a comma or a "but" is a detail, not the answer.
+const FIRST_CLAUSE = /[,;/(]|\s[-–—]\s|\b(?:but|mais|sauf|except|excepte|aber|ausser|ma|pero|tranne|salvo|eccetto|maar|men|ale)\b/;
 const dogOf = (s) => {
-  const t = norm(s).trim();
+  const t = norm(s).split(FIRST_CLAUSE)[0].trim();
   if (DOG_NO.test(t) || NO_WORDS.some((w) => isAnswer(t, w))) return false;
   if (DOG_YES.test(t) || YES_WORDS.some((w) => isAnswer(t, w))) return true;
   return null;
@@ -331,15 +340,15 @@ function parse(description, notes, { kind = 'activity' } = {}) {
  * columns and the panel read these, so a sheet line counts everywhere it shows.
  */
 function factsOf(place) {
-  if (!place) return { visitMinutes: null, dogAllowed: null, tentAllowed: null, arrivalWindow: null };
+  if (!place) return { visitMinutes: null, dogAllowed: null, tentAllowed: null, arrivalWindows: [] };
   const f = sheetOf(place).fields;
-  const span = f.arrival && norm(f.arrival.text).match(/(\d{1,2})\s*[h:]?(\d{2})?\s*[–-]\s*(\d{1,2})\s*[h:]?(\d{2})?/);
+  const windows = f.arrival ? require('./rules').windowsIn(f.arrival.text) : [];
   return {
     visitMinutes: f.duration && f.duration.minutes != null ? f.duration.minutes : null,
     visitQuote: f.duration ? f.duration.text : null,
     dogAllowed: f.dog ? (f.dog.allowed ?? null) : null,
     tentAllowed: f.rooftop_tent ? dogOf(f.rooftop_tent.text) : null,
-    arrivalWindow: span ? [+span[1] * 60 + +(span[2] || 0), +span[3] * 60 + +(span[4] || 0)] : null,
+    arrivalWindows: windows,
   };
 }
 

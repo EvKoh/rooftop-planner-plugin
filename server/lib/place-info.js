@@ -640,6 +640,23 @@ function refuses(info, settings, facts = {}) {
     || (info.max_weight_t != null && info.max_weight_t < settings.vehicle_weight_t);
 }
 
+/**
+ * Why a place rules this vehicle or party out, as the planner chip and the panel say it:
+ * "✗ dog · rooftop tent  ↕ 2 m" — only what refuses (refuses), from the record or the sheet.
+ * null when nothing does.
+ */
+function refusalText(info, settings, L, facts = {}) {
+  const am = (info && info.amenities) || {};
+  const no = [];
+  if (settings.vehicle === 'rooftop_tent' && (am.rooftop_tent === 'no' || facts.tentAllowed === false)) no.push(t(L, 'am.rooftop_tent'));
+  if (settings.dog && (am.dog === 'no' || facts.dogAllowed === false)) no.push(t(L, 'am.dog'));
+  const parts = no.length ? [`✗ ${no.join(' · ')}`] : [];
+  if (info && info.max_height_m != null && info.max_height_m < settings.vehicle_height_m) parts.push(`↕ ${num(info.max_height_m, L)} m`);
+  if (info && info.max_length_m != null && info.max_length_m < settings.vehicle_length_m) parts.push(`↔ ${num(info.max_length_m, L)} m`);
+  if (info && info.max_weight_t != null && info.max_weight_t < settings.vehicle_weight_t) parts.push(t(L, 'unit.maxWeight', { t: num(info.max_weight_t, L) }));
+  return parts.length ? parts.join('  ') : null;
+}
+
 async function migrate(ctx) {
   await ctx.db.migrate('002_place_info_index', MIGRATION);
   await ctx.db.migrate('004_place_info_copy', COPY_MIGRATION);
@@ -729,4 +746,4 @@ function localized(rec, L) {
   return { ...rec, source: sourceText(rec.source, L), visit_source: sourceText(rec.visit_source, L), contact_sources: cs };
 }
 
-module.exports = { SRC, sourceText, localized, lacksText, nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { refusalText, SRC, sourceText, localized, lacksText, nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

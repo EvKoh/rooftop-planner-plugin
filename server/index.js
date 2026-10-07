@@ -195,6 +195,8 @@ module.exports = definePlugin({
             recorded: !!info,
             summary: placeInfo.amenitiesText(info, L),
             refused: placeInfo.refuses(info, settings, placeSheet.factsOf({ ...place, categoryName })),
+            // What refuses, in words ("✗ dog"), for the panel's red chip.
+            refusedText: placeInfo.refusalText(info, settings, L, placeSheet.factsOf({ ...place, categoryName })),
             amenities: placeInfo.AMENITIES,
             channels: contacts.CHANNELS,
             // The host's ways in: the record, then TREK's own fields (contacts.js reachOf; a

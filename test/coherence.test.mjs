@@ -582,3 +582,65 @@ describe('finding params', () => {
     } finally { vi.unstubAllGlobals(); }
   });
 });
+
+describe('the 0.6.6 audit: the sheet is read strictly', () => {
+  const sheet = require('../server/lib/place-sheet.js');
+  const rules = require('../server/lib/rules.js');
+
+  it('a duration: a range gives its lower end, a clock time or 3 min is none', () => {
+    expect(sheet.minutesOf('2-3 h')).toBe(120);
+    expect(sheet.minutesOf('45 min – 1 h')).toBe(45);
+    expect(sheet.minutesOf('10:30')).toBeNull();
+    expect(sheet.minutesOf('3 min')).toBeNull();
+    expect(sheet.minutesOf('2h30')).toBe(150);
+  });
+
+  it('a window must open the value; several windows all count', () => {
+    expect(rules.windowsIn('self check-in, code sent 1-2 days before')).toEqual([]);
+    expect(rules.windowsIn('par la D12 – 3 km après le village')).toEqual([]);
+    expect(rules.windowsIn('8h-12h / 14h-20h')).toEqual([[480, 720], [840, 1200]]);
+    expect(rules.windowsIn('14 h - 16 h 30')).toEqual([[840, 990]]);
+  });
+
+  it('the answer is the first clause', () => {
+    expect(sheet.dogOf('allowed on a leash, not allowed in the pool area')).toBe(true);
+    expect(sheet.dogOf('Hunde: willkommen, im Restaurant verboten')).toBe(true);
+    expect(sheet.dogOf('non, sauf si accord préalable')).toBe(false);
+  });
+
+  it('in the check: no window, refusal or overload invented from such text', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      const camp = trip.places.find((p) => p.id === 13);
+      camp.notes = 'Check-in : self check-in, code sent 1-2 days before\nDogs : allowed on a leash, not allowed in the pool area';
+      trip.days[0].assignments.find((a) => a.id === 1005).place.notes = camp.notes;
+      const r = await check(makeHost({ trip, userSettings: { language: 'en', timezone: 'Europe/Rome', dog: true } }));
+      expect(keys(r, 'welcome_window').filter((f) => f.dayNumber === 1)).toEqual([]);
+      expect(keys(r, 'dog_refused').filter((f) => f.dayNumber === 1)).toEqual([]);
+      camp.notes = 'Arrival : 8h-12h / 14h-20h';
+      trip.days[0].assignments.find((a) => a.id === 1005).place.notes = camp.notes;
+      trip.days[0].assignments.find((a) => a.id === 1005).place.place_time = '17:00';
+      expect(keys(await check(makeHost({ trip })), 'welcome_window').filter((f) => f.dayNumber === 1)).toEqual([]);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('a too-short duration in one sheet does not stop the fill of the trip', async () => {
+    const fillLib = require('../server/lib/amenity-fill.js');
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      trip.places.find((p) => p.id === 14).notes = 'Time: 3 min';
+      const h = makeHost({ trip });
+      await pi.migrate(h.ctx); await fillLib.migrate(h.ctx);
+      await expect(fillLib.fill(h.ctx, 1, { park4night: false })).resolves.toBeTruthy();
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('the planner chip says why a place is ruled out', async () => {
+    const trip = build();
+    trip.places.find((p) => p.id === 13).notes = 'Dogs : not allowed';
+    const cols = await makeHost({ trip, userSettings: { language: 'en', dog: true } }).run(plugin).hook('tableContributor', 'getContributions', 'places', 1);
+    expect(cols.find((x) => x.entityId === 13 && x.id === 'vanlife-am-no').value).toBe('✗ dog');
+  });
+});
