@@ -175,9 +175,21 @@ function channels(c) {
   return all;
 }
 
-const hasContact = (c) => !!(c && (c.email || c.phone || c.whatsapp));
+/**
+ * The host's ways in, as every reader shows and uses them: the plugin's record first, then
+ * TREK's own phone and website fields (a platform page is never the host's site). The one
+ * merge of the two sources: the widget, the night list, the check and the host message.
+ */
+function reachOf(info, raw) {
+  const c = { ...blankContacts(), ...((info && info.contacts) || {}) };
+  const site = c.website || (raw && raw.website) || null;
+  return { ...c, phone: c.phone || (raw && raw.phone) || null, website: site && !notOwnSite(site) ? site : null };
+}
+
+/** Can the host be asked anything: an e-mail, a phone, WhatsApp or its own website (a contact form)? */
+const hasContact = (c) => !!(c && (c.email || c.phone || c.whatsapp || (c.website && !notOwnSite(c.website))));
 
 module.exports = {
-  CHANNELS, LOG_CHANNELS, DIRECTIONS, LOG_MAX, FIELDS, ContactError, NOT_OWN_SITE, notOwnSite,
-  blankContacts, email, phone, website, field, patchContacts, logEntry, addLog, extract, fromOsmTags, channels, hasContact,
+  CHANNELS, LOG_CHANNELS, DIRECTIONS, LOG_MAX, FIELDS, ContactError, notOwnSite,
+  blankContacts, email, phone, website, field, patchContacts, logEntry, addLog, extract, fromOsmTags, channels, hasContact, reachOf,
 };

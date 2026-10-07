@@ -389,5 +389,13 @@
   "chip.closedFrom": "{from}起停业",
   "chip.closedUntil": "停业至{until}",
   "place_closed": "“{name}”当天停业（停业 {from}–{until}）：请另选地点",
-  "s.place_closed": "当天停业"
+  "s.place_closed": "当天停业",
+  "night.none": "这一天没有安排过夜",
+  "night.unlinked": "预订“{title}”未关联到计划中的任何一晚",
+  "night.dropped_note": "已放弃：{reason}",
+  "resa_unlinked": "预订“{title}”（第 {day} 天）未关联到计划中的任何一晚：TREK 显示已预订，但计划中没有人在那里过夜——请将其关联到当晚的住宿，或取消",
+  "resa_note_stale": "预订“{title}”已确认，但备注仍写着在等待答复：请更新备注",
+  "resa_price": "预订“{title}”的价格是 {booked}，计划按 {planned} 计算：请更新地点的价格",
+  "budget.fuel_line": "燃油 第 {day} 天（{km} 公里）",
+  "budget.toll_line": "通行费 第 {day} 天 — {name}"
 }

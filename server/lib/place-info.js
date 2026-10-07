@@ -444,16 +444,43 @@ function nativePrice(p) {
 }
 
 /**
- * Price of one night for the whole party, from TREK's price and the recorded details; null
- * when the unit cannot make a night price (per hour, per entry).
+ * What a stay costs the whole party, from TREK's price and the recorded details:
+ * { perNight, perStay }. Per person (or per person and night) x travellers, + the dog fee
+ * each night; a flat price ("flat": a lump sum) is paid once for the stay, so its night
+ * share is the sum divided by the nights. Both null when there is no price or the unit
+ * cannot make a night price (per hour, per entry). The one price rule of the plugin: the
+ * check, the budget, the night list, the night search and the host message all read it.
  */
-function nightTotal(price, info, settings) {
-  if (price == null) return null;
-  if (info && NOT_A_NIGHT_PRICE.includes(info.per)) return null;
+function nightCost(price, info, settings, nights = 1) {
+  const n = Math.max(1, nights || 1);
+  if (price == null) return { perNight: null, perStay: null };
+  if (info && NOT_A_NIGHT_PRICE.includes(info.per)) return { perNight: null, perStay: null };
   const people = info && PER_PERSON.includes(info.per) ? (settings.travellers || 2) : 1;
   const dog = settings.dog && info && info.amenities.dog === 'fee' && info.dog_fee != null ? info.dog_fee : 0;
-  return Math.round((price * people + dog) * 100) / 100;
+  const r2 = (x) => Math.round(x * 100) / 100;
+  if (info && info.per === 'flat') {
+    const perStay = r2(price + dog * n);
+    return { perNight: r2(perStay / n), perStay };
+  }
+  const perNight = r2(price * people + dog);
+  return { perNight, perStay: r2(perNight * n) };
 }
+
+// Units whose price reads as one night for the vehicle, like a campsite's posted charge.
+const VEHICLE_NIGHT_UNITS = [null, undefined, 'night', 'vehicle', 'day'];
+
+/**
+ * A planned night's price in the unit night candidates are quoted in (OSM `charge`,
+ * park4night: per night, for the vehicle): its TREK price + dog fee when the unit is per
+ * night; null when it is per person or a flat sum, since then the two do not compare.
+ */
+const comparableNightPrice = (night) => (night && VEHICLE_NIGHT_UNITS.includes(night.info && night.info.per) ? night.price : null);
+
+/** Price of one night for the whole party (see nightCost), or null. */
+const nightTotal = (price, info, settings) => nightCost(price, info, settings, 1).perNight;
+
+/** The currency of a place's price: its own, else the trip's, else EUR. The one fallback chain. */
+const currencyOf = (place, tripCurrency) => (place && place.currency) || tripCurrency || 'EUR';
 
 /** Does the free price note already state this amount ("5 €/h" for 5)? */
 function noteHasAmount(note, price) {
@@ -675,4 +702,4 @@ async function getAll(ctx, tripId, placeIds) {
   return out;
 }
 
-module.exports = { closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

@@ -11,8 +11,8 @@ const { isShopping, isHike, isTrace, isNightCategory, isParkingCategory, parking
 const rules = require('./rules');
 const routing = require('./routing');
 const { highwayAllowed, fuelPerKm } = require('./settings');
-const { stopMinutes } = require('./visit');
-const { nightOf, nightBefore, nameKey, unplannedNights } = require('./trip');
+const { dayStopMinutes } = require('./visit');
+const { stayOn, stayBefore, isFirstEvening, findDay, nameKey, unplannedNights } = require('./trip');
 const contacts = require('./contacts');
 const nightStatus = require('./night-status');
 
@@ -29,8 +29,10 @@ const pos = (p) => [p.lat, p.lng];
 
 /** The stops of a day that the car drives between, with where the car actually goes. */
 function dayPlan(model, day) {
-  const veille = nightBefore(model, day);
-  const nuit = nightOf(model, day);
+  // Where the car is in the morning (last evening's stay) and tonight's stay: the same stay
+  // on the later days of a stay over several nights, so those days start and end at camp.
+  const veille = stayBefore(model, day);
+  const nuit = stayOn(model, day);
   const trace = day.assignments.find((a) => isTrace(a.place.categoryName, a.place));
   const stops = day.assignments.filter((a) => a !== trace && !(veille && a.accommodationId === veille.id && (!nuit || veille.id !== nuit.id)));
   return { veille, nuit, trace, stops };
@@ -61,15 +63,14 @@ function dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L,
   let drive = 0;
   let complete = true;
   // A car park is where the car waits, not an activity; on a day with a hike its time is the
-  // hike's, so it is not counted twice.
-  const hikeDay = stops.some((s) => isHike(s.place.categoryName));
+  // hike's, so it is not counted twice (visit.js dayStopMinutes, shared with the schedule).
   stops.forEach((s, i) => {
     const leg = legIdx[i];
     if (leg && leg.drive != null) { const m = M(leg.drive); if (m == null) complete = false; else drive += m; }
     if (nuit && s.accommodationId === nuit.id) return;
     const info = (model.poolById.get(s.place.id) || {}).info || null;
     const parking = isParkingCategory(s.place.categoryName);
-    visits.push({ s, minutes: parking && hikeDay ? 0 : stopMinutes(s.place, info), visit: isVisit(s.place) && !parking });
+    visits.push({ s, minutes: dayStopMinutes(s, info, stops), visit: isVisit(s.place) && !parking });
   });
   if (toNight != null) { const m = M(toNight); if (m == null) complete = false; else drive += m; }
   const unknown = visits.filter((v) => v.visit && v.minutes == null).map((v) => v.s.place.name);
@@ -103,13 +104,9 @@ function dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L,
 // Words in a stop's notes saying the slot, car park or road is booked.
 const BOOKED_NOTE = /\b(booked|reserved|reservation|confirmation|confirmed|ticket|reserve|prenotat|gebucht|reserviert|buchung)/;
 
-/** Is a booking of this place recorded: a TREK booking confirmed or with a number, or words in the stop's notes? */
+/** Is a booking of this place recorded: a TREK booking that reads "booked" (night-status.js), or words in the stop's notes? */
 function bookingNoted(model, placeId, notes) {
-  const res = (model.reservations || []).some((r) => {
-    const id = r.accommodation_place_id ?? r.place_id ?? null;
-    return id != null && Number(id) === Number(placeId) && r.status !== 'cancelled' && (r.status === 'confirmed' || !!r.confirmation_number);
-  });
-  return res || BOOKED_NOTE.test(norm(notes));
+  return nightStatus.placeBooked(model.reservations, placeId) || BOOKED_NOTE.test(norm(notes));
 }
 
 /**
@@ -129,12 +126,6 @@ function accessFindings({ model, info, name, arr, notes, placeId, add, J, extra,
   }
 }
 
-/** The night whose evening is day `d` (a stay over several nights included), or null. */
-function campOf(model, dayIndex) {
-  const idx = (id) => (model.days.find((x) => x.id === id) || {}).index;
-  return model.nights.find((n) => idx(n.startDayId) <= dayIndex && dayIndex < idx(n.endDayId)) || null;
-}
-
 /**
  * Money that could be saved, never blocking:
  *  - a night above the target price when the night search (cache only) knows a legal, open,
@@ -149,28 +140,28 @@ async function savings({ ctx, model, settings, add, L, deadline, dayLabel }) {
   // Lazy: nights.js needs this module.
   const { findNightsForDay } = require('./nights');
   for (const d of model.days) {
-    const nuit = nightOf(model, d);
-    if (!nuit || nuit.price == null || nuit.price <= settings.night_price_target) continue;
+    const nuit = stayOn(model, d);
+    if (!isFirstEvening(nuit, d)) continue;
+    // Only a price in the same unit as the candidates' (per night, for the vehicle).
+    const current = placeInfo.comparableNightPrice(nuit);
+    if (current == null || current <= settings.night_price_target) continue;
     if (deadline && deadline.left() < 1500) break;
     let r;
     try {
       r = await findNightsForDay(ctx, model, { dayId: d.id, sources: ['osm'] }, { settings, deadline, network: false });
     } catch { continue; }
-    const best = r.candidates
-      .filter((c) => !c.blocked.length && !c.legalRisk && c.openOnDate !== 'closed' && c.price != null && c.price < nuit.price && c.detourMinutes != null && c.detourMinutes <= 20)
-      .map((c) => ({ c, net: Math.round((nuit.price - c.price - Math.max(0, c.detourKm || 0) * perKm) * 100) / 100 }))
-      .filter((x) => x.net > 0)
-      .sort((a, b) => b.net - a.net)[0];
+    // The same rule as the planner's (nights.js cheaperNight).
+    const best = r.cheaper ? { c: r.cheaper.candidate, net: r.cheaper.net } : null;
     if (best) {
       add('verify', dayLabel(d), 'saving_night', {
-        name: nuit.name, current: money(nuit.price, cur, L), alt: best.c.name, price: money(best.c.price, cur, L), detour: best.c.detourMinutes, saving: money(best.net, cur, L),
+        name: nuit.name, current: money(current, nuit.currency, L), alt: best.c.name, price: money(best.c.price, nuit.currency, L), detour: best.c.detourMinutes, saving: money(best.net, nuit.currency, L),
       }, { dayId: d.id, dayNumber: d.n, placeId: nuit.placeId, savingAmount: best.net });
     }
   }
   for (const d of model.days) {
     const next = model.days[d.index + 1];
-    const camp = campOf(model, d.index);
-    const before = campOf(model, d.index - 1);
+    const camp = stayOn(model, d);
+    const before = stayBefore(model, d);
     if (!next || !camp || !before || camp.placeId !== before.placeId || !located(camp)) continue;
     const lastVisit = [...d.assignments].reverse().find((a) => located(a.place) && a.place.id !== camp.placeId && !isTrace(a.place.categoryName, a.place));
     const first = next.assignments.find((a) => located(a.place) && a.place.id !== camp.placeId && !isTrace(a.place.categoryName, a.place));
@@ -317,7 +308,12 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       prec = { name: p.name, end: end ?? start };
     });
 
-    if (nuit) {
+    if (!nuit) dryNights = 0;
+    // Tonight's stay. Its arrival, access, ground and vehicle rules are judged on its first
+    // evening; a later evening of the same stay is judged on the day's load (dayLoad, back
+    // at camp before dark) and on its own date (closures above), and counts as a night for
+    // water.
+    if (nuit && isFirstEvening(nuit, d)) {
       const extra = { ...ids, placeId: nuit.placeId };
       const a = d.assignments.find((x) => x.accommodationId === nuit.id);
       const arr = a?.place.time ?? rules.hm(nuit.checkIn);
@@ -354,16 +350,18 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       if (win && arr != null && (arr < win[0] || arr > win[1])) add('blocking', J, 'welcome_window', { arr: hhmm(arr), name: nuit.name, open: hhmm(win[0]), close: hhmm(win[1]) }, extra);
       const mini = rules.minNights(nuit.text);
       if (mini && nuit.nights < mini) add('blocking', J, 'min_nights', { name: nuit.name, n: nuit.nights }, extra);
-      if (nuit.startDayId === d.id) {
-        const pv = rules.priceVerdict(nuit.price, settings);
-        const cur = model.currency;
-        if (pv) add(pv.level, J, pv.key, { name: nuit.name, price: money(nuit.price, cur, L), max: money(settings.night_price_max, cur, L), target: money(settings.night_price_target, cur, L) }, extra);
-        // No way to ask the host anything: no e-mail, no phone (plugin record or TREK's field).
-        if (!contacts.hasContact(nuit.info && nuit.info.contacts) && !nuit.nativePhone) add('verify', J, 'night_no_contact', { name: nuit.name }, extra);
-        const waiting = nightStatus.waitingDays(nightStatus.reservationFor(nuit, model.reservations), nuit.info, now);
-        if (waiting != null && waiting > nightStatus.STALE_DAYS) add('verify', J, 'contact_stale', { name: nuit.name, n: waiting }, extra);
-      }
-      // Entered amenities win over words in the notes.
+      // The price against the target and the ceiling, both in the trip's currency: a night
+      // priced in another currency is not compared.
+      const pv = nuit.currency === model.currency ? rules.priceVerdict(nuit.price, settings) : null;
+      if (pv) add(pv.level, J, pv.key, { name: nuit.name, price: money(nuit.price, model.currency, L), max: money(settings.night_price_max, model.currency, L), target: money(settings.night_price_target, model.currency, L) }, extra);
+      // No way to ask the host anything: no e-mail, phone, WhatsApp or own website (contacts.js).
+      if (!contacts.hasContact(contacts.reachOf(nuit.info, (model.poolById.get(nuit.placeId) || {}).raw))) add('verify', J, 'night_no_contact', { name: nuit.name }, extra);
+      const waiting = nightStatus.waitingDays(nightStatus.reservationFor(nuit, model.reservations), nuit.info, now);
+      if (waiting != null && waiting > nightStatus.STALE_DAYS) add('verify', J, 'contact_stale', { name: nuit.name, n: waiting }, extra);
+    }
+    if (nuit) {
+      // Entered amenities win over words in the notes. Every evening of a stay is a night.
+      const am = nuit.info ? nuit.info.amenities : {};
       const dry = am.water === 'no' || (am.water !== 'yes' && rules.noWater(nuit.text));
       dryNights = dry ? dryNights + 1 : 0;
       if (dryNights >= 2) {
@@ -387,6 +385,9 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
     }).map(({ place }) => place.name);
   };
   const bookings = t(L, 'scope.bookings');
+  const dayOfStay = (n) => findDay(model, { dayId: n.startDayId });
+  const scopeOf = (d) => (d ? dayLabel(d) : bookings);
+  const dayIds = (d) => (d ? { dayId: d.id, dayNumber: d.n } : {});
   for (const x of model.reservations || []) {
     const acc = model.nights.find((n) => x.accommodation_id != null && n.id === String(x.accommodation_id));
     const words = norm(x.title).split(/[^a-z0-9]+/).filter((w) => w.length >= 5);
@@ -395,13 +396,26 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
     // no confirmation number is the usual sign nobody actually booked.
     // Only a hint now: the user sets a night booked from the place view or TREK's form, and a
     // farm on a donation has no confirmation number to give.
-    if (x.status === 'confirmed' && !x.confirmation_number && !BOOKED_NOTE.test(norm(`${x.notes || ''} ${x.title || ''}`))) add('verify', bookings, 'resa_confirmed', { title: x.title }, { reservationId: x.id });
-    // A night whose booking was cancelled and that is still in the plan has nowhere to sleep.
-    if (x.status === 'cancelled' && acc) {
-      const nd = model.days.find((d) => d.id === acc.startDayId);
-      const othersOk = (model.reservations || []).some((y) => y !== x && y.accommodation_id === x.accommodation_id && y.status !== 'cancelled');
-      if (!othersOk) add('fix', nd ? dayLabel(nd) : bookings, 'night_cancelled', { name: acc.name }, { reservationId: x.id, accommodationId: acc.id, ...(nd ? { dayId: nd.id, dayNumber: nd.n } : {}) });
+    if (x.status === 'confirmed' && !x.confirmation_number && !BOOKED_NOTE.test(norm(`${nightStatus.freeNotes(x.notes)} ${x.title || ''}`))) add('verify', bookings, 'resa_confirmed', { title: x.title }, { reservationId: x.id });
+    // A confirmed booking whose notes still say it waits for an answer.
+    if (nightStatus.staleWaitingNote(x)) add('fix', bookings, 'resa_note_stale', { title: x.title }, { reservationId: x.id });
+  }
+  for (const n of model.nights) {
+    const res = nightStatus.reservationFor(n, model.reservations);
+    const nd = dayOfStay(n);
+    // A night whose booking is cancelled (no other booking of it standing) has nowhere to sleep.
+    if (res && nightStatus.statusOf(res) === 'dropped') {
+      add('fix', scopeOf(nd), 'night_cancelled', { name: n.name }, { reservationId: res.id, accommodationId: n.id, ...dayIds(nd) });
     }
+    // The price the booking records (TREK's expense side) against the price the plan counts.
+    const bp = nightStatus.bookedPrice(res);
+    if (bp && n.stayCost != null && (bp.currency || n.currency) === n.currency && Math.abs(bp.amount - n.stayCost) > 1) {
+      add('fix', scopeOf(nd), 'resa_price', { title: res.title || n.name, booked: money(bp.amount, n.currency, L), planned: money(n.stayCost, n.currency, L) }, { reservationId: res.id, placeId: n.placeId, ...dayIds(nd) });
+    }
+  }
+  // A booking TREK shows as made, but tied to no night of the plan: nobody sleeps there.
+  for (const u of nightStatus.unlinkedBookings(model)) {
+    add('fix', scopeOf(u.day), 'resa_unlinked', { title: u.res.title || '', day: u.day ? u.day.n : '?' }, { reservationId: u.res.id, placeId: u.placeId, ...dayIds(u.day) });
   }
   const budgetScope = t(L, 'scope.budget');
   if (Array.isArray(model.costs)) {
@@ -409,11 +423,13 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       const c = cites(b.name);
       if (c.length) add('fix', budgetScope, 'stale_budget', { name: b.name, list: c.join(', ') });
     }
+    // Compared only when every night's price is known and in the trip's currency: a partial
+    // total would ask for a wrong correction.
     const lodging = model.costs.filter((b) => /hebergement|hotel|accommodation|lodging|camping|nuit|night|alloggio|unterkunft/.test(norm(`${b.category || ''} ${b.name || ''}`)));
-    if (lodging.length) {
+    const nm = nightStatus.nightsMoney(model);
+    if (lodging.length && nm.complete) {
       const inBudget = lodging.reduce((s, b) => s + (+b.total_price || 0), 0);
-      const planned = model.nights.reduce((s, n) => s + (n.price || 0) * n.nights, 0);
-      if (Math.abs(inBudget - planned) > 1) add('fix', budgetScope, 'budget_total', { budget: money(inBudget, model.currency, L), nights: money(planned, model.currency, L) });
+      if (Math.abs(inBudget - nm.total) > 1) add('fix', budgetScope, 'budget_total', { budget: money(inBudget, model.currency, L), nights: money(nm.total, model.currency, L) });
     }
   }
   const todoScope = t(L, 'scope.todos');
@@ -440,4 +456,4 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
   return { ok: counts.blocking === 0, counts, findings, pendingRoutes: pending };
 }
 
-module.exports = { checkTrip, dayPlan, carPos, campOf, isVisit, bookingNoted, LEVELS, nameKey };
+module.exports = { checkTrip, dayPlan, carPos, isVisit, bookingNoted, LEVELS, nameKey };

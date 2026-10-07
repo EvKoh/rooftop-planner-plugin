@@ -389,5 +389,13 @@
   "chip.closedFrom": "Stängt från {from}",
   "chip.closedUntil": "Stängt till {until}",
   "place_closed": "”{name}” är stängt den dagen (stängt {from}–{until}): välj en annan plats",
-  "s.place_closed": "stängt den dagen"
+  "s.place_closed": "stängt den dagen",
+  "night.none": "ingen övernattning planerad denna dag",
+  "night.unlinked": "bokningen ”{title}” är inte kopplad till någon natt i planen",
+  "night.dropped_note": "Avbokad: {reason}",
+  "resa_unlinked": "bokningen ”{title}” (dag {day}) är inte kopplad till någon natt i planen: TREK visar den som bokad, men enligt planen sover ingen där — koppla den till den kvällens natt eller avboka den",
+  "resa_note_stale": "bokningen ”{title}” är bekräftad men anteckningarna säger fortfarande att den väntar på svar: uppdatera anteckningarna",
+  "resa_price": "bokningen ”{title}” kostar {booked}, planen räknar med {planned}: uppdatera platsens pris",
+  "budget.fuel_line": "Bränsle dag {day} ({km} km)",
+  "budget.toll_line": "Vägavgift dag {day} — {name}"
 }

@@ -66,7 +66,9 @@ describe('contact fields', () => {
     expect(c.channels(all).map((x) => x.channel)).toEqual(['email', 'whatsapp', 'phone', 'website_form']);
     expect(c.channels({ ...all, preferred_channel: 'phone' })[0]).toEqual({ channel: 'phone', address: '+390000000001' });
     expect(c.channels(null)).toEqual([]);
-    expect(c.hasContact({ website: 'https://example.com' })).toBe(false);
+    // An own website is a way in (a contact form), as the host message uses it; a platform page is not.
+    expect(c.hasContact({ website: 'https://example.com' })).toBe(true);
+    expect(c.hasContact({ website: 'https://park4night.com/fr/place/1' })).toBe(false);
     expect(c.hasContact({ whatsapp: '+390000000002' })).toBe(true);
   });
 
@@ -309,8 +311,12 @@ describe('vanlife_night', () => {
     expect(booked.warnings).toBeUndefined();
     expect(trip.reservations[0]).toMatchObject({ status: 'confirmed', confirmation_number: 'EX-123' });
     const dropped = await call(h, 'vanlife_night', { tripId: 1, action: 'set', placeId: 16, dayNumber: 2, status: 'dropped', reason: 'no tents' });
-    expect(trip.reservations[1]).toMatchObject({ status: 'cancelled', notes: 'Dropped: no tents' });
+    expect(trip.reservations[1]).toMatchObject({ status: 'cancelled', notes: '[vanlife] Dropped: no tents' });
     expect(dropped.trekStatus).toBe('cancelled');
+    // Back to "contacted": the plugin's own "dropped" line goes, the user's notes stay.
+    trip.reservations[1].notes = 'Called the owner\n[vanlife] Dropped: no tents';
+    await call(h, 'vanlife_night', { tripId: 1, action: 'set', placeId: 16, dayNumber: 2, status: 'contacted' });
+    expect(trip.reservations[1]).toMatchObject({ status: 'pending', notes: 'Called the owner' });
     const h2 = makeHost();
     const noNumber = await call(h2, 'vanlife_night', { tripId: 1, action: 'set', placeId: 16, dayNumber: 2, status: 'booked' });
     expect(noNumber.warnings[0]).toMatch(/No confirmation number/);

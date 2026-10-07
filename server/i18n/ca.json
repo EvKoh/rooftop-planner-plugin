@@ -389,5 +389,13 @@
   "chip.closedFrom": "Tancat des del {from}",
   "chip.closedUntil": "Tancat fins al {until}",
   "place_closed": "«{name}» és tancat aquell dia (tancat del {from} al {until}): tria un altre lloc",
-  "s.place_closed": "tancat aquell dia"
+  "s.place_closed": "tancat aquell dia",
+  "night.none": "cap nit prevista aquest dia",
+  "night.unlinked": "la reserva «{title}» no està vinculada a cap nit del pla",
+  "night.dropped_note": "Descartada: {reason}",
+  "resa_unlinked": "la reserva «{title}» (dia {day}) no està vinculada a cap nit del pla: TREK la mostra reservada, però al pla ningú no hi dorm — vincula-la a la nit d’aquell vespre o cancel·la-la",
+  "resa_note_stale": "la reserva «{title}» està confirmada però les notes encara diuen que espera resposta: actualitza les notes",
+  "resa_price": "la reserva «{title}» costa {booked}, el pla compta {planned}: actualitza el preu del lloc",
+  "budget.fuel_line": "Combustible dia {day} ({km} km)",
+  "budget.toll_line": "Peatge dia {day} — {name}"
 }

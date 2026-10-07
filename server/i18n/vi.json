@@ -389,5 +389,13 @@
   "chip.closedFrom": "Đóng cửa từ {from}",
   "chip.closedUntil": "Đóng cửa đến {until}",
   "place_closed": "“{name}” đóng cửa ngày đó (đóng cửa {from}–{until}): hãy chọn nơi khác",
-  "s.place_closed": "đóng cửa ngày đó"
+  "s.place_closed": "đóng cửa ngày đó",
+  "night.none": "không có đêm nào được lên kế hoạch cho ngày này",
+  "night.unlinked": "đặt chỗ “{title}” không gắn với đêm nào trong kế hoạch",
+  "night.dropped_note": "Đã bỏ: {reason}",
+  "resa_unlinked": "đặt chỗ “{title}” (ngày {day}) không gắn với đêm nào trong kế hoạch: TREK hiển thị là đã đặt, nhưng trong kế hoạch không ai ngủ ở đó — hãy gắn nó vào đêm của buổi tối hôm đó, hoặc hủy",
+  "resa_note_stale": "đặt chỗ “{title}” đã được xác nhận nhưng ghi chú vẫn nói đang chờ trả lời: hãy cập nhật ghi chú",
+  "resa_price": "đặt chỗ “{title}” có giá {booked}, kế hoạch tính {planned}: hãy cập nhật giá của địa điểm",
+  "budget.fuel_line": "Nhiên liệu ngày {day} ({km} km)",
+  "budget.toll_line": "Phí đường ngày {day} — {name}"
 }

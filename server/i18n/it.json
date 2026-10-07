@@ -389,5 +389,13 @@
   "chip.closedFrom": "Chiuso dal {from}",
   "chip.closedUntil": "Chiuso fino al {until}",
   "place_closed": "«{name}» è chiuso quel giorno (chiuso dal {from} al {until}): scegliere un altro posto",
-  "s.place_closed": "chiuso quel giorno"
+  "s.place_closed": "chiuso quel giorno",
+  "night.none": "nessuna notte prevista in questo giorno",
+  "night.unlinked": "la prenotazione «{title}» non è collegata a nessuna notte del piano",
+  "night.dropped_note": "Scartata: {reason}",
+  "resa_unlinked": "la prenotazione «{title}» (giorno {day}) non è collegata a nessuna notte del piano: TREK la mostra prenotata, ma nel piano nessuno ci dorme — collegala alla notte di quella sera o annullala",
+  "resa_note_stale": "la prenotazione «{title}» è confermata ma le sue note dicono ancora che attende una risposta: aggiorna le note",
+  "resa_price": "la prenotazione «{title}» costa {booked}, il piano conta {planned}: aggiorna il prezzo del luogo",
+  "budget.fuel_line": "Carburante giorno {day} ({km} km)",
+  "budget.toll_line": "Pedaggio giorno {day} — {name}"
 }

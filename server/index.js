@@ -260,9 +260,10 @@ module.exports = definePlugin({
         try {
           if (!(await placeOf(ctx, at.tripId, at.placeId))) return json(404, { error: 'place not in this trip' });
           const model = await loadTrip(ctx, at.tripId, null);
+          const { language } = await readSettings(ctx, ['language']);
           const text = (v, n) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : undefined);
           const result = await nightStatus.set(ctx, model, {
-            placeId: at.placeId, dayId, status: b.status, clear: true,
+            placeId: at.placeId, dayId, status: b.status, clear: true, language,
             confirmation: b.status === 'booked' ? text(b.confirmation, 100) : undefined,
             reason: b.status === 'dropped' ? text(b.reason, 200) : undefined,
           });

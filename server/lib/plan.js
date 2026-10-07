@@ -50,11 +50,13 @@ async function planTrip(ctx, model, o, opts) {
       for (const f of r.findings.filter((x) => x.level === 'blocking')) out.actions.push({ priority: 1, action: f.message });
       // An overloaded day, too many activities, unknown durations, then the possible savings.
       for (const f of r.findings.filter((x) => LOAD_KEYS.includes(x.key))) out.actions.push({ priority: 2, action: f.message });
-      for (const f of r.findings.filter((x) => SAVING_KEYS.includes(x.key))) out.actions.push({ priority: 3, action: f.message });
+      // A cheaper night is proposed once, by the nights step (same rule, measured on the road).
+      for (const f of r.findings.filter((x) => SAVING_KEYS.includes(x.key) && x.key !== 'saving_night')) out.actions.push({ priority: 3, action: f.message });
       const days = r.findings.filter((x) => x.key === 'day_overloaded');
       out.results.load = { overloadedDays: days.map((f) => ({ day: f.dayNumber, needMinutes: f.needMinutes, windowMinutes: f.windowMinutes })), savings: r.findings.filter((x) => SAVING_KEYS.includes(x.key)).map((f) => ({ day: f.dayNumber, key: f.key, amount: f.savingAmount ?? null, extraKm: f.extraKm ?? null })) };
     } else if (name === 'nights') {
       out.results.nights = out.results.nights || [];
+      // Each stay once, on its first evening.
       const nightDays = model.days.filter((d) => model.nights.some((n) => n.startDayId === d.id));
       for (; index < nightDays.length; index++) {
         if (deadline.left() < 6000) break;
@@ -70,11 +72,10 @@ async function planTrip(ctx, model, o, opts) {
           }
           const best = r.candidates.filter((c) => !c.blocked.length).slice(0, 3);
           out.results.nights.push({ day: d.n, current: r.currentNight, best });
-          // Net of the detour's fuel, within 20 min, legal and not closed that night.
-          const cheaper = best.find((c) => c.price != null && r.currentNight && r.currentNight.price != null && c.price < r.currentNight.price && (c.detourMinutes ?? 99) <= 20 && !c.legalRisk && c.openOnDate !== 'closed');
-          if (cheaper) {
-            const net = Math.round((r.currentNight.price - (cheaper.totalCost ?? cheaper.price)) * 100) / 100;
-            if (net > 0) out.actions.push({ priority: 2, action: `Day ${d.n}: "${cheaper.name}" (${cheaper.price}, ${cheaper.detourMinutes} min detour) could replace "${r.currentNight.name}" (${r.currentNight.price}), saving ${net} net of fuel: verify ${cheaper.toVerify.join(', ')} (vanlife_host_message drafts the question to the host), then ask the user` });
+          // The same rule as the check's saving (nights.js cheaperNight): net of the detour's fuel.
+          if (r.cheaper) {
+            const c = r.cheaper.candidate;
+            out.actions.push({ priority: 2, action: `Day ${d.n}: "${c.name}" (${c.price}, ${c.detourMinutes} min detour) could replace "${r.currentNight.name}" (${r.currentNight.comparablePrice}), saving ${r.cheaper.net} net of fuel: verify ${c.toVerify.join(', ')} (vanlife_host_message drafts the question to the host), then ask the user` });
           }
         } catch (e) {
           out.results.nights.push({ day: d.n, error: String(e.message || e) });

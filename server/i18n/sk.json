@@ -389,5 +389,13 @@
   "chip.closedFrom": "Zatvorené od {from}",
   "chip.closedUntil": "Zatvorené do {until}",
   "place_closed": "„{name}“ má v ten deň zatvorené (zatvorené {from}–{until}): vyberte iné miesto",
-  "s.place_closed": "v ten deň zatvorené"
+  "s.place_closed": "v ten deň zatvorené",
+  "night.none": "na tento deň nie je naplánovaná žiadna noc",
+  "night.unlinked": "rezervácia „{title}“ nie je priradená k žiadnej noci plánu",
+  "night.dropped_note": "Zrušené: {reason}",
+  "resa_unlinked": "rezervácia „{title}“ (deň {day}) nie je priradená k žiadnej noci plánu: TREK ju ukazuje ako rezervovanú, ale podľa plánu tam nikto nespí — priraďte ju k noci toho večera, alebo ju zrušte",
+  "resa_note_stale": "rezervácia „{title}“ je potvrdená, ale poznámky stále hovoria, že čaká na odpoveď: aktualizujte poznámky",
+  "resa_price": "rezervácia „{title}“ stojí {booked}, plán počíta s {planned}: aktualizujte cenu miesta",
+  "budget.fuel_line": "Palivo deň {day} ({km} km)",
+  "budget.toll_line": "Mýto deň {day} — {name}"
 }

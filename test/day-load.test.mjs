@@ -7,7 +7,8 @@ const plugin = require('../server/index.js');
 const pi = require('../server/lib/place-info.js');
 const fillLib = require('../server/lib/amenity-fill.js');
 const { parseVisit, stopMinutes } = require('../server/lib/visit.js');
-const { campOf, checkTrip } = require('../server/lib/check.js');
+const { checkTrip } = require('../server/lib/check.js');
+const { stayOn, stayBefore } = require('../server/lib/trip.js');
 const { bannerText, bannerFrom } = require('../server/lib/report.js');
 const { deadline } = require('../server/lib/util.js');
 const { loadTrip } = require('../server/lib/trip.js');
@@ -301,11 +302,13 @@ describe('possible savings in the check', () => {
   });
 
   it('knows the camp of a day inside a stay of several nights', () => {
-    const model = { days: [{ id: 1, index: 0 }, { id: 2, index: 1 }, { id: 3, index: 2 }], nights: [{ placeId: 9, startDayId: 1, endDayId: 3 }] };
-    expect(campOf(model, 0).placeId).toBe(9);
-    expect(campOf(model, 1).placeId).toBe(9);
-    expect(campOf(model, 2)).toBeNull();
-    expect(campOf(model, -1)).toBeNull();
+    const days = [{ id: 1, index: 0 }, { id: 2, index: 1 }, { id: 3, index: 2 }];
+    const model = { days, nights: [{ placeId: 9, startDayId: 1, endDayId: 3, startIndex: 0, nights: 2 }] };
+    expect(stayOn(model, days[0]).placeId).toBe(9);
+    expect(stayOn(model, days[1]).placeId).toBe(9);
+    expect(stayOn(model, days[2])).toBeNull();
+    expect(stayBefore(model, days[0])).toBeNull();
+    expect(stayBefore(model, days[2]).placeId).toBe(9);
   });
 
   it('plan_trip reports the load and the savings and turns them into actions', async () => {

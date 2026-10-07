@@ -389,5 +389,13 @@
   "chip.closedFrom": "{from} itibarıyla kapalı",
   "chip.closedUntil": "{until} tarihine kadar kapalı",
   "place_closed": "“{name}” o gün kapalı ({from}–{until} kapalı): başka bir yer seçin",
-  "s.place_closed": "o gün kapalı"
+  "s.place_closed": "o gün kapalı",
+  "night.none": "bu gün için planlanmış konaklama yok",
+  "night.unlinked": "“{title}” rezervasyonu planın hiçbir gecesine bağlı değil",
+  "night.dropped_note": "Vazgeçildi: {reason}",
+  "resa_unlinked": "“{title}” rezervasyonu ({day}. gün) planın hiçbir gecesine bağlı değil: TREK onu rezerve gösteriyor ama planda orada kimse kalmıyor — o akşamın gecesine bağlayın ya da iptal edin",
+  "resa_note_stale": "“{title}” rezervasyonu onaylandı ama notları hâlâ yanıt beklediğini söylüyor: notları güncelleyin",
+  "resa_price": "“{title}” rezervasyonunun fiyatı {booked}, plan {planned} hesaplıyor: yerin fiyatını güncelleyin",
+  "budget.fuel_line": "Yakıt {day}. gün ({km} km)",
+  "budget.toll_line": "Geçiş ücreti {day}. gün — {name}"
 }

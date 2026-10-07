@@ -389,5 +389,13 @@
   "chip.closedFrom": "Geschlossen ab {from}",
   "chip.closedUntil": "Geschlossen bis {until}",
   "place_closed": "„{name}“ ist an diesem Tag geschlossen (geschlossen {from}–{until}): einen anderen Ort wählen",
-  "s.place_closed": "an dem Tag geschlossen"
+  "s.place_closed": "an dem Tag geschlossen",
+  "night.none": "an diesem Tag ist keine Nacht geplant",
+  "night.unlinked": "Buchung „{title}“ ist keiner Nacht des Plans zugeordnet",
+  "night.dropped_note": "Verworfen: {reason}",
+  "resa_unlinked": "Buchung „{title}“ (Tag {day}) ist keiner Nacht des Plans zugeordnet: TREK zeigt sie als gebucht, aber laut Plan schläft dort niemand — der Nacht dieses Abends zuordnen oder stornieren",
+  "resa_note_stale": "Buchung „{title}“ ist bestätigt, aber ihre Notizen sagen noch, dass sie auf eine Antwort wartet: Notizen aktualisieren",
+  "resa_price": "Buchung „{title}“ kostet {booked}, der Plan rechnet mit {planned}: Preis des Ortes aktualisieren",
+  "budget.fuel_line": "Kraftstoff Tag {day} ({km} km)",
+  "budget.toll_line": "Maut Tag {day} — {name}"
 }

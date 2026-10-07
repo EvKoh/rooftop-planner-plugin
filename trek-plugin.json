@@ -539,7 +539,7 @@
       {
         "name": "vanlife_check_trip",
         "title": "Check a vanlife trip for problems",
-        "description": "Read-only check of a trip, by day for the user's vehicle. Levels: blocking (arrival after sunset minus margin; stop outside its hours; arrival after a place's access_before; check-in window or minimum stay missed; a night the vehicle may not use: motorhome area or car park for a rooftop tent, tent or dog refused, size limit; booking confirmed with no number), fix (impossible times, overlaps, arrival before access_after or in closed hours; route place missing/not first/not joined; long shopping detour; dry nights in a row; stale lines; overloaded day; over one big or two small activities a day), verify (booking required, none recorded, with link; no host contact or host silent 3 days; farm zone; van night off-site; closure in the notes; after sunset; price above the ceiling or unknown; visit duration unknown; cheaper legal night within 20 min; back to the same camp against the next day's route), info (sunset margins). Fix what is certain; ask the user about choices. Never book, pay or message a host for them.",
+        "description": "Read-only check of a trip, by day, for the user's vehicle. blocking: arrival after sunset minus margin or unknown, stop outside its hours, access closed, place closed, check-in window or minimum stay missed, night the vehicle may not use (aire for a rooftop tent, tent/dog refused, size). fix: impossible times, overlaps, route place, shopping detour, dry nights, overloaded day, hike walk not from one car park; bookings tied to no night, cancelled night still planned, booked price unlike the plan, \"waiting\" notes on a confirmed booking; stale budget lines or to-dos, lodging budget unlike the nights' total. verify: booking required, none recorded; confirmed with no number; no way to reach the host or host silent 3 days; private/wild/unknown ground; closure in the notes; after sunset; price over the ceiling or unknown; visit duration unknown; cheaper legal night; backtracking to camp. info: margins, price over target, farm zone. Fix what is certain; ask about choices. Never book, pay or message a host.",
         "inputSchema": {
           "type": "object",
           "additionalProperties": false,
@@ -569,10 +569,35 @@
             "language": {
               "type": "string",
               "enum": [
+                "de",
                 "en",
-                "fr"
+                "es",
+                "et",
+                "fr",
+                "hu",
+                "nl",
+                "br",
+                "cs",
+                "sk",
+                "pl",
+                "ru",
+                "zh",
+                "zh-TW",
+                "it",
+                "tr",
+                "ar",
+                "az",
+                "id",
+                "ja",
+                "ko",
+                "th",
+                "uk",
+                "gr",
+                "sv",
+                "vi",
+                "ca"
               ],
-              "description": "Message language (default: the user setting)."
+              "description": "Message language, TREK code (default: the user setting)."
             },
             "sun": {
               "type": "boolean",
@@ -717,7 +742,7 @@
             "departure": {
               "type": "string",
               "pattern": "^[0-2]?[0-9]:[0-5][0-9]$",
-              "description": "schedule: departure from last night's place (default: keep the current plan, else 09:00)."
+              "description": "schedule: departure from last night's place (default: keep the current plan, else the day_start setting)."
             },
             "stays": {
               "type": "array",
@@ -1223,7 +1248,7 @@
       {
         "name": "vanlife_night",
         "title": "Status of each night: spotted, contacted, booked, dropped",
-        "description": "Where each night of the trip stands, kept in TREK's own bookings. Statuses: spotted (a place with no booking), contacted (booking \"pending\": the host was asked), booked (booking \"confirmed\", with its confirmation number when there is one), dropped (booking \"cancelled\", with a short reason). action \"list\": one line per night (day, place, status, contact, last exchange, price, days waiting for an answer). action \"set\": placeId + dayNumber (the evening) + status: creates or updates the hotel booking tied to that place and day (and plans the night if the day has none). Use it after the user says they asked, booked or gave up a place. This only records what the user declares: it never books, pays or contacts anyone; never set \"booked\" unless the user says the host confirmed.",
+        "description": "Where each night of the trip stands, kept in TREK's own bookings. Statuses: spotted (a place with no booking), contacted (booking \"pending\": the host was asked), booked (booking \"confirmed\", with its confirmation number when there is one), dropped (booking \"cancelled\", with a short reason). action \"list\": one line per evening (status, contact, last exchange, party price per night and per stay, days waiting); later evenings of a stay carry \"continues\", so counts are nights; \"unlinked\" = a booking tied to no night of the plan. action \"set\": placeId + dayNumber (or date) + status: creates or updates the hotel booking of that place and evening; an evening with no stay gets one (nights, default 1), and an unlinked booking of the place is tied to it. \"notes\" replaces the free notes. Use it after the user says they asked, booked or gave up a place. This only records what the user declares: it never books, pays or contacts anyone; never set \"booked\" unless the user says the host confirmed.",
         "inputSchema": {
           "type": "object",
           "additionalProperties": false,
@@ -1259,6 +1284,11 @@
               "type": "integer",
               "minimum": 1,
               "description": "set: TREK day id, instead of dayNumber."
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "set: the date of that evening, instead of dayNumber."
             },
             "status": {
               "type": "string",
@@ -1355,33 +1385,33 @@
             "language_extra": {
               "type": "string",
               "enum": [
-                "ar",
-                "az",
-                "br",
-                "ca",
-                "cs",
                 "de",
                 "en",
                 "es",
                 "et",
                 "fr",
-                "gr",
                 "hu",
-                "id",
-                "it",
-                "ja",
-                "ko",
                 "nl",
+                "br",
+                "cs",
+                "sk",
                 "pl",
                 "ru",
-                "sk",
-                "sv",
-                "th",
-                "tr",
-                "uk",
-                "vi",
                 "zh",
-                "zh-TW"
+                "zh-TW",
+                "it",
+                "tr",
+                "ar",
+                "az",
+                "id",
+                "ja",
+                "ko",
+                "th",
+                "uk",
+                "gr",
+                "sv",
+                "vi",
+                "ca"
               ],
               "description": "Add the host's language after the user's (TREK language code)."
             },

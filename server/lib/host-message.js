@@ -6,8 +6,10 @@
 // The texts are the message itself, in the host's languages, not interface strings: they
 // live here rather than in the 27 interface catalogues.
 const contacts = require('./contacts');
-const { nightOf } = require('./trip');
-const { hhmm, toNum } = require('./util');
+const { findDay, stayOn } = require('./trip');
+const placeInfo = require('./place-info');
+const nightStatus = require('./night-status');
+const { hhmm } = require('./util');
 const { money } = require('./i18n');
 
 const SEPARATOR = '————————————';
@@ -892,27 +894,33 @@ function params(lg, base) {
 function draft(model, settings, a) {
   const place = model.poolById.get(a.placeId);
   if (!place) throw new MessageError(`place ${a.placeId} is not in trip ${model.tripId}`);
-  const noDay = a.dayNumber == null && a.dayId == null;
-  const planned = model.nights.find((n) => n.placeId === place.id && (noDay || model.days.some((d) => d.id === n.startDayId && (d.n === a.dayNumber || d.id === a.dayId))));
-  const day = model.days.find((d) => (a.dayId != null && d.id === a.dayId) || (a.dayNumber != null && d.n === a.dayNumber)) || (planned && model.days.find((d) => d.id === planned.startDayId));
+  // The evening asked, else the place's first planned stay. On a later evening of a stay of
+  // this place, the message is about the whole stay, from its first evening.
+  const asked = findDay(model, { dayId: a.dayId, dayNumber: a.dayNumber });
+  if ((a.dayId != null || a.dayNumber != null) && !asked) throw new MessageError(`day ${a.dayNumber ?? a.dayId} is not in trip ${model.tripId}`);
+  const covering = asked ? stayOn(model, asked) : null;
+  const planned = asked ? (covering && covering.placeId === place.id ? covering : null) : model.nights.find((n) => n.placeId === place.id) || null;
+  const day = planned ? findDay(model, { dayId: planned.startDayId }) : asked;
   if (!day || !day.date) throw new MessageError(`"${place.name}" is not a planned night with a date: give dayNumber, the evening of the night`);
   const nights = Math.max(1, Math.min(30, a.nights || (planned ? planned.nights : 1)));
   const endDay = model.days[day.index + nights];
   const endDate = nights > 1 ? (endDay && endDay.date) || new Date(Date.parse(`${day.date}T12:00:00Z`) + nights * 864e5).toISOString().slice(0, 10) : null;
   // Arrival: the night's planned time in the day, else its check-in.
   let arrival = a.arrival || null;
-  if (!arrival) {
-    const tonight = nightOf(model, day);
-    const asg = tonight && tonight.placeId === place.id ? day.assignments.find((x) => x.accommodationId === tonight.id) : null;
+  if (!arrival && planned) {
+    const asg = day.assignments.find((x) => x.accommodationId === planned.id);
     const m = asg && asg.place.time != null ? asg.place.time : null;
-    arrival = m != null ? hhmm(m) : tonight && tonight.placeId === place.id && tonight.checkIn ? tonight.checkIn : null;
+    arrival = m != null ? hhmm(m) : planned.checkIn || null;
   }
   const info = place.info;
-  const priceN = toNum(place.price);
+  // The price asked to confirm is the one the plan counts: the whole party, the whole stay
+  // (per person x travellers, dog fee, a flat price once). Unknown when the unit is not a
+  // night's (per hour, per entry): then the host is asked for it.
+  const priceN = placeInfo.nightCost(place.price, info, settings, nights).perStay;
   const base = {
     start: day.date, end: endDate, nights, travellers: settings.travellers || 2, dog: !!settings.dog, vehicle: settings.vehicle,
     length: settings.vehicle_length_m, height: settings.vehicle_height_m,
-    time: arrival, price: priceN, currency: (place.raw && place.raw.currency) || model.currency, signature: a.signature ? String(a.signature).slice(0, 80) : null,
+    time: arrival, price: priceN, currency: placeInfo.currencyOf(place.raw, model.currency), signature: a.signature ? String(a.signature).slice(0, 80) : null,
   };
   const keys = questionsFor(info, settings, { arrival, price: priceN });
   const extraQ = (a.extra_questions || []).map((x) => String(x).slice(0, 200)).slice(0, 5);
@@ -921,9 +929,9 @@ function draft(model, settings, a) {
   const langs = [...new Set(['en', mine, known.includes(a.language_extra) ? a.language_extra : null].filter(Boolean))];
   const parts = langs.map((lg) => body(lg, keys, params(lg, base), extraQ));
   const text = parts.join(`\n\n${SEPARATOR}\n\n`);
-  const routes = contacts.channels(info && info.contacts);
-  if (!routes.length && place.raw && place.raw.phone) routes.push({ channel: 'phone', address: place.raw.phone });
-  if (!routes.length && place.raw && place.raw.website && !contacts.NOT_OWN_SITE.test(place.raw.website)) routes.push({ channel: 'website_form', address: place.raw.website });
+  const routes = contacts.channels(contacts.reachOf(info, place.raw));
+  const booking = planned ? nightStatus.reservationFor(planned, model.reservations) : nightStatus.candidateReservation(model.reservations, place.id, day.id);
+  const status = nightStatus.statusOf(booking);
   const dateShort = day.date.split('-').reverse().join('/');
   const subject = `${langs.map((lg) => TEXT[lg].subject).join(' / ')} — ${dateShort}${nights > 1 ? ` (${nights})` : ''}`;
   return {
@@ -936,7 +944,9 @@ function draft(model, settings, a) {
     text,
     languages_used: langs,
     questions: keys.map((k) => Object.fromEntries([['key', k], ...langs.map((lg) => [lg, fill(TEXT[lg][k], params(lg, base))])])).concat(extraQ.map((x) => ({ key: 'extra', en: x }))),
-    reminder: 'DRAFT ONLY. Show this exact text to the user and wait for their explicit validation before it is sent; the user sends it, or tells you to. It is a request for information, not a booking. Once sent, record it with vanlife_place log (direction "sent") and vanlife_night set status "contacted".',
+    // The status the night has now: the reminder never asks to step a booked night back.
+    nightStatus: status,
+    reminder: `DRAFT ONLY. Show this exact text to the user and wait for their explicit validation before it is sent; the user sends it, or tells you to. It is a request for information, not a booking. Once sent, record it with vanlife_place log (direction "sent")${status === 'spotted' || status === 'dropped' ? ' and vanlife_night set status "contacted"' : ` (the night is already "${status}": leave its status as it is)`}.`,
   };
 }
 

@@ -389,5 +389,13 @@
   "chip.closedFrom": "Zamknięte od {from}",
   "chip.closedUntil": "Zamknięte do {until}",
   "place_closed": "„{name}” jest tego dnia zamknięte (zamknięte {from}–{until}): wybierz inne miejsce",
-  "s.place_closed": "tego dnia zamknięte"
+  "s.place_closed": "tego dnia zamknięte",
+  "night.none": "brak zaplanowanego noclegu tego dnia",
+  "night.unlinked": "rezerwacja „{title}” nie jest przypisana do żadnego noclegu w planie",
+  "night.dropped_note": "Porzucone: {reason}",
+  "resa_unlinked": "rezerwacja „{title}” (dzień {day}) nie jest przypisana do żadnego noclegu w planie: TREK pokazuje ją jako zarezerwowaną, ale w planie nikt tam nie śpi — przypisz ją do noclegu tego wieczoru albo ją anuluj",
+  "resa_note_stale": "rezerwacja „{title}” jest potwierdzona, ale notatki wciąż mówią, że czeka na odpowiedź: zaktualizuj notatki",
+  "resa_price": "rezerwacja „{title}” kosztuje {booked}, plan liczy {planned}: zaktualizuj cenę miejsca",
+  "budget.fuel_line": "Paliwo dzień {day} ({km} km)",
+  "budget.toll_line": "Opłata drogowa dzień {day} — {name}"
 }

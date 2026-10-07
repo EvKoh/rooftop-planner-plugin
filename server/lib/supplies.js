@@ -11,7 +11,7 @@ const routing = require('./routing');
 const { statusAt, hoursOn } = require('./opening-hours');
 const { highwayAllowed } = require('./settings');
 const { dayPlan, carPos } = require('./check');
-const { findDay } = require('./schedule');
+const { findDay } = require('./trip');
 
 const located = (p) => p && p.lat != null && p.lng != null;
 const KINDS = {

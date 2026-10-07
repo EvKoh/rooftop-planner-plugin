@@ -14,20 +14,21 @@ const routing = require('./routing');
 const { highwayAllowed } = require('./settings');
 const { dayPlan, carPos } = require('./check');
 const placeInfo = require('./place-info');
+const { findDay } = require('./trip');
+const { dayStopMinutes } = require('./visit');
 
 const up5 = (m) => Math.ceil(m / 5) * 5;
+// Time on site when nothing is known: listed in the result (assumedStays), never silent.
+const DEFAULT_STAY = 60;
 // A road that closes before the arrival is met by leaving earlier; one closed in between, by
 // the smaller move.
 const goesEarlier = (a) => a.key === 'access_late' || (a.key === 'access_window' && a.late <= a.wait);
 const located = (p) => p && p.lat != null && p.lng != null;
 
-function findDay(model, { dayId, dayNumber, date }) {
-  return model.days.find((d) => (dayId != null && d.id === dayId) || (dayNumber != null && d.n === dayNumber) || (date && d.date === date)) || null;
-}
 
 /**
  * @param stays     { [assignmentId]: minutes } overrides of time on site
- * @param departure "HH:MM" leaving last night's place (default: keep the current first time, else 09:00)
+ * @param departure "HH:MM" leaving last night's place (default: keep the current first time, else the day_start setting)
  */
 async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, deadline, network = true } = {}) {
   const day = findDay(model, ref);
@@ -60,10 +61,11 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
   let t0 = asked;
   if (t0 == null) {
     const first = visits.find((s) => s.place.time != null);
-    t0 = first && legMin[visits.indexOf(first)] != null ? first.place.time - legMin[visits.indexOf(first)] : 9 * 60;
+    t0 = first && legMin[visits.indexOf(first)] != null ? first.place.time - legMin[visits.indexOf(first)] : hm(settings.day_start) ?? 9 * 60;
   }
 
   /** The day's times from a departure: the stops, the arrival at the night, the access verdicts. */
+  const assumed = new Set();
   const timeline = (from) => {
     let tcur = from;
     const out = [];
@@ -71,10 +73,12 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
     visits.forEach((s, i) => {
       const drive = legMin[i];
       const arrive = drive == null ? null : up5(tcur + drive);
-      const current = s.place.end != null && s.place.time != null ? s.place.end - s.place.time : null;
-      // The stop's own times that day, else the duration recorded on the place, else TREK's.
+      // The caller's override, else the time on site the check counts (visit.js), else an
+      // hour, listed in `assumedStays` so it is never silent.
       const info = infoOf(s.place.id);
-      const stay = stays[s.id] ?? current ?? (info && info.visit_min_minutes) ?? s.place.duration ?? 60;
+      const known = stays[s.id] ?? dayStopMinutes(s, info, visits);
+      const stay = known ?? DEFAULT_STAY;
+      if (known == null) assumed.add(s.id);
       const start = arrive ?? s.place.time ?? tcur;
       const end = start + stay;
       const v = placeInfo.accessVerdict(info, arrive);
@@ -148,7 +152,7 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
     const lateBy = arrival != null && latest != null ? Math.max(0, Math.ceil(arrival - latest)) : null;
     night = {
       name: nuit.name, assignmentId: day.assignments.find((a) => a.accommodationId === nuit.id)?.id ?? null,
-      driveMinutes: lastMin, arrival: hhmm(arrival), sunset: hhmm(cs), latestArrival: hhmm(latest), ok: lateBy === 0, lateByMinutes: lateBy,
+      driveMinutes: lastMin, arrival: hhmm(arrival), sunset: hhmm(cs), latestArrival: hhmm(latest), ok: lateBy == null ? null : lateBy === 0, lateByMinutes: lateBy,
     };
     if (lateBy) {
       night.fixes = [
@@ -175,9 +179,10 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
     stops: out,
     night,
     conflicts,
+    ...(assumed.size ? { assumedStays: { minutes: DEFAULT_STAY, assignmentIds: [...assumed], note: 'Time on site unknown: an hour assumed. Record it with vanlife_place set.visit.' } } : {}),
     pendingRoutes: r.pending,
     coreCalls,
   };
 }
 
-module.exports = { scheduleDay, findDay };
+module.exports = { scheduleDay };

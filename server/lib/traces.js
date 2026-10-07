@@ -9,7 +9,7 @@ const { pmap, hhmm, norm } = require('./util');
 const routing = require('./routing');
 const { highwayAllowed } = require('./settings');
 const { dayPlan, carPos } = require('./check');
-const { findDay } = require('./schedule');
+const { findDay } = require('./trip');
 const { isHike } = require('./classify');
 const { t } = require('./i18n');
 

@@ -389,5 +389,13 @@
   "chip.closedFrom": "Tutup mulai {from}",
   "chip.closedUntil": "Tutup sampai {until}",
   "place_closed": "“{name}” tutup hari itu (tutup {from}–{until}): pilih tempat lain",
-  "s.place_closed": "tutup hari itu"
+  "s.place_closed": "tutup hari itu",
+  "night.none": "tidak ada malam yang direncanakan pada hari ini",
+  "night.unlinked": "pemesanan “{title}” tidak terhubung ke malam mana pun dalam rencana",
+  "night.dropped_note": "Dibatalkan: {reason}",
+  "resa_unlinked": "pemesanan “{title}” (hari {day}) tidak terhubung ke malam mana pun dalam rencana: TREK menampilkannya sudah dipesan, tetapi dalam rencana tidak ada yang menginap di sana — hubungkan ke malam hari itu, atau batalkan",
+  "resa_note_stale": "pemesanan “{title}” sudah dikonfirmasi tetapi catatannya masih menyebut menunggu jawaban: perbarui catatan",
+  "resa_price": "pemesanan “{title}” seharga {booked}, rencana menghitung {planned}: perbarui harga tempat",
+  "budget.fuel_line": "Bahan bakar hari {day} ({km} km)",
+  "budget.toll_line": "Tol hari {day} — {name}"
 }

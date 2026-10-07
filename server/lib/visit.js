@@ -4,6 +4,7 @@
 // not a duration: a duration needs a word saying so next to it, or a "from … to …" span.
 // Nothing is guessed: no match, no duration.
 const { norm } = require('./util');
+const { isHike, isParkingCategory } = require('./classify');
 
 // Words that make a number of hours a time on site (French, English, Italian, German).
 const CUE = /randonn|rando\b|balade|marche|promenade|boucle|aller.?retour|\ba\/r\b|sur place|visite|duree|compter|prevoir|hike|hiking|walk|trail|loop|round.?trip|return trip|on site|visit|duration|allow|takes|escursion|giro|passeggiata|andata e ritorno|durata|wanderung|rundweg|dauer|gehzeit|besuch/;
@@ -64,4 +65,15 @@ function stopMinutes(place, info) {
   return place.duration != null && place.duration > 0 ? place.duration : null;
 }
 
-module.exports = { parseVisit, stopMinutes, CUE };
+/**
+ * Minutes on site of a stop within its day, the one rule the check (day load) and the
+ * schedule share: a car park on a day with a hike is where the car waits during the hike,
+ * so its time is the hike's (0); any other stop reads stopMinutes. null when unknown.
+ */
+function dayStopMinutes(stop, info, stops) {
+  const hikeDay = stops.some((s) => isHike(s.place.categoryName));
+  if (hikeDay && isParkingCategory(stop.place.categoryName)) return 0;
+  return stopMinutes(stop.place, info);
+}
+
+module.exports = { parseVisit, stopMinutes, dayStopMinutes, CUE };

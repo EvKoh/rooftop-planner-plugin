@@ -389,5 +389,13 @@
   "chip.closedFrom": "{from}から休業",
   "chip.closedUntil": "{until}まで休業",
   "place_closed": "「{name}」はその日休業です（休業 {from}–{until}）。別の場所を選んでください",
-  "s.place_closed": "その日は休業"
+  "s.place_closed": "その日は休業",
+  "night.none": "この日の宿泊は予定されていません",
+  "night.unlinked": "予約「{title}」は計画のどの宿泊にも紐づいていません",
+  "night.dropped_note": "取りやめ：{reason}",
+  "resa_unlinked": "予約「{title}」（{day}日目）は計画のどの宿泊にも紐づいていません。TREKでは予約済みと表示されますが、計画上そこに泊まる人はいません — その晩の宿泊に紐づけるか、キャンセルしてください",
+  "resa_note_stale": "予約「{title}」は確定済みですが、メモにはまだ返事待ちと書かれています：メモを更新してください",
+  "resa_price": "予約「{title}」の料金は{booked}ですが、計画では{planned}で計算しています：場所の料金を更新してください",
+  "budget.fuel_line": "燃料 {day}日目（{km} km）",
+  "budget.toll_line": "通行料 {day}日目 — {name}"
 }
