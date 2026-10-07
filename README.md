@@ -87,7 +87,15 @@ camping on public ground.
   stay not met; a night the vehicle may not use; a farm night to check where local rules apply
   (South Tyrol: allowed on private ground with the owner's consent, except in protected areas or
   where a municipal rule forbids it); impossible times; a shopping detour over the limit; nights in a row without water; a
-  place that refuses the vehicle, the dog, or the vehicle's height, length or weight.
+  place that refuses the vehicle, the dog, or the vehicle's height, length or weight. Every evening
+  of a stay over several nights is a night: the day starts and ends at camp. Bookings are checked
+  against the plan: a booking tied to no night (TREK shows the place booked, but nobody sleeps
+  there), a cancelled night still planned, a booked price unlike the plan, notes still saying
+  "waiting" on a confirmed booking.
+- **One rule per question** — where you sleep on an evening (`trip.js` `stayOn`), which booking
+  speaks for a night (`night-status.js`), what a night costs the whole party and in which currency
+  (`place-info.js` `nightCost`, `currencyOf`): the check, the night list, the budget, the schedule,
+  the place panel, the planner columns and the host message all ask the same functions.
 - **Walking routes** — each hike's walk drawn dotted on the trip map, from the car park that gives
   access to it (see *Hikes and their car park*).
 - **One look everywhere** — every colour and pictogram the plugin shows comes from one catalogue,
@@ -110,7 +118,8 @@ camping on public ground.
   is never overwritten.
 - **Hosts and nights** — the contact of each host (e-mail, phone, WhatsApp, website, name,
   languages, preferred channel), filled from the place's own notes, OpenStreetMap and park4night;
-  a log of what was asked and answered; the status of every night, kept in TREK's own bookings;
+  a log of what was asked and answered; the status of every night, kept in TREK's own bookings
+  (a night's status is the strongest of its bookings: booked > in discussion > cancelled);
   and a ready-to-send information request to a host, in English then French (Italian or German
   on request), built from what is still unknown about the place. The plugin never sends it: the
   assistant shows the exact text and waits for your go.
