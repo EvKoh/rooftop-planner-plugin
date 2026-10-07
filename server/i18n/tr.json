@@ -397,5 +397,7 @@
   "s.tent_refused": "tavan çadırı yok",
   "ui.invalidField": "{field}: bu değer geçerli değil",
   "ui.notInTrip": "Bu yer bu gezide değil.",
-  "ui.failed": "Olmadı. Birazdan tekrar deneyin."
+  "ui.failed": "Olmadı. Birazdan tekrar deneyin.",
+  "sheet_refusal": "“{name}”: notlar {what} için “{quote}” diyor: gecenin mümkün olduğunu ev sahibiyle doğrulayın",
+  "s.sheet_refusal": "{what}: notlar hayır diyor"
 }

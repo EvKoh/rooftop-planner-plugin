@@ -397,5 +397,7 @@
   "s.tent_refused": "루프탑 텐트 불가",
   "ui.invalidField": "{field}: 올바르지 않은 값입니다",
   "ui.notInTrip": "이 장소는 이 여행에 없습니다.",
-  "ui.failed": "실패했습니다. 잠시 후 다시 시도하세요."
+  "ui.failed": "실패했습니다. 잠시 후 다시 시도하세요.",
+  "sheet_refusal": "“{name}”: 메모에 {what}에 대해 “{quote}”라고 되어 있습니다. 숙박이 가능한지 호스트에게 확인하세요",
+  "s.sheet_refusal": "{what}: 메모상 불가"
 }

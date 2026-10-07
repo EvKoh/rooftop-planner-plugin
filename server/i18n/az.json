@@ -397,5 +397,7 @@
   "s.tent_refused": "dam çadırı yox",
   "ui.invalidField": "{field}: bu dəyər etibarsızdır",
   "ui.notInTrip": "Bu yer bu səfərdə deyil.",
-  "ui.failed": "Alınmadı. Bir azdan yenidən cəhd edin."
+  "ui.failed": "Alınmadı. Bir azdan yenidən cəhd edin.",
+  "sheet_refusal": "“{name}”: qeydlər {what} haqqında “{quote}” deyir: gecənin mümkün olduğunu ev sahibi ilə dəqiqləşdirin",
+  "s.sheet_refusal": "{what}: qeydlər xeyr deyir"
 }

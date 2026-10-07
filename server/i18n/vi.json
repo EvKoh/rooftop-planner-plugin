@@ -397,5 +397,7 @@
   "s.tent_refused": "không lều nóc",
   "ui.invalidField": "{field}: giá trị này không hợp lệ",
   "ui.notInTrip": "Địa điểm này không thuộc chuyến đi này.",
-  "ui.failed": "Không thành công. Hãy thử lại sau giây lát."
+  "ui.failed": "Không thành công. Hãy thử lại sau giây lát.",
+  "sheet_refusal": "“{name}”: ghi chú nói “{quote}” về {what}: hãy xác nhận với chủ nhà rằng có thể nghỉ đêm",
+  "s.sheet_refusal": "{what}: ghi chú nói không"
 }

@@ -397,5 +397,7 @@
   "s.tent_refused": "不接受車頂帳篷",
   "ui.invalidField": "{field}：此值無效",
   "ui.notInTrip": "此地點不在本次行程中。",
-  "ui.failed": "操作未成功，請稍後重試。"
+  "ui.failed": "操作未成功，請稍後重試。",
+  "sheet_refusal": "「{name}」：備註中關於{what}寫著「{quote}」：請與房東確認能否過夜",
+  "s.sheet_refusal": "{what}：備註說不行"
 }

@@ -184,6 +184,17 @@ function minutesOf(s) {
   return minutes >= 5 && minutes <= 1440 ? minutes : null;
 }
 
+/** The upper end of a duration range ("1h30-2h" → 120, "30-45 min" → 45), or null. */
+function maxMinutesOf(s) {
+  const t = norm(s);
+  const m = t.match(/[-–]\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|hours?|heures?|std|stunden?|ore|horas?|min|mn|minutes?|minuten|minuti|minutos)(?![a-z])\s*(\d{1,2})?/);
+  if (!m) return null;
+  const n = Number(m[1].replace(',', '.'));
+  const v = /^m/.test(m[2]) ? Math.round(n) : Math.round(n * 60 + (m[3] ? Number(m[3]) : 0));
+  const low = minutesOf(s);
+  return v >= 5 && v <= 1440 && (low == null || v > low) ? v : null;
+}
+
 const GRADES = [
   ['hard', /\b(difficile|tres difficile|difficult|hard|demanding|strenuous|schwer|schwierig|anspruchsvoll|impegnativ\w*|dificil|exigente|expert)\b/],
   ['medium', /\b(moyen|moyenne|intermediate|medium|moderate|mittel|mittelschwer|medio|media|moderato|moderada|intermedi\w*)\b/],
@@ -211,21 +222,21 @@ const isAnswer = (t, w) => t.replace(/[\s.!。！]+$/u, '') === w;
 // The answer is the first clause: "allowed on a leash, not in the pool" is a yes; "no, unless
 // agreed" is a no. What comes after a comma or a "but" is a detail, not the answer.
 const FIRST_CLAUSE = /[,;/(]|\s[-–—]\s|\b(?:but|mais|sauf|except|excepte|aber|ausser|ma|pero|tranne|salvo|eccetto|maar|men|ale)\b/;
-// A negation before an approval word turns it into a refusal ("non autorisés", "not
-// accepted", "nicht willkommen"); a refusal that names a part of the place ("not allowed in
-// the pool area") restricts it, it does not refuse the night: unknown.
-const NEGATION = /\b(non|not|no|pas|ne|nicht|kein\w*|nessun\w*|niet|nao|nunca|jamais|never)\b/;
-const REFUSED = /\b(refus\w*|interdit\w*|forbidden|prohibited|banned|not permitted|vietat\w*|verboten|prohibid\w*)\b/;
-const PART = /\b(in the|in|dans|dans la|dans le|au|aux|a la|im|in der|nel|nella|nei|en el|en la|at the|inside|sur la|sur le)\s+\w+/;
+// The answer is read at the START of the first clause, nowhere else: "Oui, pas de problème",
+// "acceptés et ne doivent pas rester seuls", "yes, no extra charge" are a yes; "non admis
+// dans le camping", "not allowed", "interdits", "Нет" a no; "non précisé", "à vérifier" or
+// anything else stays unknown. A free sentence is not guessed at: a no read from the notes is
+// a point to verify, only the record's answer blocks (check.js).
+const NO_PROBLEM = /^(?:pas de (?:souci|probleme)|sans (?:souci|probleme)|no problem|kein problem|nessun problema|ningun problema|sin problema)/;
+const UNKNOWN = /\b(precis\w*|specifi\w*|indique\w*|renseign\w*|connu\w*|unknown|not stated|not known|to check|a verifier|bekannt|angegeben|noto|nota)\b|\?/;
+const NO_START = new RegExp(`^(?:${['non', 'no', 'not', 'pas', 'nein', 'nicht', 'kein\\w*', 'niet', 'nao', 'nessun\\w*', 'refus\\w*', 'interdit\\w*', 'forbidden', 'prohibited', 'banned', 'verboten', 'vietat\\w*', 'prohibid\\w*'].join('|')})\\b`);
 const dogOf = (s) => {
   const t = norm(s).split(FIRST_CLAUSE)[0].trim();
-  const no = DOG_NO.test(t) || REFUSED.test(t) || NO_WORDS.some((w) => isAnswer(t, w)) || (NEGATION.test(t) && DOG_YES.test(t));
-  if (no) {
-    // "not allowed in the pool area": a restriction on part of the place, not a refusal.
-    const after = t.slice(t.search(/\b(not|non|pas|nicht|refus|interdit|forbidden|prohibited|verboten|vietat|prohibid)/));
-    return PART.test(after) ? null : false;
-  }
-  if (DOG_YES.test(t) || YES_WORDS.some((w) => isAnswer(t, w))) return true;
+  if (!t || UNKNOWN.test(t)) return null;
+  if (NO_PROBLEM.test(t)) return true;
+  const first = t.split(/\s+/)[0];
+  if (NO_START.test(t) || NO_WORDS.some((w) => isAnswer(t, w) || first === w)) return false;
+  if (new RegExp(`^(?:${DOG_YES.source.slice(3, -3)})\\b`).test(t) || YES_WORDS.some((w) => isAnswer(t, w) || first === w)) return true;
   return null;
 };
 
@@ -357,6 +368,10 @@ function factsOf(place) {
   const windows = f.arrival ? f.arrival.text.split('\n').flatMap((l) => require('./rules').windowsIn(l.replace(/^\s*[•\-*]\s*/, ''))) : [];
   return {
     visitMinutes: f.duration && f.duration.minutes != null ? f.duration.minutes : null,
+    // The upper end of a range ("1h30-2h"), as parseVisit keeps it.
+    visitMax: f.duration ? maxMinutesOf(f.duration.text) : null,
+    dogText: f.dog ? f.dog.text : null,
+    tentText: f.rooftop_tent ? f.rooftop_tent.text : null,
     visitQuote: f.duration ? f.duration.text : null,
     dogAllowed: f.dog ? (f.dog.allowed ?? null) : null,
     tentAllowed: f.rooftop_tent ? dogOf(f.rooftop_tent.text) : null,

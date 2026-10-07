@@ -397,5 +397,7 @@
   "s.tent_refused": "niente tende da tetto",
   "ui.invalidField": "{field}: questo valore non è valido",
   "ui.notInTrip": "Questo luogo non fa parte di questo viaggio.",
-  "ui.failed": "Non ha funzionato. Riprova tra un momento."
+  "ui.failed": "Non ha funzionato. Riprova tra un momento.",
+  "sheet_refusal": "«{name}»: le note dicono «{quote}» per {what}: conferma con l’host che la notte è possibile",
+  "s.sheet_refusal": "{what}: le note dicono no"
 }
