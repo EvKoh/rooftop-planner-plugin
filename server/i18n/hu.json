@@ -397,5 +397,7 @@
   "s.tent_refused": "tetősátor nem",
   "ui.invalidField": "{field}: ez az érték érvénytelen",
   "ui.notInTrip": "Ez a hely nem része ennek az útnak.",
-  "ui.failed": "Nem sikerült. Próbálja újra egy perc múlva."
+  "ui.failed": "Nem sikerült. Próbálja újra egy perc múlva.",
+  "sheet_refusal": "„{name}”: a jegyzetek szerint {what}: „{quote}” — erősítse meg a szállásadóval, hogy lehetséges-e az éjszaka",
+  "s.sheet_refusal": "{what}: a jegyzet szerint nem"
 }

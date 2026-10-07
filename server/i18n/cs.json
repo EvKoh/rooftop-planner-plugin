@@ -397,5 +397,7 @@
   "s.tent_refused": "bez střešních stanů",
   "ui.invalidField": "{field}: tato hodnota není platná",
   "ui.notInTrip": "Toto místo není v této cestě.",
-  "ui.failed": "Nepovedlo se. Zkuste to za chvíli znovu."
+  "ui.failed": "Nepovedlo se. Zkuste to za chvíli znovu.",
+  "sheet_refusal": "„{name}“: poznámky k {what} říkají „{quote}“: potvrďte u hostitele, že je noc možná",
+  "s.sheet_refusal": "{what}: poznámky říkají ne"
 }

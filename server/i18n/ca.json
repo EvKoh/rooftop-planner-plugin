@@ -397,5 +397,7 @@
   "s.tent_refused": "sense tendes de sostre",
   "ui.invalidField": "{field}: aquest valor no és vàlid",
   "ui.notInTrip": "Aquest lloc no és en aquest viatge.",
-  "ui.failed": "No ha funcionat. Torna-ho a provar d’aquí a un moment."
+  "ui.failed": "No ha funcionat. Torna-ho a provar d’aquí a un moment.",
+  "sheet_refusal": "«{name}»: les notes diuen «{quote}» sobre {what}: confirma amb l’amfitrió que la nit és possible",
+  "s.sheet_refusal": "{what}: les notes diuen no"
 }

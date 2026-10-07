@@ -397,5 +397,7 @@
   "s.tent_refused": "ルーフテント不可",
   "ui.invalidField": "{field}：この値は無効です",
   "ui.notInTrip": "この場所はこの旅行に含まれていません。",
-  "ui.failed": "うまくいきませんでした。少ししてからもう一度お試しください。"
+  "ui.failed": "うまくいきませんでした。少ししてからもう一度お試しください。",
+  "sheet_refusal": "「{name}」：メモには{what}について「{quote}」とあります。宿泊できるかホストに確認してください",
+  "s.sheet_refusal": "{what}：メモでは不可"
 }

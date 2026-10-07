@@ -397,5 +397,7 @@
   "s.tent_refused": "no rooftop tents",
   "ui.invalidField": "{field}: this value is not valid",
   "ui.notInTrip": "This place is not in this trip.",
-  "ui.failed": "That did not work. Try again in a moment."
+  "ui.failed": "That did not work. Try again in a moment.",
+  "sheet_refusal": "\"{name}\": its notes say \"{quote}\" about {what}: confirm with the host that the night is possible",
+  "s.sheet_refusal": "{what}: notes say no"
 }

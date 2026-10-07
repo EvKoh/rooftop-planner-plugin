@@ -342,11 +342,17 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       const facts = placeSheet.factsOf((model.poolById.get(nuit.placeId) || {}).raw || { notes: nuit.notes });
       // A tent ban only matters to a rooftop tent: a van or a motorhome deploys nothing.
       // The record or the sheet says no (tent_refused), or free notes do (tent_banned, quoted).
-      const refused = settings.vehicle === 'rooftop_tent' && placeInfo.refusedBy(nuit.info, facts, 'rooftop_tent', 'tentAllowed');
+      // Blocking only when the record says no; a no read from the notes' sheet is a point to
+      // verify, quoted (a free sentence may restrict a part or a season, not the night).
+      const recordNo = (k) => !!nuit.info && nuit.info.amenities[k] === 'no';
+      const notesNo = (k, fact) => !recordNo(k) && placeInfo.refusedBy(nuit.info, facts, k, fact);
+      const refused = settings.vehicle === 'rooftop_tent' && recordNo('rooftop_tent');
+      if (settings.vehicle === 'rooftop_tent' && notesNo('rooftop_tent', 'tentAllowed')) add('verify', J, 'sheet_refusal', { name: nuit.name, what: t(L, 'am.rooftop_tent'), quote: facts.tentText }, extra);
+      if (settings.dog && notesNo('dog', 'dogAllowed')) add('verify', J, 'sheet_refusal', { name: nuit.name, what: t(L, 'am.dog'), quote: facts.dogText }, extra);
       const banned = settings.vehicle !== 'rooftop_tent' || refused ? null : rules.tentBanned(nuit.text);
       if (refused) add('blocking', J, 'tent_refused', { name: nuit.name }, extra);
       if (banned) add('blocking', J, 'tent_banned', { name: nuit.name, quote: banned }, extra);
-      if (settings.dog && placeInfo.refusedBy(nuit.info, facts, 'dog', 'dogAllowed')) add('blocking', J, 'dog_refused', { name: nuit.name }, extra);
+      if (settings.dog && recordNo('dog')) add('blocking', J, 'dog_refused', { name: nuit.name }, extra);
       if (nuit.info && nuit.info.max_height_m != null && nuit.info.max_height_m < settings.vehicle_height_m) {
         add('blocking', J, 'too_low', { name: nuit.name, max: num(nuit.info.max_height_m, L), height: num(settings.vehicle_height_m, L) }, extra);
       }

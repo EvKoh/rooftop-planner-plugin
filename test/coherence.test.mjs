@@ -525,7 +525,8 @@ describe('the 0.6.3 audit: the sheet speaks every language to every rule', () =>
         const r = await check(makeHost({ trip, userSettings: { language: L, timezone: 'Europe/Rome', dog: true } }));
         expect(keys(r, 'visit_unknown').some((f) => f.dayNumber === 3), L).toBe(false);
         expect(keys(r, 'welcome_window').some((f) => f.dayNumber === 3), L).toBe(true);
-        expect(keys(r, 'dog_refused').some((f) => f.dayNumber === 3), L).toBe(true);
+        // read from the notes: a point to verify, quoted (only the record's no blocks)
+        expect(keys(r, 'sheet_refusal').some((f) => f.dayNumber === 3 && f.level === 'verify'), L).toBe(true);
       }
     } finally { vi.unstubAllGlobals(); }
   });
@@ -604,7 +605,7 @@ describe('the 0.6.6 audit: the sheet is read strictly', () => {
 
   it('the answer is the first clause', () => {
     expect(sheet.dogOf('allowed on a leash, not allowed in the pool area')).toBe(true);
-    expect(sheet.dogOf('Hunde: willkommen, im Restaurant verboten')).toBe(true);
+    expect(sheet.dogOf('willkommen, im Restaurant verboten')).toBe(true);
     expect(sheet.dogOf('non, sauf si accord préalable')).toBe(false);
   });
 
@@ -650,12 +651,18 @@ describe('the 0.6.7 audit', () => {
   const rules = require('../server/lib/rules.js');
   const { parseVisit } = require('../server/lib/visit.js');
 
-  it('a negated approval is a refusal; a restriction on part of the place is not', () => {
+  it('a negated approval is a refusal; the answer is read at the start only', () => {
     expect(sheet.dogOf('non autorisés')).toBe(false);
     expect(sheet.dogOf('not accepted')).toBe(false);
     expect(sheet.dogOf('nicht willkommen')).toBe(false);
     expect(sheet.dogOf('interdits')).toBe(false);
-    expect(sheet.dogOf('not allowed in the pool area')).toBeNull();
+    // read at the start: a no (from the notes it is only a point to verify, see check.js)
+    expect(sheet.dogOf('not allowed in the pool area')).toBe(false);
+    expect(sheet.dogOf('Oui, pas de problème')).toBe(true);
+    expect(sheet.dogOf('pas de problème')).toBe(true);
+    expect(sheet.dogOf('acceptés et ne doivent pas rester seuls')).toBe(true);
+    expect(sheet.dogOf('non admis dans le camping')).toBe(false);
+    expect(sheet.dogOf('non précisé')).toBeNull();
     expect(sheet.dogOf('admis')).toBe(true);
   });
 
@@ -687,11 +694,61 @@ describe('the 0.6.7 audit', () => {
       const trip = build();
       trip.places.find((p) => p.id === 13).notes = 'Chiens : non';
       const h = makeHost({ trip, userSettings: { language: 'en', timezone: 'Europe/Rome', dog: true }, queryResults: { [pi.INDEX_SQL]: [{ place_id: 13 }] } });
-      expect(keys(await check(h), 'dog_refused').filter((f) => f.dayNumber === 1)).toHaveLength(1);
+      expect(keys(await check(h), 'sheet_refusal').filter((f) => f.dayNumber === 1)).toHaveLength(1);
+      expect(keys(await check(h), 'dog_refused').filter((f) => f.dayNumber === 1)).toEqual([]); // the notes alone never block
       await h.ctx.meta.set('place', 13, pi.META_KEY, pi.merge(null, { dog: 'yes' }));
-      expect(keys(await check(h), 'dog_refused').filter((f) => f.dayNumber === 1)).toEqual([]);
+      expect(keys(await check(h), 'sheet_refusal').filter((f) => f.dayNumber === 1)).toEqual([]);
+      const yes = JSON.parse((await h.run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13 } })).body);
+      expect(yes.refused).toBe(false); // the panel follows the record too
+      await h.ctx.meta.set('place', 13, pi.META_KEY, pi.merge(null, { dog: 'no' }));
+      expect(keys(await check(h), 'dog_refused').filter((f) => f.dayNumber === 1)).toHaveLength(1); // the record's no blocks
       const w = JSON.parse((await h.run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13 } })).body);
-      expect(w.refused).toBe(false);
+      expect(w.refused).toBe(true);
     } finally { vi.unstubAllGlobals(); }
+  });
+});
+
+describe('the 0.6.8 audit', () => {
+  it('an open source never fills over the dog answer the notes give', async () => {
+    const fillLib = require('../server/lib/amenity-fill.js');
+    // A campsite mapped on the place itself, which OSM says takes dogs.
+    const base = stubFetch();
+    vi.stubGlobal('fetch', vi.fn(async (url, init) => {
+      const res = await base(url, init);
+      if (!String(url).includes('overpass')) return res;
+      const body = await res.json();
+      body.elements = [...(body.elements || []), { type: 'node', id: 99, lat: 46.53, lon: 12.13, tags: { tourism: 'camp_site', name: 'Camping Example', dog: 'yes', drinking_water: 'yes' } }];
+      return { ok: true, status: 200, json: async () => body };
+    }));
+    try {
+      const trip = build();
+      trip.places.find((p) => p.id === 13).notes = 'Chiens : non';
+      const h = makeHost({ trip });
+      await pi.migrate(h.ctx); await fillLib.migrate(h.ctx);
+      await fillLib.fill(h.ctx, 1, { park4night: false, placeIds: [13] });
+      const rec = await pi.get(h.ctx, 13);
+      expect(rec.amenities.water).toBe('yes'); // the fill did run on this place
+      expect(rec.amenities.dog).toBe('unknown'); // but left the dog to the notes' "non"
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('the schedule applies the check-in window on the stay\'s first evening only', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      trip.accommodations = trip.accommodations.filter((a) => a.id !== 2);
+      trip.accommodations[0].end_day_id = 103;
+      trip.days[1].assignments = trip.days[1].assignments.filter((a) => a.id !== 2004);
+      trip.reservations = trip.reservations.filter((r) => r.id !== 502);
+      trip.places.find((p) => p.id === 13).notes = 'Check-in : 8h-10h';
+      const r = await call(makeHost({ trip }), 'vanlife_day', { tripId: 1, action: 'schedule', dayNumber: 2 });
+      expect(r.conflicts.filter((c) => /check-in/.test(c.reason))).toEqual([]);
+      expect(r.night.waitMinutes).toBeUndefined();
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('a range in a sheet line keeps its upper end, as in free notes', () => {
+    const sheet = require('../server/lib/place-sheet.js');
+    expect(sheet.factsOf({ notes: 'Durée : 1h30-2h' })).toMatchObject({ visitMinutes: 90, visitMax: 120 });
   });
 });

@@ -397,5 +397,7 @@
   "s.tent_refused": "keine Dachzelte",
   "ui.invalidField": "{field}: dieser Wert ist ungültig",
   "ui.notInTrip": "Dieser Ort gehört nicht zu dieser Reise.",
-  "ui.failed": "Das hat nicht geklappt. Bitte gleich noch einmal versuchen."
+  "ui.failed": "Das hat nicht geklappt. Bitte gleich noch einmal versuchen.",
+  "sheet_refusal": "„{name}“: die Notizen sagen „{quote}“ zu {what}: beim Gastgeber bestätigen, dass die Übernachtung möglich ist",
+  "s.sheet_refusal": "{what}: Notizen sagen nein"
 }

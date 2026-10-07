@@ -397,5 +397,7 @@
   "s.tent_refused": "sin tiendas de techo",
   "ui.invalidField": "{field}: este valor no es válido",
   "ui.notInTrip": "Este lugar no está en este viaje.",
-  "ui.failed": "No ha funcionado. Inténtalo de nuevo en un momento."
+  "ui.failed": "No ha funcionado. Inténtalo de nuevo en un momento.",
+  "sheet_refusal": "«{name}»: sus notas dicen «{quote}» sobre {what}: confirma con el anfitrión que la noche es posible",
+  "s.sheet_refusal": "{what}: las notas dicen no"
 }

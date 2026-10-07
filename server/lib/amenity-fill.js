@@ -241,7 +241,11 @@ async function fill(ctx, tripId, opts = {}) {
     if (!(res.park4nightLimited && id && !sources.some((x) => x.startsWith('park4night')))) looked.push(place.id);
     const current = records.get(place.id) || null;
     const patch = {};
-    for (const [k, v] of Object.entries(found)) if (!current || current.amenities[k] === 'unknown') patch[k] = v;
+    // The place's own sheet already answers the dog and the rooftop tent: an open source
+    // never fills over what the host's text says (a "Chiens : non" stays a no).
+    const sheetFacts = placeSheet.factsOf(place);
+    const answered = { dog: sheetFacts.dogAllowed != null, rooftop_tent: sheetFacts.tentAllowed != null };
+    for (const [k, v] of Object.entries(found)) if ((!current || current.amenities[k] === 'unknown') && !answered[k]) patch[k] = v;
     const amenitiesFound = Object.keys(patch).length > 0;
     // Only empty contact fields, each from the first source that has it.
     const cpatch = {};
@@ -255,7 +259,7 @@ async function fill(ctx, tripId, opts = {}) {
     // Time on site, from what the place's own notes or description say; never over a typed one.
     const stated = placeSheet.factsOf(place);
     const visit = (!current || current.visit_min_minutes == null)
-      ? (stated.visitMinutes != null ? { min: stated.visitMinutes, max: null, quote: stated.visitQuote } : parseVisit(`${place.notes || ''}\n${place.description || ''}`))
+      ? (stated.visitMinutes != null ? { min: stated.visitMinutes, max: stated.visitMax, quote: stated.visitQuote } : parseVisit(`${place.notes || ''}\n${place.description || ''}`))
       : null;
     if (visit) {
       Object.assign(patch, { visit_min_minutes: visit.min, visit_max_minutes: visit.max, visit_source: `${placeInfo.SRC.notes}: "${visit.quote}"` });

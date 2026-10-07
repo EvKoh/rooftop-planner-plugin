@@ -15,7 +15,7 @@ const { highwayAllowed, DEFAULTS } = require('./settings');
 const { dayPlan, carPos } = require('./check');
 const placeInfo = require('./place-info');
 const placeSheet = require('./place-sheet');
-const { findDay } = require('./trip');
+const { findDay, isFirstEvening } = require('./trip');
 const { dayStopMinutes } = require('./visit');
 
 const up5 = (m) => Math.ceil(m / 5) * 5;
@@ -159,7 +159,10 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
     // first one waits for it when that is still before the latest arrival; one outside every
     // window is a conflict, as the check reports it.
     const place = model.poolById && model.poolById.get(nuit.placeId);
-    const wins = [...rules.welcomeWindows(nuit.text), ...placeSheet.factsOf((place && place.raw) || { notes: nuit.notes }).arrivalWindows];
+    // Only on the stay's first evening (later evenings, the travellers are already in, as
+    // the check judges it); the notes and the sheet may state the same window once each.
+    const all = isFirstEvening(nuit, day) ? [...rules.welcomeWindows(nuit.text), ...placeSheet.factsOf((place && place.raw) || { notes: nuit.notes }).arrivalWindows] : [];
+    const wins = all.filter((w, i) => all.findIndex((x) => x[0] === w[0] && x[1] === w[1]) === i);
     if (arrival != null && wins.length && !wins.some((w) => arrival >= w[0] && arrival <= w[1])) {
       const next = wins.map((w) => w[0]).filter((from) => from > arrival && (latest == null || from <= latest)).sort((a, b) => a - b)[0];
       if (next != null) {
