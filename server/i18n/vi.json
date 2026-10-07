@@ -399,5 +399,6 @@
   "budget.fuel_line": "Nhiên liệu ngày {day} ({km} km)",
   "budget.toll_line": "Phí đường ngày {day} — {name}",
   "ui.labelValue": "{label}: {value}",
-  "unit.maxWeight": "tối đa {t} t"
+  "unit.maxWeight": "tối đa {t} t",
+  "src.auto": "(tự động)"
 }

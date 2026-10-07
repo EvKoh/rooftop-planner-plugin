@@ -73,7 +73,7 @@ function keyAmenities(settings) {
 /** One place, as the place tool shows it. */
 function placeView(model, p, info, settings, { full = false } = {}) {
   const L = settings.language;
-  const rec = info || placeInfo.blank();
+  const rec = placeInfo.localized(info, L) || placeInfo.blank();
   const plannedNights = model.nights.filter((n) => n.placeId === p.id).map((n) => (findDay(model, { dayId: n.startDayId }) || {}).n).filter(Boolean);
   // A night place: planned as a night, or of a night category (trip.js). Only a night has a night total.
   const night = isNightPlace(model, p);

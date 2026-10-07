@@ -399,5 +399,6 @@
   "budget.fuel_line": "Καύσιμα ημέρα {day} ({km} km)",
   "budget.toll_line": "Διόδια ημέρα {day} — {name}",
   "ui.labelValue": "{label}: {value}",
-  "unit.maxWeight": "μέγ. {t} t"
+  "unit.maxWeight": "μέγ. {t} t",
+  "src.auto": "(αυτόματα)"
 }

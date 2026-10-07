@@ -399,5 +399,6 @@
   "budget.fuel_line": "Пальне, день {day} ({km} км)",
   "budget.toll_line": "Платна дорога, день {day} — {name}",
   "ui.labelValue": "{label}: {value}",
-  "unit.maxWeight": "макс. {t} т"
+  "unit.maxWeight": "макс. {t} т",
+  "src.auto": "(автоматично)"
 }

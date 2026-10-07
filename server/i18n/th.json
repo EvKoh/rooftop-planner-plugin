@@ -399,5 +399,6 @@
   "budget.fuel_line": "น้ำมัน วันที่ {day} ({km} กม.)",
   "budget.toll_line": "ค่าผ่านทาง วันที่ {day} — {name}",
   "ui.labelValue": "{label}: {value}",
-  "unit.maxWeight": "สูงสุด {t} ตัน"
+  "unit.maxWeight": "สูงสุด {t} ตัน",
+  "src.auto": "(อัตโนมัติ)"
 }

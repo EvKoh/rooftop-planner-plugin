@@ -399,5 +399,6 @@
   "budget.fuel_line": "Brandstof dag {day} ({km} km)",
   "budget.toll_line": "Tol dag {day} — {name}",
   "ui.labelValue": "{label}: {value}",
-  "unit.maxWeight": "max. {t} t"
+  "unit.maxWeight": "max. {t} t",
+  "src.auto": "(automatisch)"
 }

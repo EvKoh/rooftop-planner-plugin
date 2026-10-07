@@ -399,5 +399,6 @@
   "budget.fuel_line": "Yanacaq {day}-ci gün ({km} km)",
   "budget.toll_line": "Yol haqqı {day}-ci gün — {name}",
   "ui.labelValue": "{label}: {value}",
-  "unit.maxWeight": "maks. {t} t"
+  "unit.maxWeight": "maks. {t} t",
+  "src.auto": "(avtomatik)"
 }

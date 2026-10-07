@@ -399,5 +399,6 @@
   "budget.fuel_line": "Yakıt {day}. gün ({km} km)",
   "budget.toll_line": "Geçiş ücreti {day}. gün — {name}",
   "ui.labelValue": "{label}: {value}",
-  "unit.maxWeight": "en fazla {t} t"
+  "unit.maxWeight": "en fazla {t} t",
+  "src.auto": "(otomatik)"
 }

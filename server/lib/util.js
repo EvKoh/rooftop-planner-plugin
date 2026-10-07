@@ -95,4 +95,27 @@ function durationText(min) {
   return h ? `${h} h${m ? ` ${String(m).padStart(2, '0')}` : ''}` : `${m} min`;
 }
 
-module.exports = { durationText, hm, hhmm, distKm, norm, roundPt, pmap, deadline, weekday, polylineKm, distToPolylineKm, thin, toNum };
+const URL_RE = /https?:\/\/[^\s<>"'|]+/g;
+/**
+ * The http(s) addresses in a text, the one extractor of the plugin: a closing bracket or a
+ * stop at the end belongs to the sentence, unless the bracket was opened in the address.
+ */
+const urlsIn = (s) => (String(s || '').match(URL_RE) || []).map((u) => {
+  let x = u.replace(/[.,;:!?]+$/, '');
+  while (/[)\]]$/.test(x) && (x.split(x.endsWith(')') ? '(' : '[').length <= x.split(x.endsWith(')') ? ')' : ']').length - 1)) x = x.slice(0, -1).replace(/[.,;:!?]+$/, '');
+  return x;
+});
+
+/**
+ * The part of a place name that says what it is, for a banner line or a map label: no
+ * "25 € · 4,8/5 · " prefix, no emoji, cut at a spaced dash, an arrow or a bracket, the first
+ * part longer than a one-word prefix; at most `max` characters, with an ellipsis.
+ */
+function shortName(name, max = 18) {
+  const core = String(name || '').split('·').pop().replace(/\p{Extended_Pictographic}/gu, '').replace(/\s+/g, ' ');
+  const parts = core.split(/\s[—–-]\s|\s→\s|\s\(/).map((x) => x.trim()).filter(Boolean);
+  const s = parts.find((x) => x.length > 6) || parts[0] || '';
+  return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s;
+}
+
+module.exports = { shortName, urlsIn, durationText, hm, hhmm, distKm, norm, roundPt, pmap, deadline, weekday, polylineKm, distToPolylineKm, thin, toNum };

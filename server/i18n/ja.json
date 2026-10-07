@@ -399,5 +399,6 @@
   "budget.fuel_line": "燃料 {day}日目（{km} km）",
   "budget.toll_line": "通行料 {day}日目 — {name}",
   "ui.labelValue": "{label}：{value}",
-  "unit.maxWeight": "最大 {t} t"
+  "unit.maxWeight": "最大 {t} t",
+  "src.auto": "（自動）"
 }

@@ -399,5 +399,6 @@
   "budget.fuel_line": "Palivo den {day} ({km} km)",
   "budget.toll_line": "Mýto den {day} — {name}",
   "ui.labelValue": "{label}: {value}",
-  "unit.maxWeight": "max. {t} t"
+  "unit.maxWeight": "max. {t} t",
+  "src.auto": "(automaticky)"
 }

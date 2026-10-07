@@ -399,5 +399,6 @@
   "budget.fuel_line": "Carburant jour {day} ({km} km)",
   "budget.toll_line": "Péage jour {day} — {name}",
   "ui.labelValue": "{label} : {value}",
-  "unit.maxWeight": "{t} t max"
+  "unit.maxWeight": "{t} t max",
+  "src.auto": "(auto)"
 }

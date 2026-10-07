@@ -84,6 +84,12 @@ const BACKFILL = 24;
 
 class InfoError extends Error {}
 
+// Source labels stored as language-neutral tokens and put in the reader's language when
+// shown (sourceText): a record filled in English reads in French for a French user.
+const SRC = { notes: '@src.notes', trek: '@src.trek', auto: '@src.auto' };
+/** A stored source text, its tokens in language L. */
+const sourceText = (s, L) => (s == null ? s : String(s).replace(/@(src\.[a-z]+)/g, (_, k) => t(L, k)));
+
 const blank = () => ({
   per: null,
   price_note: null,
@@ -707,4 +713,11 @@ async function getAll(ctx, tripId, placeIds) {
   return out;
 }
 
-module.exports = { lacksText, nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+/** A record with its stored source tokens in language L, as a reader is shown it. */
+function localized(rec, L) {
+  if (!rec) return rec;
+  const cs = Object.fromEntries(Object.entries(rec.contact_sources || {}).map(([k, v]) => [k, sourceText(v, L)]));
+  return { ...rec, source: sourceText(rec.source, L), visit_source: sourceText(rec.visit_source, L), contact_sources: cs };
+}
+
+module.exports = { SRC, sourceText, localized, lacksText, nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };

@@ -96,7 +96,8 @@ describe('visit duration through the plugin', () => {
     await pi.set(h.ctx, 1, 10, { visit_min_minutes: 300 }); // typed for the lake of Braies
     const r = await fillLib.fill(h.ctx, 1, { park4night: false, language: 'fr', placeIds: [10, 17] });
     expect(r.visits).toBe(1);
-    expect(await pi.get(h.ctx, 17)).toMatchObject({ visit_min_minutes: 90, visit_source: expect.stringMatching(/^notes du lieu: ".*1 h 30 sur place/) });
+    expect(await pi.get(h.ctx, 17)).toMatchObject({ visit_min_minutes: 90, visit_source: expect.stringMatching(/^@src\.notes: ".*1 h 30 sur place/) });
+    expect(pi.localized(await pi.get(h.ctx, 17), 'fr').visit_source).toMatch(/^notes du lieu: /);
     expect((await pi.get(h.ctx, 10)).visit_min_minutes).toBe(300);
   });
 

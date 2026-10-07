@@ -399,5 +399,6 @@
   "budget.fuel_line": "Bahan bakar hari {day} ({km} km)",
   "budget.toll_line": "Tol hari {day} — {name}",
   "ui.labelValue": "{label}: {value}",
-  "unit.maxWeight": "maks. {t} t"
+  "unit.maxWeight": "maks. {t} t",
+  "src.auto": "(otomatis)"
 }

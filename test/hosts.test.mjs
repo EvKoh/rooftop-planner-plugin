@@ -200,7 +200,8 @@ describe('contacts filled from the place itself and open sources', () => {
     expect(r.contacts).toBe(2);
     const rec = await pi.get(h.ctx, 13);
     expect(rec.contacts).toMatchObject({ email: 'booking@camping.example.com', phone: '+390009999999', website: 'https://camp.example.com' });
-    expect(rec.contact_sources).toEqual({ email: 'notes du lieu', website: 'OpenStreetMap https://www.openstreetmap.org/node/70' });
+    expect(rec.contact_sources).toEqual({ email: '@src.notes', website: 'OpenStreetMap https://www.openstreetmap.org/node/70' });
+    expect(pi.localized(rec, 'fr').contact_sources.email).toBe('notes du lieu');
     expect(camping.website).toBe('https://camp.example.com'); // copied into TREK's empty field
     const aire = await pi.get(h.ctx, 16);
     expect(aire.contacts.phone).toBe('+390007777777');
@@ -215,7 +216,8 @@ describe('contacts filled from the place itself and open sources', () => {
     const h = makeHost({ trip });
     await fillLib.fill(h.ctx, 1, { park4night: false, language: 'en', placeIds: [14] });
     const rec = await pi.get(h.ctx, 14);
-    expect(rec.contact_sources).toEqual({ website: 'TREK place fields', phone: 'TREK place fields' });
+    expect(rec.contact_sources).toEqual({ website: '@src.trek', phone: '@src.trek' });
+    expect(pi.localized(rec, 'en').contact_sources.phone).toBe('TREK place fields');
     expect(fillLib.incomplete(rec)).toBe(true); // no e-mail yet
     const full = pi.merge(null, { ...Object.fromEntries(Object.keys(pi.AMENITIES).map((k) => [k, 'no'])), contacts: { email: 'a@example.com', phone: '+390000000001', website: 'https://example.com' } });
     expect(fillLib.incomplete(full)).toBe(false);
@@ -559,7 +561,7 @@ describe('vanlife_day, columns, widget and catalogues', () => {
   it('has every new string in all 27 languages, translated', () => {
     const fresh = Object.keys(MESSAGES.en).filter((k) => /^(st\.|ch\.|src\.)/.test(k) || ['night_no_contact', 's.night_no_contact', 'contact_stale', 's.contact_stale', 'col.night',
       'ui.contacts', 'ui.email', 'ui.phone', 'ui.whatsapp', 'ui.website', 'ui.contactName', 'ui.languages', 'ui.preferredChannel', 'ui.contactNotes', 'ui.noContact', 'ui.night', 'ui.lastExchange', 'ui.noPreference'].includes(k));
-    expect(fresh).toHaveLength(31);
+    expect(fresh).toHaveLength(32);
     expect(CODES).toHaveLength(27);
     for (const code of CODES) {
       for (const k of fresh) expect(MESSAGES[code][k], `${code} ${k}`).toBeTruthy();

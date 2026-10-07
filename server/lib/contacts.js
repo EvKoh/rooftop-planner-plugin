@@ -4,6 +4,8 @@
 // Nothing here sends anything: the plugin never writes to a host, it records what the
 // user declares and drafts messages for the user to send.
 
+const { urlsIn } = require('./util');
+
 const CHANNELS = ['email', 'phone', 'whatsapp', 'website_form'];
 const LOG_CHANNELS = ['email', 'phone', 'whatsapp', 'website_form', 'sms', 'in_person', 'other'];
 const DIRECTIONS = ['sent', 'received'];
@@ -142,8 +144,9 @@ function extract(txt) {
   for (const m of s.matchAll(/(?:\+|\b00)\d{1,3}[\d .\-/()]{5,17}\d/g)) push(m[0]);
   for (const m of s.matchAll(/(?:t[ée]l(?:[ée]phone)?|phone|tel\.|telefono|telefon|cell|mobile|handy|whatsapp)\s*[:.]?\s*([+0-9][0-9 .\-/()]{5,18}\d)/gi)) push(m[1]);
   const urls = [];
-  for (const m of s.matchAll(/\bhttps?:\/\/[^\s<>"')]+|\bwww\.[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s<>"')]*/gi)) {
-    const u = m[0].replace(/[.,;:!?]+$/, '');
+  // http(s) addresses through the shared extractor; a bare "www." address completed after.
+  const bare = [...s.matchAll(/(?<![/\w.])www\.[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s<>"')]*/gi)].map((m) => m[0].replace(/[.,;:!?]+$/, ''));
+  for (const u of [...urlsIn(s), ...bare]) {
     if (notOwnSite(u)) continue;
     try { const w = website(u); if (!urls.includes(w)) urls.push(w); } catch { /* not a web address */ }
   }

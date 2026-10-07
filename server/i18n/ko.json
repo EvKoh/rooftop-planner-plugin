@@ -399,5 +399,6 @@
   "budget.fuel_line": "연료 {day}일차 ({km} km)",
   "budget.toll_line": "통행료 {day}일차 — {name}",
   "ui.labelValue": "{label}: {value}",
-  "unit.maxWeight": "최대 {t}t"
+  "unit.maxWeight": "최대 {t}t",
+  "src.auto": "(자동)"
 }

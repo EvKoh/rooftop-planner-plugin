@@ -7,8 +7,9 @@ const { hhmm, hm, distKm, norm, durationText } = require('./util');
 const { t, dayName, money, num, clock } = require('./i18n');
 const placeInfo = require('./place-info');
 const { sunset } = require('./sun');
-const { isShopping, isHike, isTrace, isNightCategory, isParkingCategory, parkingFromNotes } = require('./classify');
+const { isShopping, isTrace, isNightCategory, isParkingCategory, parkingFromNotes } = require('./classify');
 const rules = require('./rules');
+const { isHikePlace } = require('./design');
 const routing = require('./routing');
 const { highwayAllowed, fuelPerKm } = require('./settings');
 const { dayStopMinutes } = require('./visit');
@@ -207,7 +208,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
     plan.stops.forEach((s, i) => {
       if (!located(s.place)) { legIdx.push(null); return; }
       const car = carPos(s);
-      const onFoot = isHike(s.place.categoryName);
+      const onFoot = isHikePlace(s.place);
       const leg = { drive: prec && !onFoot ? need(prec, car, tolls) : null };
       const next = plan.stops.slice(i + 1).find((x) => located(x.place));
       if (isShopping(s.place.categoryName, s.place.stopType) && prec && next) {

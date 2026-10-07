@@ -399,5 +399,6 @@
   "budget.fuel_line": "Üzemanyag {day}. nap ({km} km)",
   "budget.toll_line": "Útdíj {day}. nap — {name}",
   "ui.labelValue": "{label}: {value}",
-  "unit.maxWeight": "max. {t} t"
+  "unit.maxWeight": "max. {t} t",
+  "src.auto": "(automatikus)"
 }

@@ -7,8 +7,8 @@
 // reads them; it stores nothing: TREK's description and notes stay the only copy, and an edit
 // of a field rewrites its line in the notes (setField). Nothing is dropped: a line it cannot
 // classify is kept as an "other note", free text as text.
-const { norm, durationText } = require('./util');
-const { isNightCategory, isHike } = require('./classify');
+const { norm, durationText, urlsIn } = require('./util');
+const { isNightCategory } = require('./classify');
 const { t, locale } = require('./i18n');
 const design = require('./design');
 
@@ -111,13 +111,6 @@ function fieldOf(rawKey) {
   return null;
 }
 
-const URL_RE = /https?:\/\/[^\s<>"'|]+/g;
-/** URLs in a text; a closing bracket or stop at the end is the sentence's, unless opened in the URL. */
-const urlsIn = (s) => (String(s || '').match(URL_RE) || []).map((u) => {
-  let x = u.replace(/[.,;:]+$/, '');
-  while (/[)\]]$/.test(x) && (x.split(x.endsWith(')') ? '(' : '[').length <= x.split(x.endsWith(')') ? ')' : ']').length - 1)) x = x.slice(0, -1).replace(/[.,;:]+$/, '');
-  return x;
-});
 const BULLET = /^\s*(?:[•●▪◦*]|-(?=\s)|–(?=\s)|\d+[.)](?=\s))\s*/;
 const SEPARATOR = /^[-—–=_\s]*(?:suite des notes|continued|fortsetzung|continua|continuacion)?[-—–=_\s]*$/i;
 
@@ -228,7 +221,7 @@ function typed(field, value, items) {
 function kindOf(place, { night = false } = {}) {
   const cat = (place && (place.categoryName || place.category_name)) || '';
   if (night || isNightCategory(cat)) return 'night';
-  if (isHike(cat)) return 'hike';
+  if (design.isHikePlace({ name: (place && place.name) || '', categoryName: cat })) return 'hike';
   return 'activity';
 }
 

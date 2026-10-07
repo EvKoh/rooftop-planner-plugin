@@ -10,7 +10,7 @@ const routing = require('./routing');
 const { highwayAllowed } = require('./settings');
 const { dayPlan, carPos } = require('./check');
 const { findDay } = require('./trip');
-const { isHike } = require('./classify');
+const { isHikePlace } = require('./design');
 const { t } = require('./i18n');
 
 const located = (p) => p && p.lat != null && p.lng != null;
@@ -27,7 +27,7 @@ function waypoints(model, day) {
   if (veille && located(veille)) push([veille.lat, veille.lng], veille.name);
   for (const s of stops) {
     if (!located(s.place) || (nuit && s.accommodationId === nuit.id)) continue;
-    if (isHike(s.place.categoryName) && pts.length) continue; // on foot: the car waits
+    if (isHikePlace(s.place) && pts.length) continue; // on foot: the car waits
     push(carPos(s), s.place.name);
   }
   if (nuit && located(nuit)) push([nuit.lat, nuit.lng], nuit.name);

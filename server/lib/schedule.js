@@ -8,7 +8,7 @@
 // departure, unless the caller gave one: then the miss is listed as a conflict.
 const { hhmm, hm } = require('./util');
 const { sunset } = require('./sun');
-const { isHike } = require('./classify');
+const { isHikePlace } = require('./design');
 const rules = require('./rules');
 const routing = require('./routing');
 const { highwayAllowed } = require('./settings');
@@ -42,7 +42,7 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
   let car = veille && located(veille) ? [veille.lat, veille.lng] : null;
   for (const s of visits) {
     if (!located(s.place)) { seq.push({ s, from: null, to: null }); continue; }
-    const onFoot = isHike(s.place.categoryName) && car;
+    const onFoot = isHikePlace(s.place) && car;
     const to = onFoot ? car : carPos(s);
     seq.push({ s, from: car, to });
     car = to;

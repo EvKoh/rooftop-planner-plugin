@@ -399,5 +399,6 @@
   "budget.fuel_line": "Carburante giorno {day} ({km} km)",
   "budget.toll_line": "Pedaggio giorno {day} — {name}",
   "ui.labelValue": "{label}: {value}",
-  "unit.maxWeight": "max {t} t"
+  "unit.maxWeight": "max {t} t",
+  "src.auto": "(automatico)"
 }

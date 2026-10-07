@@ -156,7 +156,7 @@ module.exports = definePlugin({
             currency,
             // The language's locale, for the dates the widget formats itself.
             locale: locale(L),
-            info: info || placeInfo.blank(),
+            info: placeInfo.localized(info, L) || placeInfo.blank(),
             night,
             // The price as the planner chip shows it (unit, free note, dog fee).
             priceText: placeInfo.priceText(place.price == null ? null : +place.price, currency, info, L, { night }),

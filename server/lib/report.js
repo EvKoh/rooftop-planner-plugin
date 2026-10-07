@@ -2,7 +2,7 @@
 // The warnings banner. It must answer fast (the warning hook has 5 s), so it reads drive
 // times from the cache only — the tools fill it.
 const { checkTrip } = require('./check');
-const { deadline: makeDeadline } = require('./util');
+const { deadline: makeDeadline, shortName } = require('./util');
 const { t, has, money } = require('./i18n');
 
 const WARNING_LEVEL = { blocking: 'error', fix: 'warning', verify: 'warning' };
@@ -12,12 +12,6 @@ const BANNER_MAX = 3; // individual chips; everything else goes into one summary
  * "🏠25 € · 4,8/5 · Camping Example — lake (Town)" → "Camping Example": the words a person
  * recognises, without the price/rating prefix, emoji or the description after a dash.
  */
-function shortName(name, max = 18) {
-  const n = String(name || '').split('·').pop().split(/ [—–-] | \(/)[0]
-    .replace(/\p{Extended_Pictographic}/gu, '').replace(/\s+/g, ' ').trim();
-  return n.length > max ? `${n.slice(0, max - 1).trimEnd()}…` : n;
-}
-
 /** One banner line: "J2 Farm Example : ferme au Tyrol du Sud" — the essential first, no level word. */
 function bannerText(f, settings) {
   const L = settings.language;
