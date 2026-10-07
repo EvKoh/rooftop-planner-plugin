@@ -17,7 +17,6 @@ const MATRIX_CELLS = 100;
 // than this (straight line) are routed one by one with /route instead.
 const MATRIX_MAX_KM = 110;
 
-/** Decode a Valhalla polyline (precision 6) into [lat, lng] pairs. */
 /** Routing options of the traveller's vehicle, from the settings. */
 function vehicleOpts(settings, tolls) {
   return { tolls, vehicle: settings.vehicle, height: settings.vehicle_height_m, length: settings.vehicle_length_m, weight: settings.vehicle_weight_t, factor: settings.drive_time_factor };
@@ -27,6 +26,7 @@ function vehicleOpts(settings, tolls) {
 // the user's factor rescales every drive time. The cache keeps the router's own minutes.
 const scaled = (minutes, opts) => (minutes == null || !(opts.factor > 0) || opts.factor === 1 ? minutes : Math.round(minutes * opts.factor));
 
+/** Decode a Valhalla polyline (precision 6) into [lat, lng] pairs. */
 function decodePolyline(str, precision = 6) {
   const out = [];
   const f = 10 ** precision;
@@ -188,13 +188,13 @@ async function legs(ctx, pairs, opts = {}) {
   return { values, pending };
 }
 
+// SAC scale: 1 hiking, 2 mountain hiking, 3 demanding mountain hiking.
+const MAX_HIKING_DIFFICULTY = 2;
+
 /**
  * Walking route through `points` ([lat,lng] list, in order) on footpaths (Valhalla
  * pedestrian costing): { km, minutes, points } with at most `maxPoints` vertices.
  */
-// SAC scale: 1 hiking, 2 mountain hiking, 3 demanding mountain hiking.
-const MAX_HIKING_DIFFICULTY = 2;
-
 async function walk(points, opts = {}) {
   const d = await post('/route', {
     locations: points.map((p) => ({ lat: +p[0], lon: +p[1], type: 'break' })),

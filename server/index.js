@@ -22,7 +22,7 @@ const routing = require('./lib/routing');
 const { TOOL_NAMES } = require('./lib/tool-specs');
 const { callTool } = require('./lib/tools');
 const { readSettings, rememberUiLanguage } = require('./lib/settings');
-const { loadTrip } = require('./lib/trip');
+const { loadTrip, isNightOf } = require('./lib/trip');
 const { warnings } = require('./lib/report');
 const placeInfo = require('./lib/place-info');
 const amenityFill = require('./lib/amenity-fill');
@@ -31,7 +31,6 @@ const nightStatus = require('./lib/night-status');
 const contacts = require('./lib/contacts');
 const { gentle } = require('./lib/gentle');
 const { bundle, lang, locale } = require('./lib/i18n');
-const { isNightCategory } = require('./lib/classify');
 const { NIGHT_STATES } = require('./lib/design');
 const placeSheet = require('./lib/place-sheet');
 const walks = require('./lib/walks');
@@ -145,7 +144,7 @@ module.exports = definePlugin({
           const currency = placeInfo.currencyOf(place, trip && trip.currency);
           const status = nightStatus.statusByPlace(resas).get(at.placeId) || null;
           const catName = (cats || []).find((c) => c.id === place.category_id);
-          const night = (accs || []).some((a) => a.place_id === at.placeId) || isNightCategory(place.category_name || (catName && catName.name) || '');
+          const night = isNightOf(new Set((accs || []).map((a) => a.place_id)), at.placeId, place.category_name || (catName && catName.name), place.route_geometry);
           // The structured card: description and notes read into the fixed sections of its kind.
           const categoryName = place.category_name || (catName && catName.name) || '';
           const sheet = placeSheet.view(placeSheet.sheetOf({ ...place, categoryName, raw: place }, { night }), L, {

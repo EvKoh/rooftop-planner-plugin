@@ -1,8 +1,4 @@
 {
-  "level.blocking": "ขัดขวาง",
-  "level.fix": "ต้องแก้",
-  "level.verify": "ต้องตรวจ",
-  "level.info": "ข้อมูล",
   "day": "วันที่ {n} ({date})",
   "scope.bookings": "การจอง",
   "scope.budget": "งบประมาณ",
@@ -43,7 +39,6 @@
   "stale_budget": "\"{name}\" อ้างถึงคืนที่ไม่ได้อยู่ในแผนแล้ว ({list})",
   "budget_total": "ที่พักในงบประมาณ: {budget}; คืนที่วางแผน: {nights}",
   "stale_todo": "\"{name}\" อ้างถึงคืนที่ไม่ได้อยู่ในแผนแล้ว ({list})",
-  "stale_note": "บันทึก \"{text}\" อ้างถึง {list} ซึ่งไม่ได้อยู่ในแผนแล้ว",
   "route_pending": "ยังไม่ได้คำนวณเวลาขับรถ {n} รายการ (ถึงขีดจำกัดเวลา): ตรวจสอบอีกครั้ง",
   "dayShort": "D{n}",
   "s.night_late": "ถึง {arr} ช้าสุด {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "กำลังคุย",
   "st.booked": "จองแล้ว",
   "st.dropped": "ตัดออก",
-  "overview.night": "ค้างคืน — {status}",
   "st.chip.booked": "จองแล้ว ✓",
   "st.chip.contacted": "กำลังคุย",
   "st.chip.dropped": "ตัดออก",
@@ -403,5 +397,7 @@
   "src.auto": "(อัตโนมัติ)",
   "s.resa_unlinked": "การจองที่ไม่มีคืนในแผน",
   "s.resa_note_stale": "ยืนยันแล้ว แต่บันทึกยังเป็น “รอ”",
-  "s.resa_price": "ราคาที่จอง ≠ แผน"
+  "s.resa_price": "ราคาที่จอง ≠ แผน",
+  "tent_refused": "“{name}” ไม่รับเต็นท์หลังคารถ (บันทึกไว้ที่สถานที่): หาที่พักคืนอื่น",
+  "s.tent_refused": "ไม่รับเต็นท์หลังคา"
 }

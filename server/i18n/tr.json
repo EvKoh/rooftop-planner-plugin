@@ -1,8 +1,4 @@
 {
-  "level.blocking": "ENGELLEYİCİ",
-  "level.fix": "DÜZELTİLECEK",
-  "level.verify": "KONTROL EDİLECEK",
-  "level.info": "BİLGİ",
   "day": "{n}. gün ({date})",
   "scope.bookings": "Rezervasyonlar",
   "scope.budget": "Bütçe",
@@ -43,7 +39,6 @@
   "stale_budget": "\"{name}\" artık planlanmayan bir geceden söz ediyor ({list})",
   "budget_total": "bütçedeki konaklama: {budget}; planlanan geceler: {nights}",
   "stale_todo": "\"{name}\" artık planlanmayan bir geceden söz ediyor ({list})",
-  "stale_note": "\"{text}\" notu artık planlanmayan {list} yerinden söz ediyor",
   "route_pending": "{n} sürüş süresi henüz hesaplanmadı (süre bütçesi doldu): kontrolü yeniden çalıştırın",
   "dayShort": "G{n}",
   "s.night_late": "varış {arr}, en geç {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "Görüşülüyor",
   "st.booked": "Rezerve edildi",
   "st.dropped": "Elendi",
-  "overview.night": "Gece — {status}",
   "st.chip.booked": "Rezerve ✓",
   "st.chip.contacted": "Görüşülüyor",
   "st.chip.dropped": "Elendi",
@@ -403,5 +397,7 @@
   "src.auto": "(otomatik)",
   "s.resa_unlinked": "planda gecesi olmayan rezervasyon",
   "s.resa_note_stale": "onaylandı, notlar hâlâ “bekliyor”",
-  "s.resa_price": "rezervasyon fiyatı ≠ plan"
+  "s.resa_price": "rezervasyon fiyatı ≠ plan",
+  "tent_refused": "“{name}” tavan çadırı kabul etmiyor (yerde kayıtlı): başka bir gece bulun",
+  "s.tent_refused": "tavan çadırı yok"
 }

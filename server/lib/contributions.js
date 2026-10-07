@@ -12,7 +12,7 @@
 const placeInfo = require('./place-info');
 const nightStatus = require('./night-status');
 const { t, num, locale } = require('./i18n');
-const { isNightCategory } = require('./classify');
+const { isNightOf } = require('./trip');
 
 const { NIGHT_STATUS, AMENITY_ICONS, CHIP, TONE } = require('./design');
 
@@ -50,7 +50,7 @@ async function placeColumns(ctx, tripId, settings) {
   // recorded; any other place (lake, museum, car park) shows the amount alone.
   const lodged = new Set((accs || []).map((a) => a.place_id));
   const catName = new Map((cats || []).map((c) => [c.id, c.name]));
-  const isNight = (p) => lodged.has(p.id) || isNightCategory(p.category_name || catName.get(p.category_id) || '');
+  const isNight = (p) => isNightOf(lodged, p.id, p.category_name || catName.get(p.category_id), p.route_geometry);
   // Route places carry a road geometry, not a price.
   const real = places.filter((p) => !p.route_geometry);
   const info = await placeInfo.getAll(ctx, tripId, real.map((p) => p.id));
@@ -68,7 +68,7 @@ async function placeColumns(ctx, tripId, settings) {
     for (const c of placeInfo.accessChips(rec, L, currencyOf(p))) {
       out.push({ kind: 'column', entityId: p.id, id: `vanlife-${c.key}`, label: c.label, value: c.value.slice(0, 256), icon: c.icon, tone: c.tone });
     }
-    // Time on site of a visit: "3 h 30 min" (the host strips emoji: a lucide icon instead).
+    // Time on site of a visit: "3 h 30" (the host strips emoji: a lucide icon instead).
     const visit = placeInfo.visitText(rec);
     const parking = placeInfo.parkingText(rec, L);
     if (parking) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-parking', label: t(L, 'col.parking'), value: parking.slice(0, 256), ...CHIP.parking });

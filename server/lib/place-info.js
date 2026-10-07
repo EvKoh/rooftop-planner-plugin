@@ -557,7 +557,7 @@ function amenitiesText(info, lang) {
 /** The visit's duration text (util.js durationText: the plugin's one format). */
 const duration = (m) => durationText(m);
 
-/** "3 h 30 min" or "2 h – 3 h 30 min" for a record's visit duration, or null. */
+/** "3 h 30" or "2 h – 3 h 30" for a record's visit duration, or null. */
 function visitText(info) {
   if (!info || (info.visit_min_minutes == null && info.visit_max_minutes == null)) return null;
   const a = duration(info.visit_min_minutes ?? info.visit_max_minutes);
@@ -589,10 +589,6 @@ function accessVerdict(info, arr) {
 /** The toll's currency: its own, else the place's, else the trip's. */
 const tollCurrency = (info, fallback) => (info && info.toll_currency) || fallback || 'EUR';
 
-/**
- * The access chips of a record, in the planner's order: { key, label, value, icon, tone }.
- * Only what is recorded: no chip for an unknown or a "no booking" value.
- */
 /** "2026-09-30" → "30/09" in the user's language (day and month only). */
 function shortDate(iso, L) {
   if (!iso) return '';
@@ -606,6 +602,10 @@ function closedOn(info, iso) {
   return (!info.closed_from || d >= info.closed_from) && (!info.closed_until || d <= info.closed_until);
 }
 
+/**
+ * The access chips of a record, in the planner's order: { key, label, value, icon, tone }.
+ * Only what is recorded: no chip for an unknown or a "no booking" value.
+ */
 function accessChips(info, L, currency) {
   if (!info) return [];
   const { CHIP } = require('./design');

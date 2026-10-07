@@ -41,8 +41,7 @@ const ZONES = [
   {
     id: 'liguria',
     farm: 'ok',
-    note: 'agricampeggio on an agriturismo is legal (LR 37/2007 art. 7)',
-    noteFr: 'l\'agricampeggio d\'un agriturismo est légal (LR 37/2007 art. 7)',
+    // Agricampeggio on an agriturismo is legal: LR 37/2007 art. 7 (texts: zone.liguria.*).
     polygon: [
       [43.78, 7.52], [44.08, 7.7], [44.2, 8.0], [44.42, 8.3], [44.6, 8.75], [44.62, 9.1],
       [44.45, 9.5], [44.35, 9.85], [44.05, 10.07], [44.0, 9.85], [44.25, 9.3], [44.4, 8.8],

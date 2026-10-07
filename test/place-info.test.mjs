@@ -115,7 +115,7 @@ describe('place info through the plugin', () => {
     expect(model.nights[0].price).toBe(41); // 38 € + dog 3 €
     const r = await checkTrip(h.ctx, model, { settings, network: false, deadline: deadline(5000) });
     expect(r.findings.find((f) => f.key === 'price_high' && f.dayNumber === 1).message).toContain('€41.00');
-    expect(r.findings.find((f) => f.key === 'tent_banned' && f.dayNumber === 2).message).toContain('rooftop_tent = no');
+    expect(r.findings.find((f) => f.key === 'tent_refused' && f.dayNumber === 2).message).toMatch(/refuses rooftop tents \(recorded on the place\)/);
     expect(has(r, 'blocking', 'too_low', 2)).toBe(true);
     expect(has(r, 'blocking', 'dog_refused', 3)).toBe(true);
     expect(has(r, 'blocking', 'too_long', 3)).toBe(true);

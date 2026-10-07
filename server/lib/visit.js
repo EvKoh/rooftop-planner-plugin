@@ -4,8 +4,7 @@
 // not a duration: a duration needs a word saying so next to it, or a "from … to …" span.
 // Nothing is guessed: no match, no duration.
 const { norm } = require('./util');
-const { isParkingCategory } = require('./classify');
-const { isHikePlace } = require('./design');
+const { isHikePlace, isParkingPlace } = require('./design');
 
 // Words that make a number of hours a time on site (French, English, Italian, German).
 const CUE = /randonn|rando\b|balade|marche|promenade|boucle|aller.?retour|\ba\/r\b|sur place|visite|duree|compter|prevoir|hike|hiking|walk|trail|loop|round.?trip|return trip|on site|visit|duration|allow|takes|escursion|giro|passeggiata|andata e ritorno|durata|wanderung|rundweg|dauer|gehzeit|besuch/;
@@ -16,10 +15,10 @@ const SPAN = /\b(?:de|from|dalle|von)\s+(\d{1,2})\s*[h:]\s*(\d{2})?\s*(?:a|to|al
 
 const quote = (s, i, len) => s.slice(Math.max(0, i - 30), i + len + 20).replace(/\s+/g, ' ').trim();
 
-/** { min, max, quote } in minutes from a free text, or null. */
 // Words that introduce opening hours, in the languages the notes come in (accents removed by norm).
 const OPENING = /\b(ouvert|ouverture|horaires?|open|opening|hours|daily|geoffnet|offnungszeiten|aperto|orari|apertura|abierto|horario|7\s*j\s*\/\s*7|7\s*\/\s*7|24\s*h)\b/;
 
+/** { min, max, quote } in minutes from a free text, or null. */
 function parseVisit(text) {
   const s = norm(text);
   const span = s.match(SPAN);
@@ -76,7 +75,7 @@ function stopMinutes(place, info) {
  */
 function dayStopMinutes(stop, info, stops) {
   const hikeDay = stops.some((s) => isHikePlace(s.place));
-  if (hikeDay && isParkingCategory(stop.place.categoryName)) return 0;
+  if (hikeDay && isParkingPlace(stop.place)) return 0;
   return stopMinutes(stop.place, info);
 }
 

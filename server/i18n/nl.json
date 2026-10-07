@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOKKEREND",
-  "level.fix": "TE CORRIGEREN",
-  "level.verify": "TE CONTROLEREN",
-  "level.info": "INFO",
   "day": "Dag {n} ({date})",
   "scope.bookings": "Reserveringen",
   "scope.budget": "Budget",
@@ -43,7 +39,6 @@
   "stale_budget": "\"{name}\" noemt een nacht die niet meer gepland is ({list})",
   "budget_total": "accommodatie in het budget: {budget}; geplande nachten: {nights}",
   "stale_todo": "\"{name}\" noemt een nacht die niet meer gepland is ({list})",
-  "stale_note": "notitie \"{text}\" noemt {list}, dat niet meer gepland is",
   "route_pending": "{n} rijtijd(en) nog niet berekend (tijdslimiet bereikt): voer de controle opnieuw uit",
   "dayShort": "D{n}",
   "s.night_late": "aankomst {arr}, uiterlijk {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "In overleg",
   "st.booked": "Geboekt",
   "st.dropped": "Afgevallen",
-  "overview.night": "Nacht — {status}",
   "st.chip.booked": "Geboekt ✓",
   "st.chip.contacted": "In overleg",
   "st.chip.dropped": "Afgevallen",
@@ -403,5 +397,7 @@
   "src.auto": "(automatisch)",
   "s.resa_unlinked": "boeking zonder overnachting in het plan",
   "s.resa_note_stale": "bevestigd, notities zeggen nog „wachtend”",
-  "s.resa_price": "geboekte prijs ≠ plan"
+  "s.resa_price": "geboekte prijs ≠ plan",
+  "tent_refused": "“{name}” weigert daktenten (vastgelegd bij de plek): zoek een andere overnachting",
+  "s.tent_refused": "geen daktenten"
 }

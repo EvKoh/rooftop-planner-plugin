@@ -8,10 +8,6 @@ const { t, has, money } = require('./i18n');
 const WARNING_LEVEL = { blocking: 'error', fix: 'warning', verify: 'warning' };
 const BANNER_MAX = 3; // individual chips; everything else goes into one summary chip
 
-/**
- * "🏠25 € · 4,8/5 · Camping Example — lake (Town)" → "Camping Example": the words a person
- * recognises, without the price/rating prefix, emoji or the description after a dash.
- */
 /** One banner line: "J2 Farm Example : ferme au Tyrol du Sud" — the essential first, no level word. */
 function bannerText(f, settings) {
   const L = settings.language;
@@ -60,7 +56,7 @@ function bannerFrom(all, settings) {
     const L = settings.language;
     const onlyPrices = hidden.every((f) => f.key === 'price_high');
     const anySevere = hidden.some((f) => f.level !== 'verify');
-    const message = onlyPrices ? t(L, 'group.prices', { n: hidden.length, max: money(settings.night_price_max, settings.currency || 'EUR', L) })
+    const message = onlyPrices ? t(L, 'group.prices', { n: hidden.length, max: money(settings.night_price_max, settings.currency, L) })
       : t(L, anySevere ? 'group.mixed' : 'group.verify', { n: hidden.length });
     out.push({ level: anySevere ? 'warning' : 'info', message });
   }

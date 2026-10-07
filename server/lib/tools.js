@@ -77,6 +77,9 @@ function placeView(model, p, info, settings, { full = false } = {}) {
   const plannedNights = model.nights.filter((n) => n.placeId === p.id).map((n) => (findDay(model, { dayId: n.startDayId }) || {}).n).filter(Boolean);
   // A night place: planned as a night, or of a night category (trip.js). Only a night has a night total.
   const night = isNightPlace(model, p);
+  const stay = model.nights.find((n) => n.placeId === p.id) || null;
+  // Computed from the price shown (it may have just been saved), with the stay's nights.
+  const cost = placeInfo.nightCost(p.price, info, settings, stay ? stay.nights : 1);
   const site = (p.raw && p.raw.website) || null;
   const currency = placeInfo.currencyOf(p.raw, model.currency);
   const statuses = (model.reservations || []).filter((r) => nightStatus.isNightReservation(r) && Number(nightStatus.placeOfReservation(r)) === p.id);
@@ -84,7 +87,10 @@ function placeView(model, p, info, settings, { full = false } = {}) {
     placeId: p.id, name: p.name,
     plannedNights,
     price: placeInfo.priceText(p.price, currency, info, L, { night }),
-    nightTotal: night ? placeInfo.nightTotal(p.price, info, settings) : null,
+    // The party's price for one night: the planned stay's share (a flat price spread over its
+    // nights, as vanlife_night shows it), else a one-night stay's. stayTotal: the whole stay.
+    nightTotal: night ? cost.perNight : null,
+    stayTotal: stay ? cost.perStay : null,
     amenities: placeInfo.amenitiesText(info, L),
     parking: placeInfo.parkingText(info, L),
     visit: placeInfo.visitText(info),
@@ -187,7 +193,9 @@ async function createPlace(ctx, model, c) {
     const v = Number(c.price_amount);
     if (!Number.isFinite(v) || v < 0) throw new Error('create.price_amount must be a positive number');
     input.price = v;
-    input.currency = typeof c.currency === 'string' && /^[A-Za-z]{3}$/.test(c.currency) ? c.currency.toUpperCase() : model.currency;
+    // A currency only when given: the trip's applies otherwise (currencyOf), and would stay
+    // frozen on the place if the trip's currency changed.
+    if (typeof c.currency === 'string' && /^[A-Za-z]{3}$/.test(c.currency)) input.currency = c.currency.toUpperCase();
   }
   let day = null;
   if (c.day_number != null) {

@@ -217,14 +217,17 @@ function list(model, settings, { now } = {}) {
       reservationId: res ? res.id : null,
       confirmation: res ? res.confirmation_number || null : null,
     };
+    // Unlinked bookings of other places for this evening (a second host asked): the same set
+    // the `unlinked` count is made of.
+    const others = unlinked.filter((u) => u.day && u.day.id === d.id && !same(u.placeId, night.placeId));
+    const alsoAsked = others.length ? { alsoAsked: others.map((u) => ({ placeId: u.placeId, title: u.res.title, status: statusOf(u.res), reservationId: u.res.id })) } : {};
     if (!isFirstEvening(night, d)) {
       const first = model.days.find((x) => x.id === night.startDayId);
-      rows.push({ ...base, continues: first ? first.n : null });
+      rows.push({ ...base, continues: first ? first.n : null, ...alsoAsked });
       continue;
     }
     const place = model.poolById.get(night.placeId);
     const info = place ? place.info : null;
-    const others = resas.filter((r) => r !== res && r.type === 'hotel' && r.accommodation_id == null && !same(placeOfReservation(r), night.placeId) && same(dayOfReservation(r), d.id));
     rows.push({
       ...base,
       contact: contactView(info, place && place.raw),
@@ -233,7 +236,7 @@ function list(model, settings, { now } = {}) {
       price: place ? placeInfo.priceText(place.price, night.currency, info, L, { night: true }) : null,
       nightTotal: night.price,
       stayTotal: night.stayCost,
-      ...(others.length ? { alsoAsked: others.map((r) => ({ placeId: placeOfReservation(r), title: r.title, status: statusOf(r), reservationId: r.id })) } : {}),
+      ...alsoAsked,
     });
   }
   const counts = Object.fromEntries(STATUSES.map((s) => [s, rows.filter((r) => r.status === s && !r.unlinked).length]));
@@ -322,7 +325,7 @@ async function set(ctx, model, a) {
     else {
       // Another place is tonight's night: a booking of this candidate only, not planned.
       create.day_id = day.id;
-      warnings.push(`Day ${day.n}'s planned night is "${night.name}" (place ${night.placeId}): this booking is recorded for "${place.name}" without changing the plan; vanlife_check_trip lists it as a booking with no night.`);
+      warnings.push(`Day ${day.n}'s planned night is "${night.name}" (place ${night.placeId}): this booking is recorded for "${place.name}" without changing the plan. vanlife_night list shows it under that evening (alsoAsked); once it is booked, vanlife_check_trip flags it as a booking with no night until the plan is changed.`);
     }
     written = await ctx.reservations.create(model.tripId, create);
     action = 'created';

@@ -1,8 +1,4 @@
 {
-  "level.blocking": "MENGHAMBAT",
-  "level.fix": "PERLU DIPERBAIKI",
-  "level.verify": "PERLU DICEK",
-  "level.info": "INFO",
   "day": "Hari {n} ({date})",
   "scope.bookings": "Pemesanan",
   "scope.budget": "Anggaran",
@@ -43,7 +39,6 @@
   "stale_budget": "\"{name}\" menyebut malam yang tidak lagi direncanakan ({list})",
   "budget_total": "penginapan di anggaran: {budget}; malam yang direncanakan: {nights}",
   "stale_todo": "\"{name}\" menyebut malam yang tidak lagi direncanakan ({list})",
-  "stale_note": "catatan \"{text}\" menyebut {list}, yang tidak lagi direncanakan",
   "route_pending": "{n} waktu berkendara belum dihitung (batas waktu tercapai): jalankan pemeriksaan lagi",
   "dayShort": "H{n}",
   "s.night_late": "tiba {arr}, paling lambat {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "Dalam pembicaraan",
   "st.booked": "Dipesan",
   "st.dropped": "Dibatalkan",
-  "overview.night": "Malam — {status}",
   "st.chip.booked": "Dipesan ✓",
   "st.chip.contacted": "Dalam pembicaraan",
   "st.chip.dropped": "Dibatalkan",
@@ -403,5 +397,7 @@
   "src.auto": "(otomatis)",
   "s.resa_unlinked": "pemesanan tanpa malam di rencana",
   "s.resa_note_stale": "dikonfirmasi, catatan masih “menunggu”",
-  "s.resa_price": "harga pesanan ≠ rencana"
+  "s.resa_price": "harga pesanan ≠ rencana",
+  "tent_refused": "“{name}” menolak tenda atap (tercatat di tempat): cari malam lain",
+  "s.tent_refused": "tanpa tenda atap"
 }

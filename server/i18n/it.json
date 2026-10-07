@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOCCANTE",
-  "level.fix": "DA CORREGGERE",
-  "level.verify": "DA VERIFICARE",
-  "level.info": "INFO",
   "day": "Giorno {n} ({date})",
   "scope.bookings": "Prenotazioni",
   "scope.budget": "Budget",
@@ -43,7 +39,6 @@
   "stale_budget": "«{name}» cita una notte non più prevista ({list})",
   "budget_total": "alloggio nel budget: {budget}; notti previste: {nights}",
   "stale_todo": "«{name}» cita una notte non più prevista ({list})",
-  "stale_note": "la nota «{text}» cita {list}, non più previsto",
   "route_pending": "{n} tempo/i di guida non ancora calcolato/i (limite di tempo raggiunto): rilanciare il controllo",
   "dayShort": "G{n}",
   "s.night_late": "arrivo {arr}, al più tardi {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "In trattativa",
   "st.booked": "Prenotata",
   "st.dropped": "Scartata",
-  "overview.night": "Notte — {status}",
   "st.chip.booked": "Prenotato ✓",
   "st.chip.contacted": "In trattativa",
   "st.chip.dropped": "Scartato",
@@ -403,5 +397,7 @@
   "src.auto": "(automatico)",
   "s.resa_unlinked": "prenotazione senza notte nel piano",
   "s.resa_note_stale": "confermata, note ancora «in attesa»",
-  "s.resa_price": "prezzo prenotato ≠ piano"
+  "s.resa_price": "prezzo prenotato ≠ piano",
+  "tent_refused": "«{name}» non accetta tende da tetto (registrato sul luogo): trova un’altra notte",
+  "s.tent_refused": "niente tende da tetto"
 }

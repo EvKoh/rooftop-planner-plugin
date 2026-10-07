@@ -1,5 +1,5 @@
 'use strict';
-// The full trip check (the `vanlife_check_trip` tool, the warnings banner and the tab
+// The full trip check (the `vanlife_check_trip` tool, the planner and the warnings banner
 // all read it). Two passes: first collect every drive leg the rules need and resolve them
 // in one batch (cache, then a Valhalla matrix), then evaluate the rules day by day.
 // It never writes anything. Levels: blocking > fix > verify > info.
@@ -7,13 +7,13 @@ const { hhmm, hm, distKm, norm, durationText } = require('./util');
 const { t, dayName, money, num, clock } = require('./i18n');
 const placeInfo = require('./place-info');
 const { sunset } = require('./sun');
-const { isShopping, isTrace, isNightCategory, isParkingCategory, parkingFromNotes } = require('./classify');
+const { isShopping, isTrace, parkingFromNotes } = require('./classify');
 const rules = require('./rules');
-const { isHikePlace } = require('./design');
+const { isHikePlace, isParkingPlace } = require('./design');
 const routing = require('./routing');
 const { highwayAllowed, fuelPerKm } = require('./settings');
 const { dayStopMinutes } = require('./visit');
-const { stayOn, stayBefore, isFirstEvening, findDay, nameKey, unplannedNights } = require('./trip');
+const { stayOn, stayBefore, isFirstEvening, findDay, isNightPlace, nameKey, unplannedNights } = require('./trip');
 const contacts = require('./contacts');
 const nightStatus = require('./night-status');
 
@@ -43,8 +43,8 @@ function carPos(stop) {
   return parkingFromNotes(stop.place.notes, stop.place.description) || pos(stop.place);
 }
 
-// A stop that is a visit (not shopping, not a night): what the day's load counts.
-const isVisit = (p) => !isShopping(p.categoryName, p.stopType) && !isNightCategory(p.categoryName);
+// A stop that is a visit (not shopping, not a night of the trip): what the day's load counts.
+const isVisit = (model, p) => !isShopping(p.categoryName, p.stopType) && !isNightPlace(model, p);
 const MEAL_MIN = 30;
 const LONG_DAY_MIN = 6 * 60;
 const SMALL_MIN = 60;
@@ -70,8 +70,8 @@ function dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L,
     if (leg && leg.drive != null) { const m = M(leg.drive); if (m == null) complete = false; else drive += m; }
     if (nuit && s.accommodationId === nuit.id) return;
     const info = (model.poolById.get(s.place.id) || {}).info || null;
-    const parking = isParkingCategory(s.place.categoryName);
-    visits.push({ s, minutes: dayStopMinutes(s, info, stops), visit: isVisit(s.place) && !parking });
+    const parking = isParkingPlace(s.place);
+    visits.push({ s, minutes: dayStopMinutes(s, info, stops), visit: isVisit(model, s.place) && !parking });
   });
   if (toNight != null) { const m = M(toNight); if (m == null) complete = false; else drive += m; }
   const unknown = visits.filter((v) => v.visit && v.minutes == null).map((v) => v.s.place.name);
@@ -143,8 +143,8 @@ async function savings({ ctx, model, settings, add, L, deadline, dayLabel }) {
   for (const d of model.days) {
     const nuit = stayOn(model, d);
     if (!isFirstEvening(nuit, d)) continue;
-    // Only a price in the same unit as the candidates' (per night, for the vehicle).
-    const current = placeInfo.comparableNightPrice(nuit);
+    // Only a price in the same unit and currency as the candidates' (per night, for the vehicle).
+    const current = nuit.currency === model.currency ? placeInfo.comparableNightPrice(nuit) : null;
     if (current == null || current <= settings.night_price_target) continue;
     if (deadline && deadline.left() < 1500) break;
     let r;
@@ -292,7 +292,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       if (prec && prec.end != null && prec.end > start) add('fix', J, 'overlap', { name: p.name, start: hhmm(start), prev: prec.name, prevEnd: hhmm(prec.end) }, extra);
       if (d.wd != null) {
         const text = `${p.description}\n${p.notes}\n${s.notes}`;
-        for (const c of rules.closures(text, d.wd, start, end, { placeName: p.name, isNight: !!isTonight || isNightCategory(p.categoryName) })) {
+        for (const c of rules.closures(text, d.wd, start, end, { placeName: p.name, isNight: !!isTonight || isNightPlace(model, p) })) {
           const params = { name: p.name, day: dayName(L, d.wd), ...c.params };
           if (c.key === 'outside_hours') Object.assign(params, { from: hhmm(start), to: hhmm(end ?? start), open: hhmm(c.params.open), close: hhmm(c.params.close) });
           add(c.level, J, c.key, params, extra);
@@ -336,7 +336,10 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       if (legal) add(legal.level, J, legal.key, { name: nuit.name, ...zoneText(L, legal.params) }, extra);
       const am = nuit.info ? nuit.info.amenities : {};
       // A tent ban only matters to a rooftop tent: a van or a motorhome deploys nothing.
-      const banned = settings.vehicle !== 'rooftop_tent' ? null : am.rooftop_tent === 'no' ? 'rooftop_tent = no' : rules.tentBanned(nuit.text);
+      // The place's record says no (tent_refused), or its notes do (tent_banned, quoted).
+      const refused = settings.vehicle === 'rooftop_tent' && am.rooftop_tent === 'no';
+      const banned = settings.vehicle !== 'rooftop_tent' || refused ? null : rules.tentBanned(nuit.text);
+      if (refused) add('blocking', J, 'tent_refused', { name: nuit.name }, extra);
       if (banned) add('blocking', J, 'tent_banned', { name: nuit.name, quote: banned }, extra);
       if (settings.dog && am.dog === 'no') add('blocking', J, 'dog_refused', { name: nuit.name }, extra);
       if (nuit.info && nuit.info.max_height_m != null && nuit.info.max_height_m < settings.vehicle_height_m) {
@@ -399,7 +402,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
     // no confirmation number is the usual sign nobody actually booked.
     // Only a hint now: the user sets a night booked from the place view or TREK's form, and a
     // farm on a donation has no confirmation number to give.
-    if (x.status === 'confirmed' && !x.confirmation_number && !BOOKED_NOTE.test(norm(`${nightStatus.freeNotes(x.notes)} ${x.title || ''}`))) add('verify', bookings, 'resa_confirmed', { title: x.title }, { reservationId: x.id });
+    if (nightStatus.isNightReservation(x) && x.status === 'confirmed' && !x.confirmation_number && !BOOKED_NOTE.test(norm(`${nightStatus.freeNotes(x.notes)} ${x.title || ''}`))) add('verify', bookings, 'resa_confirmed', { title: x.title }, { reservationId: x.id });
     // A confirmed booking whose notes still say it waits for an answer.
     if (nightStatus.staleWaitingNote(x)) add('fix', bookings, 'resa_note_stale', { title: x.title }, { reservationId: x.id });
   }
@@ -448,7 +451,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
   // Walks of the hikes: from one car park "P", back to the same P (walks.js).
   for (const w of require('./walks').hikeWalks(model)) {
     if (!w.problem) continue;
-    const d = w.day != null ? model.days.find((x) => x.n === w.day) : null;
+    const d = w.day != null ? findDay(model, { dayNumber: w.day }) : null;
     const scope = d ? dayLabel(d) : w.hike;
     const ids = { dayNumber: d ? d.n : null, placeId: w.hikeId };
     if (w.problem.key === 'no_parking') add('fix', scope, 'walk_no_parking', { hike: w.hike }, ids);

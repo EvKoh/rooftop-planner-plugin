@@ -10,10 +10,10 @@ const overpass = require('./overpass');
 const routing = require('./routing');
 const { statusAt, hoursOn } = require('./opening-hours');
 const { highwayAllowed } = require('./settings');
-const { dayPlan, carPos } = require('./check');
+const { dayPlan } = require('./check');
+const { waypoints } = require('./traces');
 const { findDay } = require('./trip');
 
-const located = (p) => p && p.lat != null && p.lng != null;
 const KINDS = {
   groceries: '["shop"~"^(supermarket|convenience|greengrocer|bakery)$"]',
   fuel: '["amenity"="fuel"]',
@@ -21,12 +21,10 @@ const KINDS = {
 };
 
 async function dayGeometry(ctx, model, day, settings, opts) {
-  const { veille, nuit, trace, stops } = dayPlan(model, day);
+  const { trace } = dayPlan(model, day);
   if (trace && trace.place.geometry) return { points: trace.place.geometry, source: 'route place' };
-  const pts = [];
-  if (veille && located(veille)) pts.push([veille.lat, veille.lng]);
-  for (const s of stops) if (located(s.place) && !(veille && s.accommodationId === veille.id)) pts.push(carPos(s));
-  if (nuit && located(nuit) && !pts.some((p) => p[0] === nuit.lat && p[1] === nuit.lng)) pts.push([nuit.lat, nuit.lng]);
+  // Where the car goes, as the day's route draws it (traces.js): a hike's summit is walked.
+  const { pts } = waypoints(model, day);
   if (pts.length < 2) return null;
   if (opts.network === false) return null;
   const r = await routing.route(pts, { ...routing.vehicleOpts(settings, highwayAllowed(settings, day.index, model.days.length)), timeoutMs: opts.deadline ? Math.min(10000, opts.deadline.left() - 4000) : 10000 });

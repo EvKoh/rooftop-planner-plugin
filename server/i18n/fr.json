@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOQUANT",
-  "level.fix": "À CORRIGER",
-  "level.verify": "À VÉRIFIER",
-  "level.info": "INFO",
   "day": "J{n} ({date})",
   "scope.bookings": "Résa",
   "scope.budget": "Budget",
@@ -43,7 +39,6 @@
   "stale_budget": "« {name} » cite une nuitée hors programme ({list})",
   "budget_total": "hébergement au budget : {budget} ; prix des nuits planifiées : {nights}",
   "stale_todo": "« {name} » cite une nuitée hors programme ({list})",
-  "stale_note": "note « {text} » cite {list}, hors programme",
   "route_pending": "{n} temps de route pas encore calculé(s) (budget de temps atteint) : relancer le contrôle",
   "dayShort": "J{n}",
   "s.night_late": "arrivée {arr}, limite {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "En discussion",
   "st.booked": "Réservée",
   "st.dropped": "Écartée",
-  "overview.night": "Nuit — {status}",
   "st.chip.booked": "Réservé ✓",
   "st.chip.contacted": "En discussion",
   "st.chip.dropped": "Écarté",
@@ -403,5 +397,7 @@
   "src.auto": "(auto)",
   "s.resa_unlinked": "réservation rattachée à aucune nuit",
   "s.resa_note_stale": "confirmée, notes encore « en attente »",
-  "s.resa_price": "prix réservé ≠ plan"
+  "s.resa_price": "prix réservé ≠ plan",
+  "tent_refused": "« {name} » refuse les tentes de toit (enregistré sur le lieu) : trouver une autre nuit",
+  "s.tent_refused": "tente de toit refusée"
 }

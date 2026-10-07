@@ -1,8 +1,4 @@
 {
-  "level.blocking": "مانع",
-  "level.fix": "يجب إصلاحه",
-  "level.verify": "يجب التحقق",
-  "level.info": "معلومة",
   "day": "اليوم {n} ({date})",
   "scope.bookings": "الحجوزات",
   "scope.budget": "الميزانية",
@@ -43,7 +39,6 @@
   "stale_budget": "\"{name}\" يذكر مبيتًا لم يعد مخططًا ({list})",
   "budget_total": "الإقامة في الميزانية: {budget}؛ الليالي المخططة: {nights}",
   "stale_todo": "\"{name}\" يذكر مبيتًا لم يعد مخططًا ({list})",
-  "stale_note": "الملاحظة \"{text}\" تذكر {list}، وهو لم يعد مخططًا",
   "route_pending": "{n} مدة قيادة لم تُحسب بعد (تم بلوغ حد الوقت): أعد التحقق",
   "dayShort": "ي{n}",
   "s.night_late": "الوصول {arr}، الحد {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "قيد النقاش",
   "st.booked": "محجوز",
   "st.dropped": "مستبعد",
-  "overview.night": "المبيت — {status}",
   "st.chip.booked": "محجوز ✓",
   "st.chip.contacted": "قيد النقاش",
   "st.chip.dropped": "مستبعد",
@@ -403,5 +397,7 @@
   "src.auto": "(تلقائي)",
   "s.resa_unlinked": "حجز بلا ليلة في الخطة",
   "s.resa_note_stale": "مؤكد، والملاحظات لا تزال «بانتظار»",
-  "s.resa_price": "سعر الحجز ≠ الخطة"
+  "s.resa_price": "سعر الحجز ≠ الخطة",
+  "tent_refused": "«{name}» لا يقبل خيام السقف (مسجل في المكان): ابحث عن ليلة أخرى",
+  "s.tent_refused": "لا خيام سقف"
 }

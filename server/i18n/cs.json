@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOKUJÍCÍ",
-  "level.fix": "OPRAVIT",
-  "level.verify": "OVĚŘIT",
-  "level.info": "INFO",
   "day": "Den {n} ({date})",
   "scope.bookings": "Rezervace",
   "scope.budget": "Rozpočet",
@@ -43,7 +39,6 @@
   "stale_budget": "„{name}“ zmiňuje noc, která už není v plánu ({list})",
   "budget_total": "ubytování v rozpočtu: {budget}; plánované noci: {nights}",
   "stale_todo": "„{name}“ zmiňuje noc, která už není v plánu ({list})",
-  "stale_note": "poznámka „{text}“ zmiňuje {list}, co už není v plánu",
   "route_pending": "{n} dob jízdy ještě nespočítáno (časový limit vyčerpán): spusťte kontrolu znovu",
   "dayShort": "D{n}",
   "s.night_late": "příjezd {arr}, nejpozději {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "V jednání",
   "st.booked": "Rezervováno",
   "st.dropped": "Zamítnuto",
-  "overview.night": "Noc — {status}",
   "st.chip.booked": "Rezervováno ✓",
   "st.chip.contacted": "V jednání",
   "st.chip.dropped": "Zamítnuto",
@@ -403,5 +397,7 @@
   "src.auto": "(automaticky)",
   "s.resa_unlinked": "rezervace bez noci v plánu",
   "s.resa_note_stale": "potvrzeno, poznámky stále „čeká“",
-  "s.resa_price": "rezervovaná cena ≠ plán"
+  "s.resa_price": "rezervovaná cena ≠ plán",
+  "tent_refused": "„{name}“ nepřijímá střešní stany (zaznamenáno u místa): najděte jinou noc",
+  "s.tent_refused": "bez střešních stanů"
 }

@@ -1,8 +1,4 @@
 {
-  "level.blocking": "BLOKEERIV",
-  "level.fix": "PARANDADA",
-  "level.verify": "KONTROLLIDA",
-  "level.info": "INFO",
   "day": "Päev {n} ({date})",
   "scope.bookings": "Broneeringud",
   "scope.budget": "Eelarve",
@@ -43,7 +39,6 @@
   "stale_budget": "„{name}” mainib ööd, mis pole enam plaanis ({list})",
   "budget_total": "majutus eelarves: {budget}; planeeritud ööd: {nights}",
   "stale_todo": "„{name}” mainib ööd, mis pole enam plaanis ({list})",
-  "stale_note": "märge „{text}” mainib {list}, mis pole enam plaanis",
   "route_pending": "{n} sõiduaeg(a) veel arvutamata (ajalimiit täis): käivita kontroll uuesti",
   "dayShort": "P{n}",
   "s.night_late": "saabub {arr}, hiljemalt {limit}",
@@ -200,7 +195,6 @@
   "st.contacted": "Arutlusel",
   "st.booked": "Broneeritud",
   "st.dropped": "Loobutud",
-  "overview.night": "Öö — {status}",
   "st.chip.booked": "Broneeritud ✓",
   "st.chip.contacted": "Arutlusel",
   "st.chip.dropped": "Loobutud",
@@ -403,5 +397,7 @@
   "src.auto": "(automaatne)",
   "s.resa_unlinked": "broneering ilma ööta plaanis",
   "s.resa_note_stale": "kinnitatud, märkmed ütlevad endiselt „ootel“",
-  "s.resa_price": "broneeritud hind ≠ plaan"
+  "s.resa_price": "broneeritud hind ≠ plaan",
+  "tent_refused": "„{name}“ ei luba katusetelke (kirjas koha juures): leia teine ööbimiskoht",
+  "s.tent_refused": "katusetelgid keelatud"
 }
