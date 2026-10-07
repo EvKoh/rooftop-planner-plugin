@@ -9,7 +9,7 @@
 // place edits, assignments and trip summaries are core tools (create_budget_item,
 // update_place, update_assignment_time, get_trip_summary...); these tools return the core
 // calls to make instead of re-implementing them.
-const { KINDS } = require('./design');
+const { KINDS, NIGHT_STATUSES } = require('./design');
 const { CODES: LANGUAGES } = require('./i18n');
 const SAFETY = 'Never book, pay or send a message to a host for the user: show them the exact text first and act only on their explicit validation.';
 const TRIP = { type: 'integer', minimum: 1, description: 'TREK trip id (list_trips gives it).' };
@@ -194,7 +194,7 @@ const TOOL_SPECS = [
         dayNumber: { ...DAY, description: 'set: the day whose evening the night starts.' },
         dayId: { type: 'integer', minimum: 1, description: 'set: TREK day id, instead of dayNumber.' },
         date: { type: 'string', format: 'date', description: 'set: the date of that evening, instead of dayNumber.' },
-        status: { type: 'string', enum: ['spotted', 'contacted', 'booked', 'dropped'], description: 'set: the new status.' },
+        status: { type: 'string', enum: NIGHT_STATUSES, description: 'set: the new status.' },
         kind: { type: 'string', maxLength: 32, description: 'set: also give the place its kind in plain words (e.g. "farm" for an agricamping, "campsite", "aire", "hotel", "wild"; the full list is in vanlife_place): the plugin moves it to the trip category for that kind, so its pictogram and colour follow. "A farm we booked" = kind farm + status booked.' },
         confirmation: { type: 'string', maxLength: 100, description: 'set booked: the host\'s confirmation number or reference.' },
         reason: { type: 'string', maxLength: 200, description: 'set dropped: why, in a few words (full, no tents, too expensive...).' },

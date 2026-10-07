@@ -268,7 +268,7 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
   if (a.log) patch.log = a.log;
   if (Object.keys(patch).length) {
     const before = await placeInfo.get(ctx, place.id);
-    const native = placeInfo.nativeContacts(place.raw, placeInfo.merge(before, { ...patch, price_amount: undefined, currency: undefined }));
+    const native = placeInfo.nativeContacts(place.raw, placeInfo.merge(before, { ...patch, price_amount: undefined, currency: undefined }), before);
     const rec = await placeInfo.set(ctx, model.tripId, place.id, patch, { place: place.raw });
     place.info = rec;
     const walk = await hikeWalk(ctx, model, place.id, settings, opts);

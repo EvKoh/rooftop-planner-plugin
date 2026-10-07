@@ -423,14 +423,21 @@ function clearPatch(fields) {
 }
 
 /**
- * TREK's own website and phone fields of a place, filled from the contacts when they are
- * empty there (TREK has no e-mail field: the e-mail stays in the plugin's record).
+ * TREK's own website and phone fields of a place, kept in step with the contacts: filled
+ * when empty there, and emptied when the user erases a contact that TREK's field holds
+ * (readers fall back on TREK's field, so an erased phone would come back otherwise). TREK
+ * has no e-mail field: the e-mail stays in the plugin's record. `before` is the record as
+ * it was.
  */
-function nativeContacts(place, rec) {
+function nativeContacts(place, rec, before) {
   if (!place || !rec || !rec.contacts) return null;
   const out = {};
   if (rec.contacts.website && !place.website && !contacts.notOwnSite(rec.contacts.website)) out.website = rec.contacts.website;
   if (rec.contacts.phone && !place.phone) out.phone = rec.contacts.phone;
+  const was = (before && before.contacts) || {};
+  for (const k of ['website', 'phone']) {
+    if (rec.contacts[k] == null && was[k] && place[k] && String(place[k]) === String(was[k])) out[k] = null;
+  }
   return Object.keys(out).length ? out : null;
 }
 
@@ -658,7 +665,7 @@ async function set(ctx, tripId, placeId, patch, { place } = {}) {
   delete rest.currency;
   const current = await get(ctx, placeId);
   const next = merge(current, rest);
-  const native = { ...(price || {}), ...(nativeContacts(place, next) || {}) };
+  const native = { ...(price || {}), ...(nativeContacts(place, next, current) || {}) };
   if (Object.keys(native).length) await ctx.places.update(Number(tripId), Number(placeId), native);
   await ctx.meta.set('place', Number(placeId), META_KEY, next);
   try {

@@ -147,6 +147,7 @@ module.exports = definePlugin({
           const categoryName = place.category_name || (catName && catName.name) || '';
           const sheet = placeSheet.view(placeSheet.sheetOf({ ...place, categoryName, raw: place }, { night }), L, {
             trackUrl: walks.hikeUrl({ raw: place, description: place.description, notes: place.notes }, info),
+            visitMinutes: info ? info.visit_min_minutes : null,
           });
           return json(200, {
             language: L,

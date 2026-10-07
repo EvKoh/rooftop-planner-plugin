@@ -389,8 +389,11 @@ function row(field, v, L) {
  * field outside the kind's sections) and "other" (unclassified keys and free notes).
  * opts.trackUrl: the hike's track page (walks.hikeUrl), the reference link when known.
  */
-function view(sheet, L, { trackUrl = null } = {}) {
+function view(sheet, L, { trackUrl = null, visitMinutes = null } = {}) {
   const f = { ...sheet.fields };
+  // The time on site the plan counts (visit.js: the recorded duration first) is the one the
+  // card shows: the notes' figure would contradict the schedule and the day's load.
+  if (visitMinutes != null && (!f.duration || f.duration.minutes !== visitMinutes)) f.duration = { minutes: visitMinutes, text: durationText(visitMinutes) };
   if (trackUrl && (!f.website || f.website.fromTrek)) f.website = { url: trackUrl, text: trackUrl };
   const used = new Set();
   const sections = [];
@@ -462,5 +465,5 @@ function setField(description, notes, field, value, L = 'en') {
 module.exports = {
   FIELDS, SECTIONS, TAIL, FIELD_NAMES: Object.keys(FIELDS),
   typeOf, aliasesOf, keyForm, fieldOf, splitKey, lines, minutesOf, gradeOf, routeKindOf, dogOf, urlsIn,
-  parse, sheetOf, kindOf, view, setField, durationText, FIGURE_FIELDS,
+  parse, sheetOf, kindOf, view, setField, FIGURE_FIELDS,
 };

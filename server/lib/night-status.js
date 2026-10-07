@@ -23,7 +23,7 @@ const { findDay, stayOn, evenings, isFirstEvening } = require('./trip');
 const { t } = require('./i18n');
 const { norm } = require('./util');
 
-const STATUSES = ['spotted', 'contacted', 'booked', 'dropped'];
+const { NIGHT_STATUSES: STATUSES } = require('./design');
 const TO_TREK = { contacted: 'pending', booked: 'confirmed', dropped: 'cancelled' };
 const FROM_TREK = { pending: 'contacted', confirmed: 'booked', cancelled: 'dropped' };
 // When one place has several bookings (two nights, an old dropped one), the strongest wins.
