@@ -9,7 +9,7 @@
 // classify is kept as an "other note", free text as text.
 const { norm, durationText, urlsIn } = require('./util');
 const { isNightCategory } = require('./classify');
-const { t, locale } = require('./i18n');
+const { t, locale, MESSAGES, CODES } = require('./i18n');
 const design = require('./design');
 
 /**
@@ -99,6 +99,15 @@ for (const k of Object.keys(FIELDS)) {
   for (const a of aliasesOf(k)) {
     if (a.endsWith('*')) PREFIX.push([a.slice(0, -1), k]);
     else if (!EXACT.has(a)) EXACT.set(a, k);
+  }
+}
+// The label setField writes, in every catalogue language, reads back as its own field: what
+// the plugin writes it must read (a Dutch "Duur :" line is the duration). It wins over an
+// alias of another field ("Percorso" is the Italian label of route_type).
+for (const k of Object.keys(FIELDS)) {
+  for (const code of CODES) {
+    const label = MESSAGES[code][`sh.f.${k}`];
+    if (label) EXACT.set(keyForm(label), k);
   }
 }
 

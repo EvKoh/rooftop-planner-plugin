@@ -434,7 +434,9 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
     // total would ask for a wrong correction.
     const lodging = model.costs.filter((b) => /hebergement|hotel|accommodation|lodging|camping|nuit|night|alloggio|unterkunft/.test(norm(`${b.category || ''} ${b.name || ''}`)));
     const nm = nightStatus.nightsMoney(model);
-    if (lodging.length && nm.complete) {
+    // A lodging line in another currency cannot be summed with the trip's money either.
+    const sameMoney = lodging.every((b) => !b.currency || b.currency === model.currency);
+    if (lodging.length && nm.complete && sameMoney) {
       const inBudget = lodging.reduce((s, b) => s + (+b.total_price || 0), 0);
       if (Math.abs(inBudget - nm.total) > 1) add('fix', budgetScope, 'budget_total', { budget: money(inBudget, model.currency, L), nights: money(nm.total, model.currency, L) });
     }

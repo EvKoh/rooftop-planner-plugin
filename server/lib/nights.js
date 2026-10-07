@@ -212,7 +212,8 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     if (c.rating == null) tv.push('recent reviews (rating >= 4/5)');
     c.toVerify = tv;
     // Night + fuel of the detour: what the option really costs compared to the others.
-    if (c.price != null && c.detourKm != null) c.totalCost = Math.round((c.price + Math.max(0, c.detourKm) * fuelPerKm(settings)) * 100) / 100;
+    // Fuel is in the trip's currency: a candidate priced in another one has no total.
+    if (c.price != null && c.detourKm != null && (!o.currency || c.currency === o.currency)) c.totalCost = Math.round((c.price + Math.max(0, c.detourKm) * fuelPerKm(settings)) * 100) / 100;
   }
   return {
     evening: o.evening, morning: o.morning || o.evening, date: o.date || null,
@@ -259,7 +260,7 @@ async function findNightsForDay(ctx, model, ref, opts) {
   res.day = { id: day.id, number: day.n, date: day.date };
   res.currentNight = a.current;
   if (a.current && a.current.comparablePrice != null) {
-    for (const c of res.candidates) if (c.price != null) c.savingVsCurrent = Math.round((a.current.comparablePrice - c.price) * 100) / 100;
+    for (const c of res.candidates) if (c.price != null && c.currency === a.current.currency) c.savingVsCurrent = Math.round((a.current.comparablePrice - c.price) * 100) / 100;
   }
   res.cheaper = cheaperNight(res, opts.settings);
   res.sunsetNote = day.date && a.current ? `arrive by sunset - ${opts.settings.sunset_margin_min} min` : null;

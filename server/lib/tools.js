@@ -134,7 +134,7 @@ async function hikesList(ctx, model, settings, opts) {
   return {
     filter: 'hikes', count: list.length,
     hikes: list.map((w) => walkView(w, geo.get(w.key), settings.language)),
-    note: 'found: set = chosen by the user (set.access_parking_place_id); plan = a car park planned next to the hike; notes = a start point in the hike\'s notes. A hike with no car park walks from its own place. The map draws each walk dotted.',
+    note: 'found: set = chosen by the user (set.access_parking_place_id); plan = a car park planned next to the hike; notes = a start point in the hike\'s notes. A walk starts at a car park place of the trip: without one (problem no_parking, even with a start point in the notes) it is not drawn and the check flags it; file the car park as a place (vanlife_place create kind "parking") and set walk.parking_place_id. The map draws each walk dotted.',
   };
 }
 

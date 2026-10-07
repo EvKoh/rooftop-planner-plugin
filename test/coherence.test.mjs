@@ -427,3 +427,73 @@ describe('the post-fix audit', () => {
     } finally { vi.unstubAllGlobals(); }
   });
 });
+
+describe('the 0.6.2 audit: what the plugin writes, it reads back', () => {
+  it('a sheet field written in any language reads back as that field, and is replaced, not repeated', () => {
+    const sheet = require('../server/lib/place-sheet.js');
+    for (const L of ['nl', 'ja', 'it', 'fr']) {
+      let txt = sheet.setField('', '', 'duration', '2 h', L);
+      txt = sheet.setField(txt.description, txt.notes, 'duration', '3 h', L);
+      const s = sheet.sheetOf({ name: 'Example', categoryName: 'Hike', description: txt.description, notes: txt.notes });
+      expect(s.fields.duration.minutes, L).toBe(180);
+      expect(txt.notes.split('\n').filter(Boolean), L).toHaveLength(1);
+    }
+    // Italian "Percorso" is route_type's own label: it reads back as route_type.
+    const it = sheet.setField('', '', 'route_type', 'anello', 'it');
+    expect(sheet.sheetOf({ name: 'Example', categoryName: 'Hike', description: '', notes: it.notes }).fields.route_type.text).toBe('anello');
+  });
+
+  it('a budget line the plugin proposed is recognised in every language, and other currencies are not summed', async () => {
+    const { isFuelLine, isTollLine, tripBudget } = require('../server/lib/budget.js');
+    expect(isFuelLine({ name: 'Kraftstoff Tag 2 (120 km)' })).toBe(true);
+    expect(isTollLine({ name: 'Peaje día 3 — Lago di Carezza' })).toBe(true);
+    expect(isTollLine({ name: 'Tol dag 3 — Lago di Carezza' })).toBe(true);
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      trip.costs.push({ id: 603, name: 'Péage jour 3 — Example', category: 'Transport', total_price: 40, currency: 'CHF' });
+      const h = makeHost({ trip });
+      const settings = await readSettings(h.ctx);
+      const r = await tripBudget(h.ctx, await loadTrip(h.ctx, 1, settings), {}, { settings, deadline: deadline(10000) });
+      expect(r.tollTotal).toBe(18.5); // the CHF line is listed, not added as euros
+      expect(r.note).toMatch(/Toll lines in another currency, not in the total: Péage jour 3 — Example 40 CHF/);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('a lodging line in another currency stops the lodging comparison', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      expect(keys(await check(makeHost({ trip })), 'budget_total')).toHaveLength(1);
+      trip.costs[0].currency = 'CHF';
+      expect(keys(await check(makeHost({ trip })), 'budget_total')).toEqual([]);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('a candidate in another currency gets no saving nor total cost', async () => {
+    const base = stubFetch();
+    vi.stubGlobal('fetch', vi.fn(async (url, init) => {
+      const res = await base(url, init);
+      if (!String(url).includes('overpass') || !/camp_site/.test(decodeURIComponent(String(init.body)))) return res;
+      const body = await res.json();
+      body.elements = [...body.elements, { type: 'node', id: 8, lat: 46.6, lon: 12.16, tags: { tourism: 'camp_site', name: 'Camping Franc Example', charge: 'CHF 20', tents: 'yes' } }];
+      return { ok: true, status: 200, json: async () => body };
+    }));
+    try {
+      const r = await call(makeHost(), 'vanlife_find_nights', { tripId: 1, dayNumber: 1 });
+      const chf = r.candidates.find((c) => c.name === 'Camping Franc Example');
+      expect(chf).toMatchObject({ currency: 'CHF', price: 20 });
+      expect(chf.savingVsCurrent).toBeUndefined();
+      expect(chf.totalCost).toBeUndefined();
+      expect(r.candidates.find((c) => c.name === 'Camping Lakeside Example').savingVsCurrent).toBe(20);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('fill reads a time on site the notes state, even on an otherwise complete record', () => {
+    const fillLib = require('../server/lib/amenity-fill.js');
+    const full = pi.merge(null, { contacts: { email: 'a@example.com', phone: '+39 000 000 0001', website: 'https://example.com' } });
+    for (const k of Object.keys(full.amenities)) full.amenities[k] = 'no';
+    expect(fillLib.incomplete(full, { notes: '' })).toBe(false);
+    expect(fillLib.incomplete(full, { notes: 'Hike, 2h30 round trip.' })).toBe(true);
+  });
+});
