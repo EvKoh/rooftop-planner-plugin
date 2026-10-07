@@ -235,7 +235,7 @@
   "ui.visitMax": "Maximale tijd ter plaatse (min)",
   "day_overloaded": "{need} nodig (bezoeken {visits}, rijden {drive}) voor {window} bruikbare dag ({from}–{to}): {list} schrappen of verplaatsen",
   "s.day_overloaded": "{need} voor {window}",
-  "too_many_activities": "te veel voor één dag: {list} — één grote activiteit per dag (vanaf {big}) of hooguit twee kleine (tot {small})",
+  "too_many_activities": "te veel voor één dag: {list} — één grote activiteit per dag (vanaf {big}) of hooguit twee kleine",
   "s.too_many_activities": "te veel activiteiten",
   "visit_unknown": "bezoekduur onbekend: {list} — vul die in om de dagbelasting te controleren",
   "s.visit_unknown": "bezoekduur onbekend",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "bevestigd, notities zeggen nog „wachtend”",
   "s.resa_price": "geboekte prijs ≠ plan",
   "tent_refused": "“{name}” weigert daktenten (vastgelegd bij de plek): zoek een andere overnachting",
-  "s.tent_refused": "geen daktenten"
+  "s.tent_refused": "geen daktenten",
+  "ui.invalidField": "{field}: deze waarde is ongeldig",
+  "ui.notInTrip": "Deze plek hoort niet bij deze reis.",
+  "ui.failed": "Dat is niet gelukt. Probeer het zo opnieuw."
 }

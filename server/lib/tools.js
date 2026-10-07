@@ -14,7 +14,7 @@ const { scheduleDay } = require('./schedule');
 const { suppliesForDay } = require('./supplies');
 const { planTrip, planRequest } = require('./plan');
 const { sunset, sunrise } = require('./sun');
-const { hhmm, deadline: makeDeadline } = require('./util');
+const { hhmm, durationText, deadline: makeDeadline } = require('./util');
 const { lang } = require('./i18n');
 const placeInfo = require('./place-info');
 const amenityFill = require('./amenity-fill');
@@ -108,7 +108,9 @@ function placeView(model, p, info, settings, { full = false } = {}) {
     // The description and notes read into typed fields (place-sheet.js): what the widget's
     // card shows; edit a field with sheet_set, which rewrites its line in the notes.
     const sh = placeSheet.sheetOf(p, { night });
-    out.sheet = { kind: sh.kind, fields: sh.fields, otherNotes: sh.other, about: sh.about, freeNotes: sh.text };
+    // The time on site the plan counts wins over the notes' figure, as on the panel's card.
+    const fields = info && info.visit_min_minutes != null ? { ...sh.fields, duration: { minutes: info.visit_min_minutes, text: durationText(info.visit_min_minutes) } } : sh.fields;
+    out.sheet = { kind: sh.kind, fields, otherNotes: sh.other, about: sh.about, freeNotes: sh.text };
   }
   return out;
 }

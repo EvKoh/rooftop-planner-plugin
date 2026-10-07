@@ -235,7 +235,7 @@
   "ui.visitMax": "Temps màxim al lloc (min)",
   "day_overloaded": "calen {need} (visites {visits}, conducció {drive}) per a {window} de dia útil ({from}–{to}): treure o moure {list}",
   "s.day_overloaded": "{need} per a {window}",
-  "too_many_activities": "massa per a un dia: {list} — una activitat gran al dia (des de {big}) o com a molt dues de petites (fins a {small})",
+  "too_many_activities": "massa per a un dia: {list} — una activitat gran al dia (des de {big}) o com a molt dues de petites",
   "s.too_many_activities": "massa activitats",
   "visit_unknown": "durada de la visita desconeguda: {list} — indica-la per comprovar la càrrega del dia",
   "s.visit_unknown": "durada desconeguda",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "confirmada, notes encara «en espera»",
   "s.resa_price": "preu reservat ≠ pla",
   "tent_refused": "«{name}» no admet tendes de sostre (registrat al lloc): busca una altra nit",
-  "s.tent_refused": "sense tendes de sostre"
+  "s.tent_refused": "sense tendes de sostre",
+  "ui.invalidField": "{field}: aquest valor no és vàlid",
+  "ui.notInTrip": "Aquest lloc no és en aquest viatge.",
+  "ui.failed": "No ha funcionat. Torna-ho a provar d’aquí a un moment."
 }

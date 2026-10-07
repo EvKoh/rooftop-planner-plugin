@@ -18,6 +18,7 @@
 const overpass = require('./overpass');
 const park4night = require('./park4night');
 const placeInfo = require('./place-info');
+const placeSheet = require('./place-sheet');
 const contacts = require('./contacts');
 const { distKm } = require('./util');
 const { parseVisit } = require('./visit');
@@ -124,7 +125,7 @@ const CONTACT_KEYS = ['email', 'phone', 'website'];
  */
 function incomplete(r, place) {
   if (!r || Object.values(r.amenities).some((v) => v === 'unknown') || CONTACT_KEYS.some((k) => !r.contacts[k])) return true;
-  return !!place && r.visit_min_minutes == null && !!parseVisit(`${place.notes || ''}\n${place.description || ''}`);
+  return !!place && r.visit_min_minutes == null && (placeSheet.factsOf(place).visitMinutes != null || !!parseVisit(`${place.notes || ''}\n${place.description || ''}`));
 }
 
 /**
@@ -252,7 +253,10 @@ async function fill(ctx, tripId, opts = {}) {
       if (hit) { cpatch[k] = hit.values[k]; csources[k] = hit.source; }
     }
     // Time on site, from what the place's own notes or description say; never over a typed one.
-    const visit = (!current || current.visit_min_minutes == null) ? parseVisit(`${place.notes || ''}\n${place.description || ''}`) : null;
+    const stated = placeSheet.factsOf(place);
+    const visit = (!current || current.visit_min_minutes == null)
+      ? (stated.visitMinutes != null ? { min: stated.visitMinutes, max: null, quote: stated.visitQuote } : parseVisit(`${place.notes || ''}\n${place.description || ''}`))
+      : null;
     if (visit) {
       Object.assign(patch, { visit_min_minutes: visit.min, visit_max_minutes: visit.max, visit_source: `${placeInfo.SRC.notes}: "${visit.quote}"` });
       res.visits++;

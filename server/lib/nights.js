@@ -236,7 +236,8 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
  */
 function cheaperNight(res, settings) {
   const cur = res.currentNight && res.currentNight.comparablePrice;
-  if (cur == null) return null;
+  // A night within the target price is not challenged (the check and the planner alike).
+  if (cur == null || (settings.night_price_target != null && cur <= settings.night_price_target)) return null;
   const sameCurrency = (c) => c.currency === res.currentNight.currency;
   const perKm = fuelPerKm(settings);
   const best = res.candidates

@@ -235,7 +235,7 @@
   "ui.visitMax": "最長停留時間（分鐘）",
   "day_overloaded": "可用時間 {window}（{from}–{to}）需要 {need}（遊覽 {visits}，駕駛 {drive}）：刪除或移動 {list}",
   "s.day_overloaded": "{window} 需 {need}",
-  "too_many_activities": "一天安排過多：{list} — 每天一項大型活動（{big} 起）或最多兩項小活動（{small} 以內）",
+  "too_many_activities": "一天安排過多：{list} — 每天一項大型活動（{big} 起）或最多兩項小活動",
   "s.too_many_activities": "活動過多",
   "visit_unknown": "遊覽時長未知：{list} — 請填寫以檢查當天負荷",
   "s.visit_unknown": "時長未知",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "已確認，備註仍為「等待中」",
   "s.resa_price": "預訂價格 ≠ 計畫",
   "tent_refused": "「{name}」不接受車頂帳篷（已記錄在地點上）：請另找過夜地",
-  "s.tent_refused": "不接受車頂帳篷"
+  "s.tent_refused": "不接受車頂帳篷",
+  "ui.invalidField": "{field}：此值無效",
+  "ui.notInTrip": "此地點不在本次行程中。",
+  "ui.failed": "操作未成功，請稍後重試。"
 }

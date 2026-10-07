@@ -235,7 +235,7 @@
   "ui.visitMax": "Nejdelší doba na místě (min)",
   "day_overloaded": "potřeba {need} (návštěvy {visits}, jízda {drive}) na {window} využitelného dne ({from}–{to}): vyřaďte nebo přesuňte {list}",
   "s.day_overloaded": "{need} na {window}",
-  "too_many_activities": "na jeden den příliš: {list} — jedna velká aktivita denně (od {big}) nebo nejvýš dvě malé (do {small})",
+  "too_many_activities": "na jeden den příliš: {list} — jedna velká aktivita denně (od {big}) nebo nejvýš dvě malé",
   "s.too_many_activities": "příliš mnoho aktivit",
   "visit_unknown": "neznámá délka návštěvy: {list} — zadejte ji, aby šlo zkontrolovat vytížení dne",
   "s.visit_unknown": "neznámá délka",
@@ -340,7 +340,7 @@
   "sh.f.rooftop_tent": "Střešní stan",
   "sh.f.services": "Služby",
   "sh.f.electricity": "Elektřina",
-  "sh.f.access": "Příjezd",
+  "sh.f.access": "Přístup",
   "sh.f.location": "Poloha",
   "sh.f.address": "Adresa",
   "sh.f.reviews": "Hodnocení",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "potvrzeno, poznámky stále „čeká“",
   "s.resa_price": "rezervovaná cena ≠ plán",
   "tent_refused": "„{name}“ nepřijímá střešní stany (zaznamenáno u místa): najděte jinou noc",
-  "s.tent_refused": "bez střešních stanů"
+  "s.tent_refused": "bez střešních stanů",
+  "ui.invalidField": "{field}: tato hodnota není platná",
+  "ui.notInTrip": "Toto místo není v této cestě.",
+  "ui.failed": "Nepovedlo se. Zkuste to za chvíli znovu."
 }

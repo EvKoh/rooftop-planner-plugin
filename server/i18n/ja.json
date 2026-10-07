@@ -235,7 +235,7 @@
   "ui.visitMax": "最長滞在時間（分）",
   "day_overloaded": "利用可能な {window}（{from}–{to}）に対して {need} 必要（見学 {visits}、運転 {drive}）：{list} を外すか移動してください",
   "s.day_overloaded": "{window} に {need}",
-  "too_many_activities": "1日には多すぎます：{list} — 大きな活動は1日1つ（{big} 以上）、または小さな活動を最大2つ（{small} まで）",
+  "too_many_activities": "1日には多すぎます：{list} — 大きな活動は1日1つ（{big} 以上）、または小さな活動を最大2つ",
   "s.too_many_activities": "活動が多すぎます",
   "visit_unknown": "滞在時間が不明：{list} — 1日の負荷を確認するため入力してください",
   "s.visit_unknown": "滞在時間不明",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "確定済み、メモはまだ「返事待ち」",
   "s.resa_price": "予約料金 ≠ 計画",
   "tent_refused": "「{name}」はルーフテント不可（場所に記録済み）：別の宿泊地を探してください",
-  "s.tent_refused": "ルーフテント不可"
+  "s.tent_refused": "ルーフテント不可",
+  "ui.invalidField": "{field}：この値は無効です",
+  "ui.notInTrip": "この場所はこの旅行に含まれていません。",
+  "ui.failed": "うまくいきませんでした。少ししてからもう一度お試しください。"
 }

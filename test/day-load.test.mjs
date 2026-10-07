@@ -169,12 +169,15 @@ describe('the day\'s load in the check', () => {
   });
 
   it('one big activity a day, or at most two small ones', async () => {
-    // day 1: the lake 2 h and the museum 1 h; day 2: two visits of 1 h (fine)
-    const r = await check(makeHost({ userSettings: { timezone: 'Europe/Rome' } }));
+    // day 1: the lake 2 h and the museum 1 h: two shorter ones, fine with big = 2 h 30 (default)
+    expect(of(await check(makeHost({ userSettings: { timezone: 'Europe/Rome' } })), 'too_many_activities')).toEqual([]);
+    // the setting is the rule: with big = 1 h, every visit of an hour is a big one, so day 1
+    // (2 h + 1 h) and day 2 (two of 1 h) are too much
+    const r = await check(makeHost({ userSettings: { timezone: 'Europe/Rome', big_activity_minutes: 60 } }));
     const busy = of(r, 'too_many_activities');
-    expect(busy.map((f) => [f.level, f.dayNumber])).toEqual([['fix', 1]]);
+    expect(busy.map((f) => [f.level, f.dayNumber])).toEqual([['fix', 1], ['fix', 2]]);
     expect(busy[0].message).toContain('Lago di Braies (2 h), Mountain Museum Example (1 h)');
-    expect(busy[0].message).toContain('one big activity a day (from 2 h 30), or at most two small ones (up to 1 h)');
+    expect(busy[0].message).toContain('one big activity a day (from 1 h), or at most two shorter ones');
     // two big ones on day 2
     const h = makeHost({ userSettings: { timezone: 'Europe/Rome' }, queryResults: { [pi.INDEX_SQL]: [{ place_id: 14 }, { place_id: 15 }] } });
     await h.ctx.meta.set('place', 14, pi.META_KEY, pi.merge(null, { visit_min_minutes: 150 }));

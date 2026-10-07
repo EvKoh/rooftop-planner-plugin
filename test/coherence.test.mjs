@@ -497,3 +497,67 @@ describe('the 0.6.2 audit: what the plugin writes, it reads back', () => {
     expect(fillLib.incomplete(full, { notes: 'Hike, 2h30 round trip.' })).toBe(true);
   });
 });
+
+describe('the 0.6.3 audit: the sheet speaks every language to every rule', () => {
+  const sheet = require('../server/lib/place-sheet.js');
+  const { MESSAGES, CODES } = require('../server/lib/i18n.js');
+
+  it('no two sheet fields share a label in any language', () => {
+    for (const c of CODES) {
+      const labels = Object.keys(MESSAGES[c]).filter((k) => k.startsWith('sh.f.')).map((k) => sheet.keyForm(MESSAGES[c][k]));
+      expect(new Set(labels).size, c).toBe(labels.length);
+    }
+  });
+
+  it('a duration, a welcome window, a dog or tent answer written in any language counts in the check', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      for (const L of ['es', 'nl', 'de', 'ru']) {
+        const trip = build();
+        const lake = trip.days[2].assignments.find((a) => a.id === 3001);
+        Object.assign(lake.place, { place_time: null, end_time: null }); // no slot: only the sheet says how long
+        lake.place.notes = sheet.setField('', '', 'duration', '2 h 30', L).notes;
+        trip.places.find((p) => p.id === 17).notes = lake.place.notes;
+        const farm = trip.places.find((p) => p.id === 18);
+        let txt = sheet.setField('', '', 'arrival', '17:00-19:00', L); // the farm is reached at 16:00
+        txt = sheet.setField(txt.description, txt.notes, 'dog', MESSAGES[L]['opt.no'], L);
+        farm.notes = txt.notes;
+        const r = await check(makeHost({ trip, userSettings: { language: L, timezone: 'Europe/Rome', dog: true } }));
+        expect(keys(r, 'visit_unknown').some((f) => f.dayNumber === 3), L).toBe(false);
+        expect(keys(r, 'welcome_window').some((f) => f.dayNumber === 3), L).toBe(true);
+        expect(keys(r, 'dog_refused').some((f) => f.dayNumber === 3), L).toBe(true);
+      }
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('the planner and the check challenge a night only above the target price', () => {
+    const cand = { name: 'Camping Cheap Example', price: 18, currency: 'EUR', blocked: [], legalRisk: null, openOnDate: 'open', detourMinutes: 10, detourKm: 5 };
+    const res = { currentNight: { comparablePrice: 38, currency: 'EUR' }, candidates: [cand] };
+    expect(cheaperNight(res, { fuel_l_per_100km: 8, fuel_price_per_l: 1.8, night_price_target: 40 })).toBeNull();
+    expect(cheaperNight(res, { fuel_l_per_100km: 8, fuel_price_per_l: 1.8, night_price_target: 25 })).not.toBeNull();
+  });
+
+  it('a fuel line\'s day is its day, never its kilometres', () => {
+    const { fuelDayOf } = require('../server/lib/budget.js');
+    expect(fuelDayOf({ name: 'Fuel day 1 (4 km)' })).toBe(1);
+    expect(fuelDayOf({ name: 'Kraftstoff Tag 2 (120 km)' })).toBe(2);
+    expect(fuelDayOf({ name: 'Carburant (12 km) J3' })).toBe(3);
+  });
+
+  it('the place tool shows the time on site the plan counts, as the panel does', async () => {
+    const trip = build();
+    trip.places.find((p) => p.id === 10).notes = 'Durée : 4 h';
+    const h = makeHost({ trip, queryResults: { [pi.INDEX_SQL]: [{ place_id: 10 }] } });
+    await h.ctx.meta.set('place', 10, pi.META_KEY, pi.merge(null, { visit_min_minutes: 150 }));
+    const r = await call(h, 'vanlife_place', { tripId: 1, placeId: 10 });
+    expect(r.visit).toBe('2 h 30');
+    expect(r.sheet.fields.duration.minutes).toBe(150);
+  });
+
+  it('a refusal stated in the sheet shows in the planner columns', async () => {
+    const trip = build();
+    trip.places.find((p) => p.id === 18).notes = 'Chien : interdit';
+    const cols = await makeHost({ trip, userSettings: { language: 'fr', dog: true } }).run(plugin).hook('tableContributor', 'getContributions', 'places', 1);
+    expect(cols.some((x) => x.entityId === 18 && x.id === 'vanlife-am-no')).toBe(true);
+  });
+});

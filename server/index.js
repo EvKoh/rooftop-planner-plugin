@@ -30,12 +30,32 @@ const { placeColumns } = require('./lib/contributions');
 const nightStatus = require('./lib/night-status');
 const contacts = require('./lib/contacts');
 const { gentle } = require('./lib/gentle');
-const { bundle, lang, locale } = require('./lib/i18n');
+const { bundle, lang, locale, t } = require('./lib/i18n');
 const { NIGHT_STATES } = require('./lib/design');
 const placeSheet = require('./lib/place-sheet');
 const walks = require('./lib/walks');
 
 const json = (status, body) => ({ status, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+// The panel shows `error` to the person: in their language. A validation message names its
+// field first ("visit_max_minutes must…", "phone \"06\" is not…"): the field's label says
+// which one; any other failure reads as a plain "it did not work".
+const FIELD_LABEL = {
+  price_amount: 'ui.price', currency: 'ui.currency', per: 'ui.per', dog_fee: 'ui.dogFee', price_note: 'ui.priceNote',
+  visit_min_minutes: 'ui.visitMin', visit_max_minutes: 'ui.visitMax', access_before: 'ui.accessBefore', access_after: 'ui.accessAfter',
+  booking_url: 'ui.bookingUrl', booking_note: 'ui.bookingNote', toll_amount: 'ui.tollAmount', toll_currency: 'ui.tollCurrency',
+  max_height_m: 'ui.maxHeight', max_length_m: 'ui.maxLength', max_weight_t: 'ui.maxWeight', source: 'ui.source', checked: 'ui.checked',
+  email: 'ui.email', phone: 'ui.phone', whatsapp: 'ui.whatsapp', website: 'ui.website', contact_name: 'ui.contactName',
+  languages: 'ui.languages', preferred_channel: 'ui.preferredChannel', notes: 'ui.contactNotes',
+};
+function userError(e, L) {
+  const msg = String((e && e.message) || e);
+  const m = msg.match(/^(?:contacts\.)?([a-z_]+)\b/);
+  const label = m && FIELD_LABEL[m[1]];
+  return label ? t(L, 'ui.invalidField', { field: t(L, label) }) : t(L, 'ui.failed');
+}
+const notInTrip = (L) => json(404, { error: t(L, 'ui.notInTrip') });
+const langOf = (req) => lang(req && req.body && req.body.locale);
 const ids = (b) => {
   const tripId = Number(b && b.tripId);
   const placeId = Number(b && b.placeId);
@@ -125,7 +145,7 @@ module.exports = definePlugin({
         if (!at) return json(400, { error: 'tripId and placeId required' });
         try {
           const place = await placeOf(ctx, at.tripId, at.placeId);
-          if (!place) return json(404, { error: 'place not in this trip' });
+          if (!place) return notInTrip(langOf(req));
           const settings = await readSettings(ctx, ['language', 'vehicle', 'dog', 'vehicle_height_m', 'vehicle_length_m', 'vehicle_weight_t']);
           // The user's own language setting wins; "auto" follows the language TREK gives the frame.
           const own = await ctx.settings.get('language').catch(() => undefined);
@@ -174,7 +194,7 @@ module.exports = definePlugin({
             access: placeInfo.accessChips(info, L, currency).map((c) => ({ key: c.key, value: c.value, tone: c.tone })),
             recorded: !!info,
             summary: placeInfo.amenitiesText(info, L),
-            refused: placeInfo.refuses(info, settings),
+            refused: placeInfo.refuses(info, settings, placeSheet.factsOf({ ...place, categoryName })),
             amenities: placeInfo.AMENITIES,
             channels: contacts.CHANNELS,
             // The host's ways in: the record, then TREK's own fields (contacts.js reachOf; a
@@ -187,7 +207,7 @@ module.exports = definePlugin({
             sheet,
           });
         } catch (e) {
-          return json(403, { error: String((e && e.message) || e) });
+          return json(403, { error: userError(e, langOf(req)) });
         }
       },
     },
@@ -202,12 +222,12 @@ module.exports = definePlugin({
         if (!at) return json(400, { error: 'tripId and placeId required' });
         try {
           const place = await placeOf(ctx, at.tripId, at.placeId);
-          if (!place) return json(404, { error: 'place not in this trip' });
+          if (!place) return notInTrip(langOf(req));
           // The same shorthands as the MCP tool (walk, parking), so both write the same record.
           const patch = placeInfo.expandParking(placeInfo.expandWalk({ ...((req.body && req.body.set) || {}) }));
           return json(200, { saved: true, info: await placeInfo.set(ctx, at.tripId, at.placeId, patch, { place }) });
         } catch (e) {
-          return json(e instanceof placeInfo.InfoError ? 400 : 403, { error: String((e && e.message) || e) });
+          return json(e instanceof placeInfo.InfoError ? 400 : 403, { error: userError(e, langOf(req)) });
         }
       },
     },
@@ -227,14 +247,14 @@ module.exports = definePlugin({
           const settings = await readSettings(ctx, ['language'], { tripId });
           const opts = { park4night: settings.park4night };
           if (Number.isInteger(placeId) && placeId > 0) {
-            if (!(await placeOf(ctx, tripId, placeId))) return json(404, { error: 'place not in this trip' });
+            if (!(await placeOf(ctx, tripId, placeId))) return notInTrip(langOf(req));
             opts.placeIds = [placeId];
             // One place, from the place view: answer well inside TREK's 8 s call limit.
             opts.budgetMs = 5000;
           }
           return json(200, await amenityFill.fill(ctx, tripId, opts));
         } catch (e) {
-          return json(403, { error: String((e && e.message) || e) });
+          return json(403, { error: userError(e, langOf(req)) });
         }
       },
     },
@@ -249,11 +269,11 @@ module.exports = definePlugin({
         const at = ids(req.body);
         if (!at) return json(400, { error: 'tripId and placeId required' });
         try {
-          if (!(await placeOf(ctx, at.tripId, at.placeId))) return json(404, { error: 'place not in this trip' });
+          if (!(await placeOf(ctx, at.tripId, at.placeId))) return notInTrip(langOf(req));
           const model = await loadTrip(ctx, at.tripId, null);
           return json(200, { states: NIGHT_STATES, ...nightStatus.placeNights(model, at.placeId) });
         } catch (e) {
-          return json(403, { error: String((e && e.message) || e) });
+          return json(403, { error: userError(e, langOf(req)) });
         }
       },
     },
@@ -271,7 +291,7 @@ module.exports = definePlugin({
         if (!at || !Number.isInteger(dayId) || dayId < 1) return json(400, { error: 'tripId, placeId and dayId required' });
         if (!nightStatus.STATUSES.includes(b.status)) return json(400, { error: `status must be one of ${nightStatus.STATUSES.join(', ')}` });
         try {
-          if (!(await placeOf(ctx, at.tripId, at.placeId))) return json(404, { error: 'place not in this trip' });
+          if (!(await placeOf(ctx, at.tripId, at.placeId))) return notInTrip(langOf(req));
           const model = await loadTrip(ctx, at.tripId, null);
           const { language } = await readSettings(ctx, ['language'], { tripId: at.tripId });
           const text = (v, n) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : undefined);
@@ -283,7 +303,7 @@ module.exports = definePlugin({
           const fresh = await loadTrip(ctx, at.tripId, null);
           return json(200, { result, ...nightStatus.placeNights(fresh, at.placeId), dayId });
         } catch (e) {
-          return json(e instanceof nightStatus.NightError ? 400 : 403, { error: String((e && e.message) || e) });
+          return json(e instanceof nightStatus.NightError ? 400 : 403, { error: userError(e, langOf(req)) });
         }
       },
     },
@@ -296,11 +316,11 @@ module.exports = definePlugin({
         const at = ids(req.body);
         if (!at) return json(400, { error: 'tripId and placeId required' });
         try {
-          if (!(await placeOf(ctx, at.tripId, at.placeId))) return json(404, { error: 'place not in this trip' });
+          if (!(await placeOf(ctx, at.tripId, at.placeId))) return notInTrip(langOf(req));
           await placeInfo.clear(ctx, at.tripId, at.placeId);
           return json(200, { cleared: true });
         } catch (e) {
-          return json(403, { error: String((e && e.message) || e) });
+          return json(403, { error: userError(e, langOf(req)) });
         }
       },
     },

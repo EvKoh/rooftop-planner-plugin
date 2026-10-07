@@ -235,7 +235,7 @@
   "ui.visitMax": "Najdłuższy czas na miejscu (min)",
   "day_overloaded": "potrzeba {need} (wizyty {visits}, jazda {drive}) na {window} użytecznego dnia ({from}–{to}): usuń lub przenieś {list}",
   "s.day_overloaded": "{need} na {window}",
-  "too_many_activities": "za dużo na jeden dzień: {list} — jedna duża atrakcja dziennie (od {big}) lub najwyżej dwie małe (do {small})",
+  "too_many_activities": "za dużo na jeden dzień: {list} — jedna duża atrakcja dziennie (od {big}) lub najwyżej dwie małe",
   "s.too_many_activities": "za dużo atrakcji",
   "visit_unknown": "nieznany czas wizyty: {list} — wpisz go, aby sprawdzić obciążenie dnia",
   "s.visit_unknown": "nieznany czas wizyty",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "potwierdzona, notatki wciąż „oczekuje”",
   "s.resa_price": "cena rezerwacji ≠ plan",
   "tent_refused": "„{name}” nie przyjmuje namiotów dachowych (zapisane przy miejscu): znajdź inny nocleg",
-  "s.tent_refused": "bez namiotów dachowych"
+  "s.tent_refused": "bez namiotów dachowych",
+  "ui.invalidField": "{field}: ta wartość jest nieprawidłowa",
+  "ui.notInTrip": "To miejsce nie należy do tej podróży.",
+  "ui.failed": "Nie udało się. Spróbuj ponownie za chwilę."
 }

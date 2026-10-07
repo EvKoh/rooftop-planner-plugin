@@ -235,7 +235,7 @@
   "ui.visitMax": "Leghosszabb idő a helyszínen (perc)",
   "day_overloaded": "{need} kell (látogatás {visits}, vezetés {drive}) {window} hasznos napra ({from}–{to}): hagyd ki vagy tedd át: {list}",
   "s.day_overloaded": "{need} kell {window} alatt",
-  "too_many_activities": "túl sok egy napra: {list} — napi egy nagy program ({big}-tól) vagy legfeljebb két kicsi ({small}-ig)",
+  "too_many_activities": "túl sok egy napra: {list} — napi egy nagy program ({big}-tól) vagy legfeljebb két kicsi",
   "s.too_many_activities": "túl sok program",
   "visit_unknown": "ismeretlen látogatási idő: {list} — add meg, hogy a nap terhelése ellenőrizhető legyen",
   "s.visit_unknown": "ismeretlen időtartam",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "megerősítve, a jegyzet még „várakozik”",
   "s.resa_price": "foglalt ár ≠ terv",
   "tent_refused": "„{name}” nem fogad tetősátrat (a helynél rögzítve): keressen másik szállást",
-  "s.tent_refused": "tetősátor nem"
+  "s.tent_refused": "tetősátor nem",
+  "ui.invalidField": "{field}: ez az érték érvénytelen",
+  "ui.notInTrip": "Ez a hely nem része ennek az útnak.",
+  "ui.failed": "Nem sikerült. Próbálja újra egy perc múlva."
 }
