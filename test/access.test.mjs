@@ -239,7 +239,7 @@ describe('access tolls in the budget', () => {
     expect(r.accessTollTotal).toBe(40);
     expect(r.accessTollDays).toEqual([{ day: 2, total: 40 }]);
     expect(r.total).toBeCloseTo(before.total + 40, 2);
-    expect(r.coreCalls).toContainEqual({ tool: 'create_budget_item', args: { tripId: 1, name: 'Toll day 2 — Passo Giau', category: 'Transport', total_price: 40 } });
+    expect(r.coreCalls).toContainEqual({ tool: 'create_budget_item', args: { tripId: 1, name: 'Toll day 2 — Passo Giau', category: 'transport', total_price: 40 } });
   });
 
   it('a toll already in the budget lines is not counted twice; another currency is listed, not summed', async () => {

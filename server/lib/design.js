@@ -87,7 +87,9 @@ const SHEET_WATCH = new Set(['risk', 'vertigo', 'closures', 'doubts']);
 
 /** Tone of a sheet field: watch fields amber, a dog not allowed red, the rest default. */
 function sheetTone(field, typedValue) {
-  if (field === 'dog' && typedValue && typedValue.allowed === false) return TONE.rulesOut;
+  // A no read from the notes is a point to verify (amber), as in the check and the chips;
+  // only the record rules a place out (red).
+  if ((field === 'dog' || field === 'rooftop_tent') && typedValue && typedValue.allowed === false) return TONE.watch;
   if (field === 'level' && typedValue && typedValue.grade === 'hard') return TONE.watch;
   return SHEET_WATCH.has(field) ? TONE.watch : TONE.info;
 }
