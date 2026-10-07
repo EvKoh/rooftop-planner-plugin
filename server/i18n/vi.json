@@ -399,5 +399,6 @@
   "ui.notInTrip": "Địa điểm này không thuộc chuyến đi này.",
   "ui.failed": "Không thành công. Hãy thử lại sau giây lát.",
   "sheet_refusal": "“{name}”: ghi chú nói “{quote}” về {what}: hãy xác nhận với chủ nhà rằng có thể nghỉ đêm",
-  "s.sheet_refusal": "{what}: ghi chú nói không"
+  "s.sheet_refusal": "{what}: ghi chú nói không",
+  "ui.notesSay": "Ghi chú: {list} — cần kiểm tra"
 }

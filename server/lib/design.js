@@ -129,6 +129,7 @@ const CHIP = {
   closed: { icon: 'Ban', tone: TONE.dropped },
   toll: { icon: 'Ticket', tone: TONE.info },
   missing: { icon: 'Ban', tone: TONE.rulesOut },
+  notesNo: { icon: 'Ban', tone: TONE.watch },
   parking: { icon: 'ParkingSquare', tone: TONE.info },
 };
 

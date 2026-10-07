@@ -141,7 +141,12 @@ function tentBanned(text, tags = {}) {
   const re = new RegExp(BANNED.source, 'g');
   let m;
   while ((m = re.exec(t))) {
-    if (!LAW_NOT_BAN.test(t.slice(m.index + m[0].length))) return quote(t, m.index, 20, 50);
+    if (!LAW_NOT_BAN.test(t.slice(m.index + m[0].length))) {
+      // The whole line it sits on, never a word cut at its start.
+      const from = t.lastIndexOf('\n', m.index) + 1;
+      const to = t.indexOf('\n', m.index);
+      return t.slice(from, to < 0 ? undefined : to).replace(/\s+/g, ' ').trim().slice(0, 140);
+    }
   }
   return null;
 }

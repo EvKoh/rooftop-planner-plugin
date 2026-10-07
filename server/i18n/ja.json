@@ -399,5 +399,6 @@
   "ui.notInTrip": "この場所はこの旅行に含まれていません。",
   "ui.failed": "うまくいきませんでした。少ししてからもう一度お試しください。",
   "sheet_refusal": "「{name}」：メモには{what}について「{quote}」とあります。宿泊できるかホストに確認してください",
-  "s.sheet_refusal": "{what}：メモでは不可"
+  "s.sheet_refusal": "{what}：メモでは不可",
+  "ui.notesSay": "メモ：{list} — 要確認"
 }

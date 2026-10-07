@@ -559,7 +559,9 @@ describe('the 0.6.3 audit: the sheet speaks every language to every rule', () =>
     const trip = build();
     trip.places.find((p) => p.id === 18).notes = 'Chien : interdit';
     const cols = await makeHost({ trip, userSettings: { language: 'fr', dog: true } }).run(plugin).hook('tableContributor', 'getContributions', 'places', 1);
-    expect(cols.some((x) => x.entityId === 18 && x.id === 'vanlife-am-no')).toBe(true);
+    // only the notes say no: an amber point to verify, not the red "ruled out" chip
+    expect(cols.some((x) => x.entityId === 18 && x.id === 'vanlife-am-no')).toBe(false);
+    expect(cols.find((x) => x.entityId === 18 && x.id === 'vanlife-am-check')).toMatchObject({ value: 'Notes : ✗ chien — à vérifier', tone: 'warn' });
   });
 });
 
@@ -642,7 +644,7 @@ describe('the 0.6.6 audit: the sheet is read strictly', () => {
     const trip = build();
     trip.places.find((p) => p.id === 13).notes = 'Dogs : not allowed';
     const cols = await makeHost({ trip, userSettings: { language: 'en', dog: true } }).run(plugin).hook('tableContributor', 'getContributions', 'places', 1);
-    expect(cols.find((x) => x.entityId === 13 && x.id === 'vanlife-am-no').value).toBe('✗ dog');
+    expect(cols.find((x) => x.entityId === 13 && x.id === 'vanlife-am-check').value).toBe('Notes: ✗ dog — to verify');
   });
 });
 
@@ -697,13 +699,15 @@ describe('the 0.6.7 audit', () => {
       expect(keys(await check(h), 'sheet_refusal').filter((f) => f.dayNumber === 1)).toHaveLength(1);
       expect(keys(await check(h), 'dog_refused').filter((f) => f.dayNumber === 1)).toEqual([]); // the notes alone never block
       await h.ctx.meta.set('place', 13, pi.META_KEY, pi.merge(null, { dog: 'yes' }));
-      expect(keys(await check(h), 'sheet_refusal').filter((f) => f.dayNumber === 1)).toEqual([]);
+      // the record says yes, the notes no: nothing blocks, and the disagreement is a point to verify
+      expect(keys(await check(h), 'dog_refused').filter((f) => f.dayNumber === 1)).toEqual([]);
+      expect(keys(await check(h), 'sheet_refusal').filter((f) => f.dayNumber === 1 && f.level === 'verify')).toHaveLength(1);
       const yes = JSON.parse((await h.run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13 } })).body);
       expect(yes.refused).toBe(false); // the panel follows the record too
       await h.ctx.meta.set('place', 13, pi.META_KEY, pi.merge(null, { dog: 'no' }));
       expect(keys(await check(h), 'dog_refused').filter((f) => f.dayNumber === 1)).toHaveLength(1); // the record's no blocks
       const w = JSON.parse((await h.run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13 } })).body);
-      expect(w.refused).toBe(true);
+      expect(w.refused).toBe(true); // the record's no
     } finally { vi.unstubAllGlobals(); }
   });
 });
@@ -750,5 +754,31 @@ describe('the 0.6.8 audit', () => {
   it('a range in a sheet line keeps its upper end, as in free notes', () => {
     const sheet = require('../server/lib/place-sheet.js');
     expect(sheet.factsOf({ notes: 'Durée : 1h30-2h' })).toMatchObject({ visitMinutes: 90, visitMax: 120 });
+  });
+});
+
+describe('the 0.6.9 audit: free notes never block', () => {
+  it('a tent ban or a minimum stay quoted from notes is a point to verify, quoted whole', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      const camp = trip.places.find((p) => p.id === 13);
+      camp.notes = 'Règlement : camping interdit sur le parking du lac\n2 nuits minimum en juillet-août';
+      trip.days[0].assignments.find((a) => a.id === 1005).place.notes = camp.notes;
+      const r = await check(makeHost({ trip }));
+      const ban = keys(r, 'tent_banned').find((f) => f.dayNumber === 1);
+      expect(ban.level).toBe('verify');
+      expect(ban.params.quote).toBe('reglement : camping interdit sur le parking du lac');
+      expect(keys(r, 'min_nights').find((f) => f.dayNumber === 1).level).toBe('verify');
+      expect(r.findings.filter((f) => f.level === 'blocking' && f.dayNumber === 1 && /tent|min_nights|dog/.test(f.key))).toEqual([]);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('the panel shows a no from the notes as amber, a no from the record as red', async () => {
+    const trip = build();
+    trip.places.find((p) => p.id === 13).notes = 'Chiens : non';
+    const h = makeHost({ trip, userSettings: { language: 'en', dog: true } });
+    const w = JSON.parse((await h.run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13 } })).body);
+    expect(w).toMatchObject({ refused: false, refusedText: null, notesRefusedText: 'Notes: ✗ dog — to verify' });
   });
 });

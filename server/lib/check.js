@@ -345,13 +345,17 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       // Blocking only when the record says no; a no read from the notes' sheet is a point to
       // verify, quoted (a free sentence may restrict a part or a season, not the night).
       const recordNo = (k) => !!nuit.info && nuit.info.amenities[k] === 'no';
-      const notesNo = (k, fact) => !recordNo(k) && placeInfo.refusedBy(nuit.info, facts, k, fact);
+      // The notes say no and the record does not: a point to verify — also when the record
+      // says yes, since the two then disagree.
+      const notesNo = (k, fact) => !recordNo(k) && facts[fact] === false;
       const refused = settings.vehicle === 'rooftop_tent' && recordNo('rooftop_tent');
       if (settings.vehicle === 'rooftop_tent' && notesNo('rooftop_tent', 'tentAllowed')) add('verify', J, 'sheet_refusal', { name: nuit.name, what: t(L, 'am.rooftop_tent'), quote: facts.tentText }, extra);
       if (settings.dog && notesNo('dog', 'dogAllowed')) add('verify', J, 'sheet_refusal', { name: nuit.name, what: t(L, 'am.dog'), quote: facts.dogText }, extra);
       const banned = settings.vehicle !== 'rooftop_tent' || refused ? null : rules.tentBanned(nuit.text);
       if (refused) add('blocking', J, 'tent_refused', { name: nuit.name }, extra);
-      if (banned) add('blocking', J, 'tent_banned', { name: nuit.name, quote: banned }, extra);
+      // A ban quoted from free notes: the line may concern a season or a part of the place, so
+      // it is a point to verify, like every no read from the notes.
+      if (banned) add('verify', J, 'tent_banned', { name: nuit.name, quote: banned }, extra);
       if (settings.dog && recordNo('dog')) add('blocking', J, 'dog_refused', { name: nuit.name }, extra);
       if (nuit.info && nuit.info.max_height_m != null && nuit.info.max_height_m < settings.vehicle_height_m) {
         add('blocking', J, 'too_low', { name: nuit.name, max: num(nuit.info.max_height_m, L), height: num(settings.vehicle_height_m, L) }, extra);
@@ -367,7 +371,8 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       const win = wins[0];
       if (win && arr != null && !wins.some((w) => arr >= w[0] && arr <= w[1])) add('blocking', J, 'welcome_window', { arr: hhmm(arr), name: nuit.name, open: hhmm(win[0]), close: hhmm(win[1]) }, extra);
       const mini = rules.minNights(nuit.text);
-      if (mini && nuit.nights < mini) add('blocking', J, 'min_nights', { name: nuit.name, n: nuit.nights }, extra);
+      // Quoted from free notes (often seasonal): a point to verify, as its message says.
+      if (mini && nuit.nights < mini) add('verify', J, 'min_nights', { name: nuit.name, n: nuit.nights }, extra);
       // The price against the target and the ceiling, both in the trip's currency: a night
       // priced in another currency is not compared.
       const pv = nuit.currency === model.currency ? rules.priceVerdict(nuit.price, settings) : null;

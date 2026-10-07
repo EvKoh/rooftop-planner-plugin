@@ -31,7 +31,7 @@ describe('check_trip on the fictional trip', () => {
     expect(has(r, 'fix', 'trace_not_first', 2)).toBe(true);
     expect(has(r, 'info', 'night_farm_zone', 3)).toBe(true); // allowed on a private farm: a reminder, not a problem
     expect(has(r, 'fix', 'water_fix', 3)).toBe(true);
-    expect(has(r, 'blocking', 'min_nights', 3)).toBe(true);
+    expect(has(r, 'verify', 'min_nights', 3)).toBe(true); // quoted from free notes: to verify
     expect(has(r, 'fix', 'no_trace', 3)).toBe(true);
     expect(has(r, 'verify', 'resa_confirmed')).toBe(true); // a hint: the user may have booked without a number
     expect(has(r, 'fix', 'resa_mismatch')).toBe(true);
@@ -46,7 +46,7 @@ describe('check_trip on the fictional trip', () => {
     expect(late.placeId).toBe(13);
     // sorted: blocking first
     expect(r.findings[0].level).toBe('blocking');
-    expect(r.counts.blocking).toBeGreaterThanOrEqual(4);
+    expect(r.counts.blocking).toBeGreaterThanOrEqual(3);
   });
 
   it('flags a night whose only booking is cancelled, and stays quiet once another booking holds it', async () => {
@@ -130,7 +130,7 @@ describe('check_trip on the fictional trip', () => {
     expect(has(r, 'fix', 'no_time', 3)).toBe(true);
     expect(has(r, 'fix', 'ends_before_start', 1)).toBe(true);
     expect(has(r, 'blocking', 'welcome_window', 1)).toBe(true);
-    expect(has(r, 'blocking', 'tent_banned', 1)).toBe(true);
+    expect(has(r, 'verify', 'tent_banned', 1)).toBe(true); // quoted from free notes: to verify
     expect(has(r, 'fix', 'checkin_mismatch', 1)).toBe(true);
   });
 

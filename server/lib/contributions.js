@@ -66,8 +66,11 @@ async function placeColumns(ctx, tripId, settings) {
     if (price && !(+p.price === 0 && !rec)) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-price', label: t(L, 'col.price'), value: price.slice(0, 256), ...CHIP.price });
     // What is missing shows only when it rules the place out for this vehicle or party (the
     // record, or the place's sheet in its notes).
-    const missing = placeInfo.refusalText(rec, settings, L, placeSheet.factsOf(p));
+    const missing = placeInfo.refusalText(rec, settings, L);
     if (missing) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-am-no', label: t(L, 'col.amenities'), value: missing.slice(0, 256), ...CHIP.missing });
+    // What only the notes say no to: a point to verify, not a refusal.
+    const notesNo = placeInfo.notesRefusalText(rec, settings, L, placeSheet.factsOf(p));
+    if (notesNo) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-am-check', label: t(L, 'col.amenities'), value: notesNo.slice(0, 256), ...CHIP.notesNo });
     if (!rec) continue;
     // Timed access, booking, toll: one small chip each, only when recorded.
     for (const c of placeInfo.accessChips(rec, L, currencyOf(p))) {

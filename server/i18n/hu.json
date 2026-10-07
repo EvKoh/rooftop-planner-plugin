@@ -399,5 +399,6 @@
   "ui.notInTrip": "Ez a hely nem része ennek az útnak.",
   "ui.failed": "Nem sikerült. Próbálja újra egy perc múlva.",
   "sheet_refusal": "„{name}”: a jegyzetek szerint {what}: „{quote}” — erősítse meg a szállásadóval, hogy lehetséges-e az éjszaka",
-  "s.sheet_refusal": "{what}: a jegyzet szerint nem"
+  "s.sheet_refusal": "{what}: a jegyzet szerint nem",
+  "ui.notesSay": "Jegyzetek: {list} — ellenőrizendő"
 }
