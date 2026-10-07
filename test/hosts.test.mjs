@@ -549,7 +549,7 @@ describe('vanlife_day, columns, widget and catalogues', () => {
     expect(d.strings).toMatchObject({ 'ui.contacts': "Contact de l'hôte", 'st.contacted': 'En discussion', 'ch.whatsapp': 'WhatsApp' });
     const bad = await post('/amenities/save', { tripId: 1, placeId: 16, set: { contacts: { email: 'nope' } } });
     expect(bad.status).toBe(400);
-    expect(JSON.parse(bad.body).error).toMatch(/not a valid e-mail/);
+    expect(JSON.parse(bad.body).error).toMatch(/: this value is not valid$/);
     const ok = await post('/amenities/save', { tripId: 1, placeId: 16, set: { contacts: { email: 'aire@example.com', website: 'https://aire.example.com', phone: null } } });
     expect(JSON.parse(ok.body).info.contacts).toMatchObject({ email: 'aire@example.com', website: 'https://aire.example.com' });
     expect(trip.places.find((p) => p.id === 16).website).toBe('https://aire.example.com'); // TREK's empty field filled

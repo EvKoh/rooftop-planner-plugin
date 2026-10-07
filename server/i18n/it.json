@@ -235,7 +235,7 @@
   "ui.visitMax": "Tempo massimo sul posto (min)",
   "day_overloaded": "servono {need} (visite {visits}, guida {drive}) per {window} di giornata utile ({from}–{to}): togliere o spostare {list}",
   "s.day_overloaded": "{need} per {window}",
-  "too_many_activities": "troppo per un giorno: {list} — una grande attività al giorno (da {big}) o al massimo due piccole (fino a {small})",
+  "too_many_activities": "troppo per un giorno: {list} — una grande attività al giorno (da {big}) o al massimo due piccole",
   "s.too_many_activities": "troppe attività",
   "visit_unknown": "durata della visita sconosciuta: {list} — inserirla per controllare il carico del giorno",
   "s.visit_unknown": "durata sconosciuta",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "confermata, note ancora «in attesa»",
   "s.resa_price": "prezzo prenotato ≠ piano",
   "tent_refused": "«{name}» non accetta tende da tetto (registrato sul luogo): trova un’altra notte",
-  "s.tent_refused": "niente tende da tetto"
+  "s.tent_refused": "niente tende da tetto",
+  "ui.invalidField": "{field}: questo valore non è valido",
+  "ui.notInTrip": "Questo luogo non fa parte di questo viaggio.",
+  "ui.failed": "Non ha funzionato. Riprova tra un momento."
 }

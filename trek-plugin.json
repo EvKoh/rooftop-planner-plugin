@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -189,7 +189,7 @@
     },
     {
       "key": "big_activity_minutes",
-      "label": "A visit this long (minutes) is a big activity: one a day, or at most two small ones (60 min or less)",
+      "label": "A visit this long (minutes) is a big activity: one a day, or at most two shorter ones",
       "scope": "user",
       "input_type": "number",
       "default": 150

@@ -629,7 +629,9 @@ function accessText(info, L, currency) {
 }
 
 /** Does the place refuse this vehicle or party? (rooftop tent refused, dog refused, a limit exceeded) */
-function refuses(info, settings) {
+function refuses(info, settings, facts = {}) {
+  // The record, or the place's sheet (facts: place-sheet.js factsOf), says no.
+  if ((settings.vehicle === 'rooftop_tent' && facts.tentAllowed === false) || (settings.dog && facts.dogAllowed === false)) return true;
   if (!info) return false;
   return (settings.vehicle === 'rooftop_tent' && info.amenities.rooftop_tent === 'no')
     || (settings.dog && info.amenities.dog === 'no')

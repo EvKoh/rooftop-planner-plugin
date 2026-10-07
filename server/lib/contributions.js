@@ -10,6 +10,7 @@
 // is added here. Timed access (arrive before / after a set hour), a required booking and an
 // access toll each get a small chip, only when recorded.
 const placeInfo = require('./place-info');
+const placeSheet = require('./place-sheet');
 const nightStatus = require('./night-status');
 const { t, num, locale } = require('./i18n');
 const { isNightOf } = require('./trip');
@@ -63,6 +64,10 @@ async function placeColumns(ctx, tripId, settings) {
     const price = placeInfo.priceText(p.price == null ? null : +p.price, currencyOf(p), rec, L, { night: isNight(p) });
     // A free stop (lunch break, viewpoint) is not a night: no "0,00 €/night" on it.
     if (price && !(+p.price === 0 && !rec)) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-price', label: t(L, 'col.price'), value: price.slice(0, 256), ...CHIP.price });
+    // What is missing shows only when it rules the place out for this vehicle or party (the
+    // record, or the place's sheet in its notes).
+    const missing = placeInfo.refuses(rec, settings, placeSheet.factsOf(p)) && ((rec && missingText(rec, L)) || t(L, 'ui.vehicleRefused'));
+    if (missing) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-am-no', label: t(L, 'col.amenities'), value: missing.slice(0, 256), ...CHIP.missing });
     if (!rec) continue;
     // Timed access, booking, toll: one small chip each, only when recorded.
     for (const c of placeInfo.accessChips(rec, L, currencyOf(p))) {
@@ -76,9 +81,6 @@ async function placeColumns(ctx, tripId, settings) {
     for (const c of amenityChips(rec, L)) {
       out.push({ kind: 'column', entityId: p.id, id: `vanlife-am-${c.key}`, label: c.label, value: c.value.slice(0, 256), icon: AMENITY_ICONS[c.key], tone: TONE.info });
     }
-    // What is missing shows only when it rules the place out for this vehicle or party.
-    const missing = placeInfo.refuses(rec, settings) && missingText(rec, L);
-    if (missing) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-am-no', label: t(L, 'col.amenities'), value: missing.slice(0, 256), ...CHIP.missing });
   }
   return out;
 }

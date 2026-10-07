@@ -235,7 +235,7 @@
   "ui.visitMax": "Najdlhší čas na mieste (min)",
   "day_overloaded": "treba {need} (návštevy {visits}, jazda {drive}) na {window} využiteľného dňa ({from}–{to}): vyraďte alebo presuňte {list}",
   "s.day_overloaded": "{need} na {window}",
-  "too_many_activities": "na jeden deň priveľa: {list} — jedna veľká aktivita denne (od {big}) alebo najviac dve malé (do {small})",
+  "too_many_activities": "na jeden deň priveľa: {list} — jedna veľká aktivita denne (od {big}) alebo najviac dve malé",
   "s.too_many_activities": "priveľa aktivít",
   "visit_unknown": "neznáma dĺžka návštevy: {list} — zadajte ju, aby sa dala skontrolovať záťaž dňa",
   "s.visit_unknown": "neznáma dĺžka",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "potvrdené, poznámky stále „čaká“",
   "s.resa_price": "rezervovaná cena ≠ plán",
   "tent_refused": "„{name}“ neprijíma strešné stany (zaznamenané pri mieste): nájdite inú noc",
-  "s.tent_refused": "bez strešných stanov"
+  "s.tent_refused": "bez strešných stanov",
+  "ui.invalidField": "{field}: táto hodnota nie je platná",
+  "ui.notInTrip": "Toto miesto nie je v tejto ceste.",
+  "ui.failed": "Nepodarilo sa. Skúste to o chvíľu znova."
 }

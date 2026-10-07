@@ -235,7 +235,7 @@
   "ui.visitMax": "Höchstdauer vor Ort (Min.)",
   "day_overloaded": "{need} nötig (Besuche {visits}, Fahrt {drive}) für {window} nutzbaren Tag ({from}–{to}): {list} streichen oder verschieben",
   "s.day_overloaded": "{need} für {window}",
-  "too_many_activities": "zu viel für einen Tag: {list} — eine große Aktivität pro Tag (ab {big}) oder höchstens zwei kleine (bis {small})",
+  "too_many_activities": "zu viel für einen Tag: {list} — eine große Aktivität pro Tag (ab {big}) oder höchstens zwei kleine",
   "s.too_many_activities": "zu viele Aktivitäten",
   "visit_unknown": "Besuchsdauer unbekannt: {list} — eintragen, damit die Tagesbelastung geprüft werden kann",
   "s.visit_unknown": "Besuchsdauer unbekannt",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "bestätigt, Notizen sagen noch „wartend“",
   "s.resa_price": "Buchungspreis ≠ Plan",
   "tent_refused": "„{name}“ lehnt Dachzelte ab (beim Ort erfasst): eine andere Übernachtung suchen",
-  "s.tent_refused": "keine Dachzelte"
+  "s.tent_refused": "keine Dachzelte",
+  "ui.invalidField": "{field}: dieser Wert ist ungültig",
+  "ui.notInTrip": "Dieser Ort gehört nicht zu dieser Reise.",
+  "ui.failed": "Das hat nicht geklappt. Bitte gleich noch einmal versuchen."
 }

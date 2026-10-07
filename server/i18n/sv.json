@@ -235,7 +235,7 @@
   "ui.visitMax": "Längsta tid på plats (min)",
   "day_overloaded": "{need} behövs (besök {visits}, körning {drive}) för {window} användbar dag ({from}–{to}): stryk eller flytta {list}",
   "s.day_overloaded": "{need} för {window}",
-  "too_many_activities": "för mycket för en dag: {list} — en stor aktivitet per dag (från {big}) eller högst två små (upp till {small})",
+  "too_many_activities": "för mycket för en dag: {list} — en stor aktivitet per dag (från {big}) eller högst två små",
   "s.too_many_activities": "för många aktiviteter",
   "visit_unknown": "okänd besökstid: {list} — fyll i den så att dagens belastning kan kontrolleras",
   "s.visit_unknown": "okänd besökstid",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "bekräftad, anteckningar säger fortfarande ”väntar”",
   "s.resa_price": "bokat pris ≠ plan",
   "tent_refused": "”{name}” tar inte emot taktält (sparat på platsen): hitta en annan natt",
-  "s.tent_refused": "inga taktält"
+  "s.tent_refused": "inga taktält",
+  "ui.invalidField": "{field}: värdet är ogiltigt",
+  "ui.notInTrip": "Platsen finns inte i den här resan.",
+  "ui.failed": "Det fungerade inte. Försök igen om en stund."
 }

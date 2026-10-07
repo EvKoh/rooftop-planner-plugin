@@ -235,7 +235,7 @@
   "ui.visitMax": "최대 체류 시간(분)",
   "day_overloaded": "사용 가능한 {window}({from}–{to})에 {need} 필요(방문 {visits}, 운전 {drive}): {list} 빼거나 옮기세요",
   "s.day_overloaded": "{window}에 {need} 필요",
-  "too_many_activities": "하루에 너무 많음: {list} — 하루에 큰 활동 하나({big} 이상) 또는 작은 활동 최대 둘({small} 이하)",
+  "too_many_activities": "하루에 너무 많음: {list} — 하루에 큰 활동 하나({big} 이상) 또는 작은 활동 최대 둘",
   "s.too_many_activities": "활동이 너무 많음",
   "visit_unknown": "방문 시간 미상: {list} — 하루 부담을 확인하려면 입력하세요",
   "s.visit_unknown": "방문 시간 미상",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "확정됨, 메모는 아직 “대기 중”",
   "s.resa_price": "예약 가격 ≠ 계획",
   "tent_refused": "“{name}”은(는) 루프탑 텐트를 받지 않습니다(장소에 기록됨): 다른 숙박지를 찾으세요",
-  "s.tent_refused": "루프탑 텐트 불가"
+  "s.tent_refused": "루프탑 텐트 불가",
+  "ui.invalidField": "{field}: 올바르지 않은 값입니다",
+  "ui.notInTrip": "이 장소는 이 여행에 없습니다.",
+  "ui.failed": "실패했습니다. 잠시 후 다시 시도하세요."
 }

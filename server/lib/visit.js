@@ -58,13 +58,16 @@ function parseVisit(text) {
 /**
  * Minutes on site of one stop of a day: the longer of the slot planned that day in TREK and
  * the minimum recorded on the place (a minimum never shortens a longer planned slot, and a
- * slot shorter than the minimum counts as the minimum); else TREK's duration field; null
- * when none is known. The check's day load and the schedule both read it.
+ * slot shorter than the minimum counts as the minimum); else the duration its sheet states
+ * (in any language: place-sheet.js factsOf); else TREK's duration field; null when none is
+ * known. The check's day load and the schedule both read it.
  */
 function stopMinutes(place, info) {
   const slot = place.time != null && place.end != null && place.end > place.time ? place.end - place.time : null;
   const min = info && info.visit_min_minutes != null ? info.visit_min_minutes : null;
   if (slot != null || min != null) return Math.max(slot ?? 0, min ?? 0);
+  const stated = require('./place-sheet').factsOf(place).visitMinutes;
+  if (stated != null) return stated;
   return place.duration != null && place.duration > 0 ? place.duration : null;
 }
 

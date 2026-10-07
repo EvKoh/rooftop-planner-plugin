@@ -9,6 +9,7 @@ const placeInfo = require('./place-info');
 const { sunset } = require('./sun');
 const { isShopping, isTrace, parkingFromNotes } = require('./classify');
 const rules = require('./rules');
+const placeSheet = require('./place-sheet');
 const { isHikePlace, isParkingPlace } = require('./design');
 const routing = require('./routing');
 const { highwayAllowed, fuelPerKm, DEFAULTS } = require('./settings');
@@ -47,7 +48,6 @@ function carPos(stop) {
 const isVisit = (model, p) => !isShopping(p.categoryName, p.stopType) && !isNightPlace(model, p);
 const MEAL_MIN = 30;
 const LONG_DAY_MIN = 6 * 60;
-const SMALL_MIN = 60;
 // A stop this short (a photo, a lake by the road, a market on the way) is not an activity.
 const STOP_MIN = 30;
 
@@ -79,9 +79,11 @@ function dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L,
 
   const acts = visits.filter((v) => v.visit && v.minutes != null);
   const big = settings.big_activity_minutes;
-  const load = acts.reduce((n, v) => n + (v.minutes <= STOP_MIN ? 0 : v.minutes <= SMALL_MIN ? 0.5 : 1), 0);
+  // The rule as the setting states it: a visit of big_activity_minutes or more is the day's one
+  // big activity; a shorter one (over a quick stop) is half of one, so two fit in a day.
+  const load = acts.reduce((n, v) => n + (v.minutes <= STOP_MIN ? 0 : v.minutes >= big ? 1 : 0.5), 0);
   if (load > 1) {
-    add('fix', J, 'too_many_activities', { list: acts.filter((v) => v.minutes > STOP_MIN).map((v) => `${v.s.place.name} (${fmtDur(v.minutes)})`).join(', '), big: fmtDur(big), small: fmtDur(SMALL_MIN), nBig: acts.filter((v) => v.minutes >= big).length }, ids);
+    add('fix', J, 'too_many_activities', { list: acts.filter((v) => v.minutes > STOP_MIN).map((v) => `${v.s.place.name} (${fmtDur(v.minutes)})`).join(', '), big: fmtDur(big), nBig: acts.filter((v) => v.minutes >= big).length }, ids);
   }
 
   if (!complete || !nuit || !located(nuit) || !d.date) return;
@@ -335,13 +337,15 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       const legal = rules.nightLegality({ categoryName: nuit.categoryName, placeName: nuit.name, lat: nuit.lat, lng: nuit.lng, text: nuit.text, vehicle: settings.vehicle });
       if (legal) add(legal.level, J, legal.key, { name: nuit.name, ...zoneText(L, legal.params) }, extra);
       const am = nuit.info ? nuit.info.amenities : {};
+      // What the place's sheet states, in whatever language its notes are written.
+      const facts = placeSheet.factsOf((model.poolById.get(nuit.placeId) || {}).raw || { notes: nuit.notes });
       // A tent ban only matters to a rooftop tent: a van or a motorhome deploys nothing.
-      // The place's record says no (tent_refused), or its notes do (tent_banned, quoted).
-      const refused = settings.vehicle === 'rooftop_tent' && am.rooftop_tent === 'no';
+      // The record or the sheet says no (tent_refused), or free notes do (tent_banned, quoted).
+      const refused = settings.vehicle === 'rooftop_tent' && (am.rooftop_tent === 'no' || facts.tentAllowed === false);
       const banned = settings.vehicle !== 'rooftop_tent' || refused ? null : rules.tentBanned(nuit.text);
       if (refused) add('blocking', J, 'tent_refused', { name: nuit.name }, extra);
       if (banned) add('blocking', J, 'tent_banned', { name: nuit.name, quote: banned }, extra);
-      if (settings.dog && am.dog === 'no') add('blocking', J, 'dog_refused', { name: nuit.name }, extra);
+      if (settings.dog && (am.dog === 'no' || facts.dogAllowed === false)) add('blocking', J, 'dog_refused', { name: nuit.name }, extra);
       if (nuit.info && nuit.info.max_height_m != null && nuit.info.max_height_m < settings.vehicle_height_m) {
         add('blocking', J, 'too_low', { name: nuit.name, max: num(nuit.info.max_height_m, L), height: num(settings.vehicle_height_m, L) }, extra);
       }
@@ -351,7 +355,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       if (nuit.info && nuit.info.max_weight_t != null && nuit.info.max_weight_t < settings.vehicle_weight_t) {
         add('blocking', J, 'too_heavy', { name: nuit.name, max: num(nuit.info.max_weight_t, L), weight: num(settings.vehicle_weight_t, L) }, extra);
       }
-      const win = rules.welcomeWindow(nuit.text);
+      const win = rules.welcomeWindow(nuit.text) || facts.arrivalWindow;
       if (win && arr != null && (arr < win[0] || arr > win[1])) add('blocking', J, 'welcome_window', { arr: hhmm(arr), name: nuit.name, open: hhmm(win[0]), close: hhmm(win[1]) }, extra);
       const mini = rules.minNights(nuit.text);
       if (mini && nuit.nights < mini) add('blocking', J, 'min_nights', { name: nuit.name, n: nuit.nights }, extra);

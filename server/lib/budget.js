@@ -29,6 +29,16 @@ const LINE_RE = (key) => CODES.map((c) => MESSAGES[c][key]).filter(Boolean)
 const FUEL_LINES = LINE_RE('budget.fuel_line');
 const TOLL_LINES = LINE_RE('budget.toll_line');
 const isFuelLine = (b) => FUEL.test(norm(b.name)) || FUEL_LINES.some((re) => re.test(norm(b.name)));
+/**
+ * The day a fuel line is for: the day the plugin's own wording names, else a number next to
+ * a day word ("fuel day 3", "carburant J3"), never the kilometres.
+ */
+function fuelDayOf(b) {
+  const n = norm(b.name);
+  for (const re of FUEL_LINES) { const m = n.match(re); if (m) return Number(m[1]); }
+  const m = n.match(/(?:\bday|\bjour|\btag|\bgiorno|\bdia|\bj|\bd)\s*(\d{1,3})\b(?!\s*km)/);
+  return m ? Number(m[1]) : null;
+}
 const isTollLine = (b) => TOLL.test(norm(`${b.name} ${b.category || ''}`)) || TOLL_LINES.some((re) => re.test(norm(b.name)));
 
 async function tripBudget(ctx, model, o, { settings, deadline, network = true }) {
@@ -110,7 +120,7 @@ async function tripBudget(ctx, model, o, { settings, deadline, network = true })
   const coreCalls = [];
   if (costs) {
     for (const f of fuel) {
-      const exists = costs.some((b) => isFuelLine(b) && new RegExp(`\\b${f.day}\\b`).test(b.name));
+      const exists = costs.some((b) => isFuelLine(b) && fuelDayOf(b) === f.day);
       if (!exists) coreCalls.push({ tool: 'create_budget_item', args: { tripId: model.tripId, name: t(L, 'budget.fuel_line', { day: f.day, km: f.km }), category: 'Transport', total_price: f.cost } });
     }
     for (const x of accessTolls.filter((y) => !y.inBudget)) {
@@ -141,4 +151,4 @@ async function tripBudget(ctx, model, o, { settings, deadline, network = true })
   };
 }
 
-module.exports = { tripBudget, isFuelLine, isTollLine };
+module.exports = { tripBudget, isFuelLine, isTollLine, fuelDayOf };

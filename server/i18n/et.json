@@ -235,7 +235,7 @@
   "ui.visitMax": "Suurim aeg kohapeal (min)",
   "day_overloaded": "vaja {need} (külastused {visits}, sõit {drive}) {window} kasutatava päeva jaoks ({from}–{to}): eemalda või nihuta {list}",
   "s.day_overloaded": "{need} {window} jaoks",
-  "too_many_activities": "ühe päeva jaoks liiga palju: {list} — üks suur tegevus päevas (alates {big}) või kuni kaks väikest (kuni {small})",
+  "too_many_activities": "ühe päeva jaoks liiga palju: {list} — üks suur tegevus päevas (alates {big}) või kuni kaks väikest",
   "s.too_many_activities": "liiga palju tegevusi",
   "visit_unknown": "külastuse kestus teadmata: {list} — sisesta see, et päeva koormust kontrollida",
   "s.visit_unknown": "kestus teadmata",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "kinnitatud, märkmed ütlevad endiselt „ootel“",
   "s.resa_price": "broneeritud hind ≠ plaan",
   "tent_refused": "„{name}“ ei luba katusetelke (kirjas koha juures): leia teine ööbimiskoht",
-  "s.tent_refused": "katusetelgid keelatud"
+  "s.tent_refused": "katusetelgid keelatud",
+  "ui.invalidField": "{field}: see väärtus ei sobi",
+  "ui.notInTrip": "Seda kohta pole selles reisis.",
+  "ui.failed": "See ei õnnestunud. Proovi hetke pärast uuesti."
 }

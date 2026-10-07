@@ -194,7 +194,19 @@ const routeKindOf = (s) => { const t = norm(s); const r = ROUTE_KINDS.find(([, r
 
 const DOG_NO = /\b(non admis|interdit|pas admis|refuse|not allowed|no dogs|forbidden|prohibited|verboten|nicht erlaubt|vietato|non ammess\w*|prohibido|no se admiten|no permitido)\b/;
 const DOG_YES = /\b(admis|bienvenu\w*|accepte\w*|autorise\w*|allowed|welcome|accepted|ok|oui|yes|erlaubt|willkommen|ammess\w*|benvenut\w*|consentit\w*|si|ja|permitid\w*|admitid\w*|bienvenid\w*)\b/;
-const dogOf = (s) => { const t = norm(s); return DOG_NO.test(t) ? false : DOG_YES.test(t) ? true : null; };
+// The catalogues' own "No" / "Yes" (Нет, いいえ, Không...), as a whole answer: what the plugin
+// writes in a sheet in any language reads back.
+const ANSWER = (key) => [...new Set(CODES.map((c) => norm(MESSAGES[c][key] || '')).filter(Boolean))];
+const NO_WORDS = ANSWER('opt.no');
+const YES_WORDS = ANSWER('opt.yes');
+const startsWithWord = (t, w) => t === w || (t.startsWith(w) && !/[\p{L}\p{N}]/u.test(t.charAt(w.length)));
+/** Is it allowed: false / true / null, from a free answer ("not allowed", "Nein", "Да"). */
+const dogOf = (s) => {
+  const t = norm(s).trim();
+  if (DOG_NO.test(t) || NO_WORDS.some((w) => startsWithWord(t, w))) return false;
+  if (DOG_YES.test(t) || YES_WORDS.some((w) => startsWithWord(t, w))) return true;
+  return null;
+};
 
 /** "Itinéraire : A, B, C, D" with no bullets → steps, when it reads as a list of 3 or more. */
 function stepsOf(value) {
@@ -311,6 +323,25 @@ function parse(description, notes, { kind = 'activity' } = {}) {
 }
 
 /** The sheet of a TREK place (its raw row or the model's), with its kind. */
+/**
+ * What the rules read from a place's sheet, in whatever language it is written: the time on
+ * site, whether the dog and a rooftop tent are allowed (false / true / null), and the
+ * arrival window [from, to] in minutes. The check, the schedule, the fill, the planner
+ * columns and the panel read these, so a sheet line counts everywhere it shows.
+ */
+function factsOf(place) {
+  if (!place) return { visitMinutes: null, dogAllowed: null, tentAllowed: null, arrivalWindow: null };
+  const f = sheetOf(place).fields;
+  const span = f.arrival && norm(f.arrival.text).match(/(\d{1,2})\s*[h:]?(\d{2})?\s*[–-]\s*(\d{1,2})\s*[h:]?(\d{2})?/);
+  return {
+    visitMinutes: f.duration && f.duration.minutes != null ? f.duration.minutes : null,
+    visitQuote: f.duration ? f.duration.text : null,
+    dogAllowed: f.dog ? (f.dog.allowed ?? null) : null,
+    tentAllowed: f.rooftop_tent ? dogOf(f.rooftop_tent.text) : null,
+    arrivalWindow: span ? [+span[1] * 60 + +(span[2] || 0), +span[3] * 60 + +(span[4] || 0)] : null,
+  };
+}
+
 function sheetOf(place, { night = false } = {}) {
   const raw = (place && place.raw) || place || {};
   const kind = kindOf(place, { night });
@@ -472,5 +503,5 @@ function setField(description, notes, field, value, L = 'en') {
 module.exports = {
   FIELDS, SECTIONS, TAIL, FIELD_NAMES: Object.keys(FIELDS),
   typeOf, aliasesOf, keyForm, fieldOf, splitKey, lines, minutesOf, gradeOf, routeKindOf, dogOf, urlsIn,
-  parse, sheetOf, kindOf, view, setField, FIGURE_FIELDS,
+  parse, sheetOf, factsOf, kindOf, view, setField, FIGURE_FIELDS,
 };

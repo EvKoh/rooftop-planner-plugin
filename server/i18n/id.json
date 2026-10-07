@@ -235,7 +235,7 @@
   "ui.visitMax": "Waktu maksimum di lokasi (mnt)",
   "day_overloaded": "perlu {need} (kunjungan {visits}, berkendara {drive}) untuk {window} hari yang bisa dipakai ({from}–{to}): hapus atau pindahkan {list}",
   "s.day_overloaded": "{need} untuk {window}",
-  "too_many_activities": "terlalu banyak untuk sehari: {list} — satu aktivitas besar per hari (mulai {big}) atau paling banyak dua yang kecil (hingga {small})",
+  "too_many_activities": "terlalu banyak untuk sehari: {list} — satu aktivitas besar per hari (mulai {big}) atau paling banyak dua yang kecil",
   "s.too_many_activities": "terlalu banyak aktivitas",
   "visit_unknown": "durasi kunjungan tidak diketahui: {list} — isi agar beban hari bisa diperiksa",
   "s.visit_unknown": "durasi tidak diketahui",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "dikonfirmasi, catatan masih “menunggu”",
   "s.resa_price": "harga pesanan ≠ rencana",
   "tent_refused": "“{name}” menolak tenda atap (tercatat di tempat): cari malam lain",
-  "s.tent_refused": "tanpa tenda atap"
+  "s.tent_refused": "tanpa tenda atap",
+  "ui.invalidField": "{field}: nilai ini tidak valid",
+  "ui.notInTrip": "Tempat ini tidak ada di perjalanan ini.",
+  "ui.failed": "Tidak berhasil. Coba lagi sebentar lagi."
 }

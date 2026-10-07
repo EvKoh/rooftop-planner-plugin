@@ -235,7 +235,7 @@
   "ui.visitMax": "Yerinde en çok süre (dk)",
   "day_overloaded": "{window} kullanılabilir gün ({from}–{to}) için {need} gerekiyor (ziyaret {visits}, sürüş {drive}): {list} çıkarın veya taşıyın",
   "s.day_overloaded": "{window} için {need}",
-  "too_many_activities": "bir gün için fazla: {list} — günde bir büyük etkinlik ({big} ve üzeri) ya da en fazla iki küçük ({small} kadar)",
+  "too_many_activities": "bir gün için fazla: {list} — günde bir büyük etkinlik ({big} ve üzeri) ya da en fazla iki küçük",
   "s.too_many_activities": "fazla etkinlik",
   "visit_unknown": "ziyaret süresi bilinmiyor: {list} — günün yükünü kontrol etmek için girin",
   "s.visit_unknown": "süre bilinmiyor",
@@ -394,5 +394,8 @@
   "s.resa_note_stale": "onaylandı, notlar hâlâ “bekliyor”",
   "s.resa_price": "rezervasyon fiyatı ≠ plan",
   "tent_refused": "“{name}” tavan çadırı kabul etmiyor (yerde kayıtlı): başka bir gece bulun",
-  "s.tent_refused": "tavan çadırı yok"
+  "s.tent_refused": "tavan çadırı yok",
+  "ui.invalidField": "{field}: bu değer geçerli değil",
+  "ui.notInTrip": "Bu yer bu gezide değil.",
+  "ui.failed": "Olmadı. Birazdan tekrar deneyin."
 }

@@ -82,6 +82,8 @@
     }
     // The locale of the language the strings are in (server/lib/i18n.js), for dates.
     function loc() { return (st.data && st.data.locale) || st.locale; }
+    // Every call says the panel's language, so an error comes back in it.
+    function body(b) { return Object.assign({ locale: (st.data && st.data.language) || st.locale }, b); }
     // A night state's tone (server/lib/design.js) → TREK's chip class.
     var CHIP_CLASS = { success: 'trek-chip--success', warn: 'trek-chip--warning', danger: 'trek-chip--danger' };
     function stateOf(d, status) { return (d.states || []).find(function (s) { return s.status === status; }) || null; }
@@ -340,7 +342,7 @@
     async function setNight(row, status, extra) {
       st.busy = true; render();
       try {
-        var r = await trek.invoke('/night/set', { method: 'POST', body: Object.assign({ tripId: Number(st.tripId), placeId: Number(st.placeId), dayId: row.dayId, status: status }, extra) });
+        var r = await trek.invoke('/night/set', { method: 'POST', body: body(Object.assign({ tripId: Number(st.tripId), placeId: Number(st.placeId), dayId: row.dayId, status: status }, extra)) });
         st.night = { states: st.night.states, nights: r.nights };
         st.dayId = r.dayId;
         st.pending = null;
@@ -352,7 +354,7 @@
     }
     async function loadNight() {
       try {
-        var r = await trek.invoke('/night', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId) } });
+        var r = await trek.invoke('/night', { method: 'POST', body: body({ tripId: Number(st.tripId), placeId: Number(st.placeId) }) });
         st.night = r;
         if (!st.dayId || !r.nights.some(function (x) { return x.dayId === st.dayId; })) st.dayId = r.dayId;
         render();
@@ -400,7 +402,7 @@
           st.tried[st.placeId] = true;
           // A background lookup: a slow or busy source must not replace the card with an error.
           try {
-            var r = await trek.invoke('/amenities/fill', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId) } });
+            var r = await trek.invoke('/amenities/fill', { method: 'POST', body: body({ tripId: Number(st.tripId), placeId: Number(st.placeId) }) });
             if (r && r.filled) loadAmenities();
           } catch (e) { /* open sources busy: the card stays as it is */ }
         }
@@ -422,6 +424,10 @@
       // The trip's currency shown by default is not written on the place: it would stay frozen
       // there if the trip's currency changed. Only a currency the user picked is saved.
       if (!st.data.placeCurrency && set.currency === st.data.currency) delete set.currency;
+      // The source and its date are shown in the reader's language: sent back only when the user
+      // changed them, so the stored language-neutral source (and its auto tag) is kept.
+      if (set.source === (st.data.info.source || '')) delete set.source;
+      if (String(set.checked || '') === String(st.data.info.checked || '') && !('source' in set)) delete set.checked;
       // A new source with no check date is dated today by the server, as the tool does.
       if (!String(set.checked || '').trim() && set.source && set.source !== (st.data.info.source || '')) delete set.checked;
       // An empty unit or note means "not said".
@@ -432,7 +438,7 @@
       if (set.toll_currency) set.toll_currency = set.toll_currency.toUpperCase();
       set.booking_required = set.booking_required === 'yes' ? true : set.booking_required === 'no' ? false : null;
       try {
-        await trek.invoke('/amenities/save', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId), set: set } });
+        await trek.invoke('/amenities/save', { method: 'POST', body: body({ tripId: Number(st.tripId), placeId: Number(st.placeId), set: set }) });
         trek.notify('success', S('ui.saved'));
         st.open = false;
         load();
@@ -445,7 +451,7 @@
       var total = 0, r = null, rounds = 0;
       try {
         do {
-          r = await trek.invoke('/amenities/fill', { method: 'POST', body: { tripId: Number(st.tripId) } });
+          r = await trek.invoke('/amenities/fill', { method: 'POST', body: body({ tripId: Number(st.tripId) }) });
           total += r.filled;
         } while (r.remaining > 0 && ++rounds < 40 && !r.osmBusy && !r.park4nightLimited);
         trek.notify('success', S('ui.filledN').replace('{n}', String(total)));
@@ -458,7 +464,7 @@
     async function clearIt() {
       if (!(await trek.confirm({ message: S('ui.confirmClear'), danger: true }))) return;
       try {
-        await trek.invoke('/amenities/clear', { method: 'POST', body: { tripId: Number(st.tripId), placeId: Number(st.placeId) } });
+        await trek.invoke('/amenities/clear', { method: 'POST', body: body({ tripId: Number(st.tripId), placeId: Number(st.placeId) }) });
         trek.notify('success', S('ui.cleared'));
         st.open = false;
         load();

@@ -319,7 +319,9 @@ describe('access chips, place tool and widget', () => {
     expect(w.strings).toMatchObject({ 'ui.accessBefore': 'Arriver avant (fermé après)', 'ui.book': 'Réserver', 'chip.booking': 'Réservation' });
     const bad = await route('/amenities/save', { tripId: 1, placeId: 14, set: { booking_url: 'ftp://example.com' } });
     expect(bad.status).toBe(400);
-    expect(JSON.parse(bad.body).error).toMatch(/booking_url must be an http/);
+    // In the panel's language, naming the field (not the raw English validation text).
+    expect(JSON.parse(bad.body).error).toMatch(/: this value is not valid$/);
+    expect(JSON.parse(bad.body).error).not.toMatch(/booking_url/);
     const ok = JSON.parse((await route('/amenities/save', { tripId: 1, placeId: 14, set: { toll_amount: 15, toll_currency: 'eur', booking_required: null } })).body);
     expect(ok.info).toMatchObject({ toll_amount: 15, toll_currency: 'EUR', booking_required: null, access_before: '09:00' });
     // the same walk shorthand as the MCP tool
