@@ -342,11 +342,11 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       const facts = placeSheet.factsOf((model.poolById.get(nuit.placeId) || {}).raw || { notes: nuit.notes });
       // A tent ban only matters to a rooftop tent: a van or a motorhome deploys nothing.
       // The record or the sheet says no (tent_refused), or free notes do (tent_banned, quoted).
-      const refused = settings.vehicle === 'rooftop_tent' && (am.rooftop_tent === 'no' || facts.tentAllowed === false);
+      const refused = settings.vehicle === 'rooftop_tent' && placeInfo.refusedBy(nuit.info, facts, 'rooftop_tent', 'tentAllowed');
       const banned = settings.vehicle !== 'rooftop_tent' || refused ? null : rules.tentBanned(nuit.text);
       if (refused) add('blocking', J, 'tent_refused', { name: nuit.name }, extra);
       if (banned) add('blocking', J, 'tent_banned', { name: nuit.name, quote: banned }, extra);
-      if (settings.dog && (am.dog === 'no' || facts.dogAllowed === false)) add('blocking', J, 'dog_refused', { name: nuit.name }, extra);
+      if (settings.dog && placeInfo.refusedBy(nuit.info, facts, 'dog', 'dogAllowed')) add('blocking', J, 'dog_refused', { name: nuit.name }, extra);
       if (nuit.info && nuit.info.max_height_m != null && nuit.info.max_height_m < settings.vehicle_height_m) {
         add('blocking', J, 'too_low', { name: nuit.name, max: num(nuit.info.max_height_m, L), height: num(settings.vehicle_height_m, L) }, extra);
       }

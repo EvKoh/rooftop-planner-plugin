@@ -177,7 +177,7 @@ function minutesOf(s) {
   if (/^\s*\d{1,2}:\d{2}\s*$/.test(t)) return null;
   const H = 'h|hr|hrs|hours?|heures?|std|stunden?|ore|horas?';
   const M = 'min|mn|minutes?|minuten|minuti|minutos';
-  const m = t.match(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:[-–]\\s*\\d+(?:[.,]\\d+)?\\s*)?(?:(${H})(?![a-z])\\s*(?:(\\d{1,2})(?!\\s*[-–]?\\s*\\d)\\s*(?:${M}|m\\b)?)?|(?:${M})\\b)`));
+  const m = t.match(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:[-–]\\s*\\d+(?:[.,]\\d+)?\\s*)?(?:(${H})(?![a-z])\\s*(?:(\\d{1,2})(?!\\d)\\s*(?:${M}|m\\b)?)?|(?:${M})\\b)`));
   if (!m) return null;
   const n = Number(m[1].replace(',', '.'));
   const minutes = m[2] ? Math.round(n * 60 + (m[3] ? Number(m[3]) : 0)) : Math.round(n);
@@ -211,9 +211,20 @@ const isAnswer = (t, w) => t.replace(/[\s.!。！]+$/u, '') === w;
 // The answer is the first clause: "allowed on a leash, not in the pool" is a yes; "no, unless
 // agreed" is a no. What comes after a comma or a "but" is a detail, not the answer.
 const FIRST_CLAUSE = /[,;/(]|\s[-–—]\s|\b(?:but|mais|sauf|except|excepte|aber|ausser|ma|pero|tranne|salvo|eccetto|maar|men|ale)\b/;
+// A negation before an approval word turns it into a refusal ("non autorisés", "not
+// accepted", "nicht willkommen"); a refusal that names a part of the place ("not allowed in
+// the pool area") restricts it, it does not refuse the night: unknown.
+const NEGATION = /\b(non|not|no|pas|ne|nicht|kein\w*|nessun\w*|niet|nao|nunca|jamais|never)\b/;
+const REFUSED = /\b(refus\w*|interdit\w*|forbidden|prohibited|banned|not permitted|vietat\w*|verboten|prohibid\w*)\b/;
+const PART = /\b(in the|in|dans|dans la|dans le|au|aux|a la|im|in der|nel|nella|nei|en el|en la|at the|inside|sur la|sur le)\s+\w+/;
 const dogOf = (s) => {
   const t = norm(s).split(FIRST_CLAUSE)[0].trim();
-  if (DOG_NO.test(t) || NO_WORDS.some((w) => isAnswer(t, w))) return false;
+  const no = DOG_NO.test(t) || REFUSED.test(t) || NO_WORDS.some((w) => isAnswer(t, w)) || (NEGATION.test(t) && DOG_YES.test(t));
+  if (no) {
+    // "not allowed in the pool area": a restriction on part of the place, not a refusal.
+    const after = t.slice(t.search(/\b(not|non|pas|nicht|refus|interdit|forbidden|prohibited|verboten|vietat|prohibid)/));
+    return PART.test(after) ? null : false;
+  }
   if (DOG_YES.test(t) || YES_WORDS.some((w) => isAnswer(t, w))) return true;
   return null;
 };
@@ -342,7 +353,8 @@ function parse(description, notes, { kind = 'activity' } = {}) {
 function factsOf(place) {
   if (!place) return { visitMinutes: null, dogAllowed: null, tentAllowed: null, arrivalWindows: [] };
   const f = sheetOf(place).fields;
-  const windows = f.arrival ? require('./rules').windowsIn(f.arrival.text) : [];
+  // Every line of the arrival field (its value and its bullets): a window on any line counts.
+  const windows = f.arrival ? f.arrival.text.split('\n').flatMap((l) => require('./rules').windowsIn(l.replace(/^\s*[•\-*]\s*/, ''))) : [];
   return {
     visitMinutes: f.duration && f.duration.minutes != null ? f.duration.minutes : null,
     visitQuote: f.duration ? f.duration.text : null,

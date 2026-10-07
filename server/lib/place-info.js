@@ -629,9 +629,17 @@ function accessText(info, L, currency) {
 }
 
 /** Does the place refuse this vehicle or party? (rooftop tent refused, dog refused, a limit exceeded) */
+/**
+ * Is the dog / a rooftop tent refused: the record's answer when it has one (what a person or
+ * a cited source entered wins over words in the notes, as for water), else the sheet's.
+ */
+const refusedBy = (info, facts, amenity, fact) => {
+  const v = info && info.amenities ? info.amenities[amenity] : 'unknown';
+  return v === 'no' || ((v === 'unknown' || v == null) && facts[fact] === false);
+};
+
 function refuses(info, settings, facts = {}) {
-  // The record, or the place's sheet (facts: place-sheet.js factsOf), says no.
-  if ((settings.vehicle === 'rooftop_tent' && facts.tentAllowed === false) || (settings.dog && facts.dogAllowed === false)) return true;
+  if ((settings.vehicle === 'rooftop_tent' && refusedBy(info, facts, 'rooftop_tent', 'tentAllowed')) || (settings.dog && refusedBy(info, facts, 'dog', 'dogAllowed'))) return true;
   if (!info) return false;
   return (settings.vehicle === 'rooftop_tent' && info.amenities.rooftop_tent === 'no')
     || (settings.dog && info.amenities.dog === 'no')
@@ -646,10 +654,9 @@ function refuses(info, settings, facts = {}) {
  * null when nothing does.
  */
 function refusalText(info, settings, L, facts = {}) {
-  const am = (info && info.amenities) || {};
   const no = [];
-  if (settings.vehicle === 'rooftop_tent' && (am.rooftop_tent === 'no' || facts.tentAllowed === false)) no.push(t(L, 'am.rooftop_tent'));
-  if (settings.dog && (am.dog === 'no' || facts.dogAllowed === false)) no.push(t(L, 'am.dog'));
+  if (settings.vehicle === 'rooftop_tent' && refusedBy(info, facts, 'rooftop_tent', 'tentAllowed')) no.push(t(L, 'am.rooftop_tent'));
+  if (settings.dog && refusedBy(info, facts, 'dog', 'dogAllowed')) no.push(t(L, 'am.dog'));
   const parts = no.length ? [`✗ ${no.join(' · ')}`] : [];
   if (info && info.max_height_m != null && info.max_height_m < settings.vehicle_height_m) parts.push(`↕ ${num(info.max_height_m, L)} m`);
   if (info && info.max_length_m != null && info.max_length_m < settings.vehicle_length_m) parts.push(`↔ ${num(info.max_length_m, L)} m`);
@@ -746,4 +753,4 @@ function localized(rec, L) {
   return { ...rec, source: sourceText(rec.source, L), visit_source: sourceText(rec.visit_source, L), contact_sources: cs };
 }
 
-module.exports = { refusalText, SRC, sourceText, localized, lacksText, nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { refusedBy, refusalText, SRC, sourceText, localized, lacksText, nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
