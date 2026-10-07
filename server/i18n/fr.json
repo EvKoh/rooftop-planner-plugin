@@ -400,5 +400,8 @@
   "budget.toll_line": "Péage jour {day} — {name}",
   "ui.labelValue": "{label} : {value}",
   "unit.maxWeight": "{t} t max",
-  "src.auto": "(auto)"
+  "src.auto": "(auto)",
+  "s.resa_unlinked": "réservation rattachée à aucune nuit",
+  "s.resa_note_stale": "confirmée, notes encore « en attente »",
+  "s.resa_price": "prix réservé ≠ plan"
 }

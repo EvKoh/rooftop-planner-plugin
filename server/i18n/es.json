@@ -400,5 +400,8 @@
   "budget.toll_line": "Peaje día {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "{t} t máx.",
-  "src.auto": "(automático)"
+  "src.auto": "(automático)",
+  "s.resa_unlinked": "reserva sin noche en el plan",
+  "s.resa_note_stale": "confirmada, notas aún «en espera»",
+  "s.resa_price": "precio reservado ≠ plan"
 }

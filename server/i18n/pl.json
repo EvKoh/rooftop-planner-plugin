@@ -400,5 +400,8 @@
   "budget.toll_line": "Opłata drogowa dzień {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "maks. {t} t",
-  "src.auto": "(automatycznie)"
+  "src.auto": "(automatycznie)",
+  "s.resa_unlinked": "rezerwacja bez noclegu w planie",
+  "s.resa_note_stale": "potwierdzona, notatki wciąż „oczekuje”",
+  "s.resa_price": "cena rezerwacji ≠ plan"
 }

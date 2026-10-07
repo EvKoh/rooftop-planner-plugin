@@ -250,7 +250,9 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       }
     }
 
-    if (anyTrace && (veille || nuit)) {
+    // A rest day at camp (same stay last night and tonight) drives nowhere: no route place to ask for.
+    const restDay = !!veille && !!nuit && veille.id === nuit.id;
+    if (anyTrace && (veille || nuit) && !restDay) {
       if (!trace) add('fix', J, 'no_trace', {}, ids);
       else {
         if (d.assignments[0] !== trace) add('fix', J, 'trace_not_first', {}, { ...ids, placeId: trace.place.id });
@@ -309,7 +311,6 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       prec = { name: p.name, end: end ?? start };
     });
 
-    if (!nuit) dryNights = 0;
     // Tonight's stay. Its arrival, access, ground and vehicle rules are judged on its first
     // evening; a later evening of the same stay is judged on the day's load (dayLoad, back
     // at camp before dark) and on its own date (closures above), and counts as a night for
@@ -361,7 +362,8 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       if (waiting != null && waiting > nightStatus.STALE_DAYS) add('verify', J, 'contact_stale', { name: nuit.name, n: waiting }, extra);
     }
     if (nuit) {
-      // Entered amenities win over words in the notes. Every evening of a stay is a night.
+      // Entered amenities win over words in the notes. Every evening of a stay is a night; an
+      // evening with no night planned is unknown, not a night with water: the count goes on.
       const am = nuit.info ? nuit.info.amenities : {};
       const dry = am.water === 'no' || (am.water !== 'yes' && rules.noWater(nuit.text));
       dryNights = dry ? dryNights + 1 : 0;
@@ -409,13 +411,14 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       add('fix', scopeOf(nd), 'night_cancelled', { name: n.name }, { reservationId: res.id, accommodationId: n.id, ...dayIds(nd) });
     }
     // The price the booking records (TREK's expense side) against the price the plan counts.
-    const bp = nightStatus.bookedPrice(res);
+    const bp = res && nightStatus.statusOf(res) !== 'dropped' ? nightStatus.bookedPrice(res) : null;
     if (bp && n.stayCost != null && (bp.currency || n.currency) === n.currency && Math.abs(bp.amount - n.stayCost) > 1) {
       add('fix', scopeOf(nd), 'resa_price', { title: res.title || n.name, booked: money(bp.amount, n.currency, L), planned: money(n.stayCost, n.currency, L) }, { reservationId: res.id, placeId: n.placeId, ...dayIds(nd) });
     }
   }
-  // A booking TREK shows as made, but tied to no night of the plan: nobody sleeps there.
-  for (const u of nightStatus.unlinkedBookings(model)) {
+  // A booking TREK shows as made, but tied to no night of the plan: nobody sleeps there. A
+  // request still pending (a second host asked for the same evening) is a comparison, not a fault.
+  for (const u of nightStatus.unlinkedBookings(model).filter((x) => nightStatus.statusOf(x.res) === 'booked')) {
     add('fix', scopeOf(u.day), 'resa_unlinked', { title: u.res.title || '', day: u.day ? u.day.n : '?' }, { reservationId: u.res.id, placeId: u.placeId, ...dayIds(u.day) });
   }
   const budgetScope = t(L, 'scope.budget');

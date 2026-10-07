@@ -400,5 +400,8 @@
   "budget.toll_line": "Geçiş ücreti {day}. gün — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "en fazla {t} t",
-  "src.auto": "(otomatik)"
+  "src.auto": "(otomatik)",
+  "s.resa_unlinked": "planda gecesi olmayan rezervasyon",
+  "s.resa_note_stale": "onaylandı, notlar hâlâ “bekliyor”",
+  "s.resa_price": "rezervasyon fiyatı ≠ plan"
 }

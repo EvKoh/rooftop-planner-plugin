@@ -400,5 +400,8 @@
   "budget.toll_line": "Peatge dia {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "{t} t màx.",
-  "src.auto": "(automàtic)"
+  "src.auto": "(automàtic)",
+  "s.resa_unlinked": "reserva sense nit al pla",
+  "s.resa_note_stale": "confirmada, notes encara «en espera»",
+  "s.resa_price": "preu reservat ≠ pla"
 }

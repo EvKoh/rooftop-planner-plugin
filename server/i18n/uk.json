@@ -400,5 +400,8 @@
   "budget.toll_line": "Платна дорога, день {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "макс. {t} т",
-  "src.auto": "(автоматично)"
+  "src.auto": "(автоматично)",
+  "s.resa_unlinked": "бронювання без ночі в плані",
+  "s.resa_note_stale": "підтверджено, у нотатках досі «чекає»",
+  "s.resa_price": "ціна бронювання ≠ план"
 }

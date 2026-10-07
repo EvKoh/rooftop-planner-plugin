@@ -400,5 +400,8 @@
   "budget.toll_line": "Tol hari {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "maks. {t} t",
-  "src.auto": "(otomatis)"
+  "src.auto": "(otomatis)",
+  "s.resa_unlinked": "pemesanan tanpa malam di rencana",
+  "s.resa_note_stale": "dikonfirmasi, catatan masih “menunggu”",
+  "s.resa_price": "harga pesanan ≠ rencana"
 }

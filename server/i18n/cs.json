@@ -400,5 +400,8 @@
   "budget.toll_line": "Mýto den {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "max. {t} t",
-  "src.auto": "(automaticky)"
+  "src.auto": "(automaticky)",
+  "s.resa_unlinked": "rezervace bez noci v plánu",
+  "s.resa_note_stale": "potvrzeno, poznámky stále „čeká“",
+  "s.resa_price": "rezervovaná cena ≠ plán"
 }

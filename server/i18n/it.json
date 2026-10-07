@@ -400,5 +400,8 @@
   "budget.toll_line": "Pedaggio giorno {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "max {t} t",
-  "src.auto": "(automatico)"
+  "src.auto": "(automatico)",
+  "s.resa_unlinked": "prenotazione senza notte nel piano",
+  "s.resa_note_stale": "confermata, note ancora «in attesa»",
+  "s.resa_price": "prezzo prenotato ≠ piano"
 }

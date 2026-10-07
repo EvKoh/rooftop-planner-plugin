@@ -20,7 +20,8 @@ function bannerText(f, settings) {
   const what = has(L, key) ? t(L, key, { ...p, zone: p.zone ? String(p.zone).replace(/ \(.*\)$/, '') : p.zone }) : t(L, f.key, p);
   const who = p.name || p.title ? shortName(p.name || p.title) : '';
   const where = f.dayNumber != null ? t(L, 'dayShort', { n: f.dayNumber }) : f.scope;
-  return `${[where, who].filter(Boolean).join(' ')} : ${what}`.slice(0, 120);
+  // "J2 Farm Example: …", the label/value separator of the language (" : " in French).
+  return t(L, 'ui.labelValue', { label: [where, who].filter(Boolean).join(' '), value: what }).slice(0, 120);
 }
 
 /**

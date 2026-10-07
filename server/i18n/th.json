@@ -400,5 +400,8 @@
   "budget.toll_line": "ค่าผ่านทาง วันที่ {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "สูงสุด {t} ตัน",
-  "src.auto": "(อัตโนมัติ)"
+  "src.auto": "(อัตโนมัติ)",
+  "s.resa_unlinked": "การจองที่ไม่มีคืนในแผน",
+  "s.resa_note_stale": "ยืนยันแล้ว แต่บันทึกยังเป็น “รอ”",
+  "s.resa_price": "ราคาที่จอง ≠ แผน"
 }

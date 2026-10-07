@@ -400,5 +400,8 @@
   "budget.toll_line": "Vägavgift dag {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "max {t} t",
-  "src.auto": "(automatiskt)"
+  "src.auto": "(automatiskt)",
+  "s.resa_unlinked": "bokning utan natt i planen",
+  "s.resa_note_stale": "bekräftad, anteckningar säger fortfarande ”väntar”",
+  "s.resa_price": "bokat pris ≠ plan"
 }

@@ -400,5 +400,8 @@
   "budget.toll_line": "Toll day {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "{t} t max",
-  "src.auto": "(auto)"
+  "src.auto": "(auto)",
+  "s.resa_unlinked": "booking tied to no night",
+  "s.resa_note_stale": "confirmed, notes still say waiting",
+  "s.resa_price": "booked price ≠ plan"
 }

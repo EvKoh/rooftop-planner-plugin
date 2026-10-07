@@ -400,5 +400,8 @@
   "budget.toll_line": "Teemaks päev {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "max {t} t",
-  "src.auto": "(automaatne)"
+  "src.auto": "(automaatne)",
+  "s.resa_unlinked": "broneering ilma ööta plaanis",
+  "s.resa_note_stale": "kinnitatud, märkmed ütlevad endiselt „ootel“",
+  "s.resa_price": "broneeritud hind ≠ plaan"
 }

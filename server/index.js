@@ -155,6 +155,9 @@ module.exports = definePlugin({
             vehicle: settings.vehicle,
             price: place.price == null ? null : +place.price,
             currency,
+            // The place's own currency, null when it has none (the trip's applies): the panel
+            // writes a currency only when the user sets one.
+            placeCurrency: place.currency || null,
             // The language's locale, for the dates the widget formats itself.
             locale: locale(L),
             info: placeInfo.localized(info, L) || placeInfo.blank(),

@@ -57,12 +57,15 @@ function parseVisit(text) {
 }
 
 /**
- * Minutes on site of one stop of a day: the duration recorded on the place first, then the
- * stop's own times in TREK that day, then TREK's duration field; null when none is known.
+ * Minutes on site of one stop of a day: the longer of the slot planned that day in TREK and
+ * the minimum recorded on the place (a minimum never shortens a longer planned slot, and a
+ * slot shorter than the minimum counts as the minimum); else TREK's duration field; null
+ * when none is known. The check's day load and the schedule both read it.
  */
 function stopMinutes(place, info) {
-  if (info && info.visit_min_minutes != null) return info.visit_min_minutes;
-  if (place.time != null && place.end != null && place.end > place.time) return place.end - place.time;
+  const slot = place.time != null && place.end != null && place.end > place.time ? place.end - place.time : null;
+  const min = info && info.visit_min_minutes != null ? info.visit_min_minutes : null;
+  if (slot != null || min != null) return Math.max(slot ?? 0, min ?? 0);
   return place.duration != null && place.duration > 0 ? place.duration : null;
 }
 

@@ -400,5 +400,8 @@
   "budget.toll_line": "Phí đường ngày {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "tối đa {t} t",
-  "src.auto": "(tự động)"
+  "src.auto": "(tự động)",
+  "s.resa_unlinked": "đặt chỗ không có đêm trong kế hoạch",
+  "s.resa_note_stale": "đã xác nhận, ghi chú vẫn “đang chờ”",
+  "s.resa_price": "giá đã đặt ≠ kế hoạch"
 }

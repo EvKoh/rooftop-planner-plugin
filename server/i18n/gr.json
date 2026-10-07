@@ -400,5 +400,8 @@
   "budget.toll_line": "Διόδια ημέρα {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "μέγ. {t} t",
-  "src.auto": "(αυτόματα)"
+  "src.auto": "(αυτόματα)",
+  "s.resa_unlinked": "κράτηση χωρίς νύχτα στο σχέδιο",
+  "s.resa_note_stale": "επιβεβαιωμένη, οι σημειώσεις λένε ακόμη «αναμονή»",
+  "s.resa_price": "τιμή κράτησης ≠ σχέδιο"
 }

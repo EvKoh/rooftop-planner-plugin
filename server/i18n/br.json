@@ -400,5 +400,8 @@
   "budget.toll_line": "Pedágio dia {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "{t} t máx.",
-  "src.auto": "(automático)"
+  "src.auto": "(automático)",
+  "s.resa_unlinked": "reserva sem noite no plano",
+  "s.resa_note_stale": "confirmada, notas ainda “aguardando”",
+  "s.resa_price": "preço reservado ≠ plano"
 }

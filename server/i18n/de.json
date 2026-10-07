@@ -400,5 +400,8 @@
   "budget.toll_line": "Maut Tag {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "max. {t} t",
-  "src.auto": "(automatisch)"
+  "src.auto": "(automatisch)",
+  "s.resa_unlinked": "Buchung ohne Nacht im Plan",
+  "s.resa_note_stale": "bestätigt, Notizen sagen noch „wartend“",
+  "s.resa_price": "Buchungspreis ≠ Plan"
 }

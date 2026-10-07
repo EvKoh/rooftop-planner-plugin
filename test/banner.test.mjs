@@ -22,9 +22,9 @@ describe('warnings banner', () => {
     const lines = w.slice(0, -1);
     expect(lines.every((x) => x.level === 'error')).toBe(true); // 5 blocking: only those get a chip
     expect(lines.map((x) => x.message)).toEqual([
-      'D1 Camping Example : arrives 18:40, latest 17:31',
-      'D2 Visitor Centre Ex… : closed at 14:00 (09:00–12:00)',
-      'D2 Aire Example Misu… : motorhome area: no tent',
+      'D1 Camping Example: arrives 18:40, latest 17:31',
+      'D2 Visitor Centre Ex…: closed at 14:00 (09:00–12:00)',
+      'D2 Aire Example Misu…: motorhome area: no tent',
     ]);
     expect(lines.every((x) => !/BLOCKING|TO FIX|TO VERIFY/.test(x.message))).toBe(true);
     // the day and the place are inside the visible part of every chip
@@ -94,8 +94,8 @@ describe('warnings banner', () => {
     expect(shortName('Lake')).toBe('Lake');
     expect(shortName('')).toBe('');
     // a key without a short form falls back to the full sentence
-    expect(bannerText({ key: 'night_margin', dayNumber: 1, params: { name: 'X', arr: '16:00', sunset: '18:00', margin: '2 h' } }, { language: 'en' })).toMatch(/^D1 X : night at "X"/);
-    expect(bannerText({ key: 'resa_confirmed', scope: 'Bookings', params: { title: 'Camping Example (night 1)' } }, { language: 'en' })).toBe('Bookings Camping Example : marked booked: check it');
+    expect(bannerText({ key: 'night_margin', dayNumber: 1, params: { name: 'X', arr: '16:00', sunset: '18:00', margin: '2 h' } }, { language: 'en' })).toMatch(/^D1 X: night at "X"/);
+    expect(bannerText({ key: 'resa_confirmed', scope: 'Bookings', params: { title: 'Camping Example (night 1)' } }, { language: 'en' })).toBe('Bookings Camping Example: marked booked: check it');
   });
 });
 

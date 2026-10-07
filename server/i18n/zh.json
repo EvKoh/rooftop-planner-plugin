@@ -400,5 +400,8 @@
   "budget.toll_line": "通行费 第 {day} 天 — {name}",
   "ui.labelValue": "{label}：{value}",
   "unit.maxWeight": "最大 {t} 吨",
-  "src.auto": "（自动）"
+  "src.auto": "（自动）",
+  "s.resa_unlinked": "计划中无对应过夜的预订",
+  "s.resa_note_stale": "已确认，备注仍为“等待中”",
+  "s.resa_price": "预订价格 ≠ 计划"
 }

@@ -400,5 +400,8 @@
   "budget.toll_line": "통행료 {day}일차 — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "최대 {t}t",
-  "src.auto": "(자동)"
+  "src.auto": "(자동)",
+  "s.resa_unlinked": "계획에 숙박이 없는 예약",
+  "s.resa_note_stale": "확정됨, 메모는 아직 “대기 중”",
+  "s.resa_price": "예약 가격 ≠ 계획"
 }

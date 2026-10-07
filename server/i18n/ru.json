@@ -400,5 +400,8 @@
   "budget.toll_line": "Платная дорога, день {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "макс. {t} т",
-  "src.auto": "(автоматически)"
+  "src.auto": "(автоматически)",
+  "s.resa_unlinked": "бронь без ночи в плане",
+  "s.resa_note_stale": "подтверждена, в заметках всё ещё «ждёт»",
+  "s.resa_price": "цена брони ≠ план"
 }

@@ -400,5 +400,8 @@
   "budget.toll_line": "Yol haqqı {day}-ci gün — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "maks. {t} t",
-  "src.auto": "(avtomatik)"
+  "src.auto": "(avtomatik)",
+  "s.resa_unlinked": "planda gecəsi olmayan rezervasiya",
+  "s.resa_note_stale": "təsdiqlənib, qeydlər hələ “gözləyir”",
+  "s.resa_price": "rezervasiya qiyməti ≠ plan"
 }

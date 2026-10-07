@@ -400,5 +400,8 @@
   "budget.toll_line": "رسوم الطريق اليوم {day} — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "{t} طن كحد أقصى",
-  "src.auto": "(تلقائي)"
+  "src.auto": "(تلقائي)",
+  "s.resa_unlinked": "حجز بلا ليلة في الخطة",
+  "s.resa_note_stale": "مؤكد، والملاحظات لا تزال «بانتظار»",
+  "s.resa_price": "سعر الحجز ≠ الخطة"
 }

@@ -195,15 +195,17 @@ function list(model, settings, { now } = {}) {
   for (const d of evenings(model)) {
     const night = stayOn(model, d);
     if (!night) {
-      const u = unlinked.find((x) => x.day && x.day.id === d.id);
-      if (u) {
+      // One row per unlinked booking of the evening (two hosts asked for the same night: two rows).
+      const here = unlinked.filter((x) => x.day && x.day.id === d.id);
+      for (const u of here) {
         const place = model.poolById.get(Number(u.placeId));
         rows.push({
           day: d.n, date: d.date, dayId: d.id, placeId: u.placeId, place: place ? place.name : u.res.title,
           status: statusOf(u.res), statusLabel: t(L, `st.${statusOf(u.res)}`), reservationId: u.res.id,
           confirmation: u.res.confirmation_number || null, unlinked: true, note: t(L, 'night.unlinked', { title: u.res.title || '' }),
         });
-      } else rows.push({ day: d.n, date: d.date, dayId: d.id, placeId: null, place: null, status: null, note: t(L, 'night.none') });
+      }
+      if (!here.length) rows.push({ day: d.n, date: d.date, dayId: d.id, placeId: null, place: null, status: null, note: t(L, 'night.none') });
       continue;
     }
     const res = reservationFor(night, resas);
@@ -239,8 +241,10 @@ function list(model, settings, { now } = {}) {
   return { trip: model.trip.title, counts, nights: rows };
 }
 
-/** The booking's notes without the plugin's own lines. */
-const freeNotes = (notes) => String(notes || '').split('\n').filter((l) => !l.startsWith(NOTE_TAG)).join('\n').trim();
+// The plugin's own line before it was tagged (versions up to 0.5): "Dropped: <reason>".
+const LEGACY_LINE = /^Dropped: /;
+/** The booking's notes without the plugin's own lines (tagged, or in the old untagged form). */
+const freeNotes = (notes) => String(notes || '').split('\n').filter((l) => !l.startsWith(NOTE_TAG) && !LEGACY_LINE.test(l)).join('\n').trim();
 
 /**
  * The notes to write on a booking: the user's free notes (replaced when `a.notes` is given,

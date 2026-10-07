@@ -419,6 +419,9 @@
       set.contacts = contacts;
       ['price_amount', 'dog_fee', 'max_height_m', 'max_length_m', 'max_weight_t', 'visit_min_minutes', 'visit_max_minutes', 'toll_amount'].forEach(function (k) { set[k] = set[k] === '' ? null : Number(set[k]); });
       set.currency = String(set.currency || st.data.currency).toUpperCase();
+      // The trip's currency shown by default is not written on the place: it would stay frozen
+      // there if the trip's currency changed. Only a currency the user picked is saved.
+      if (!st.data.placeCurrency && set.currency === st.data.currency) delete set.currency;
       // An empty unit or note means "not said".
       set.per = set.per ? set.per : null;
       set.price_note = String(set.price_note || '').trim() || null;

@@ -400,5 +400,8 @@
   "budget.toll_line": "Útdíj {day}. nap — {name}",
   "ui.labelValue": "{label}: {value}",
   "unit.maxWeight": "max. {t} t",
-  "src.auto": "(automatikus)"
+  "src.auto": "(automatikus)",
+  "s.resa_unlinked": "foglalás éjszaka nélkül a tervben",
+  "s.resa_note_stale": "megerősítve, a jegyzet még „várakozik”",
+  "s.resa_price": "foglalt ár ≠ terv"
 }
