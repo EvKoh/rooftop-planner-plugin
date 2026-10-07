@@ -77,9 +77,37 @@ function closures(text, wd, from, to, { placeName = '', isNight = false } = {}) 
 }
 
 /** Check-in window "Arrival: 15h–23h" / "Arrivée : 15:00-22:00" → [open, close] minutes, or null. */
+/**
+ * The arrival windows a value states, in minutes: "15h–23h", "14:00-20:00", "8h-12h / 14h-20h",
+ * "14 h - 16 h 30". Strict: the value must START with a window, and each time needs its "h"
+ * or ":" — "self check-in, code sent 1-2 days before" or "by the D12 – 3 km" is no window.
+ * [] when there is none. The one window reader of the plugin (notes and sheet alike).
+ */
+function windowsIn(value) {
+  const T = '(\\d{1,2})\\s*(?:h|:)\\s*(\\d{2})?';
+  const one = new RegExp(`^\\s*(?:de |from |dalle |von |des )?${T}\\s*(?:[–-]|a |to |alle |bis )\\s*${T}`);
+  const out = [];
+  let rest = norm(value);
+  for (let guard = 0; guard < 4; guard++) {
+    const m = rest.match(one);
+    if (!m) break;
+    const from = +m[1] * 60 + +(m[2] || 0);
+    const to = +m[3] * 60 + +(m[4] || 0);
+    if (from < 24 * 60 && to <= 24 * 60 && to > from) out.push([from, to]);
+    rest = rest.slice(m[0].length).replace(/^\s*(?:[/,;+&]|et|and|und|e|y)\s*/, '');
+  }
+  return out;
+}
+
+/** The arrival windows the notes quote ("Arrivée : 15h–23h"), from the label on. */
+function welcomeWindows(text) {
+  const m = norm(text).match(/(?:arrivee|arrival|check-?in|arrivo|anreise|ankunft|llegada)\s*:\s*([^\n]*)/);
+  return m ? windowsIn(m[1]) : [];
+}
+
+/** The first arrival window of the notes, or null. */
 function welcomeWindow(text) {
-  const m = norm(text).match(/(?:arrivee|arrival|check-?in|arrivo|anreise)\s*:\s*(\d{1,2})\s*[h:]?(\d{2})?\s*[–-]\s*(\d{1,2})\s*[h:]?(\d{2})?/);
-  return m ? [+m[1] * 60 + +(m[2] || 0), +m[3] * 60 + +(m[4] || 0)] : null;
+  return welcomeWindows(text)[0] || null;
 }
 
 /** Minimum stay quoted in the notes ("2 nights minimum", "mindestens 2 Nächte"), or null. */
@@ -175,4 +203,4 @@ function writtenArrival(text) {
   return m ? +m[1] * 60 + +m[2] : null;
 }
 
-module.exports = { WEEKDAYS, closures, welcomeWindow, minNights, noWater, tentBanned, nightLegality, priceVerdict, latestArrival, writtenArrival, hm };
+module.exports = { WEEKDAYS, closures, windowsIn, welcomeWindows, welcomeWindow, minNights, noWater, tentBanned, nightLegality, priceVerdict, latestArrival, writtenArrival, hm };

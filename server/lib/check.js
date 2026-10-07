@@ -356,8 +356,10 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       if (nuit.info && nuit.info.max_weight_t != null && nuit.info.max_weight_t < settings.vehicle_weight_t) {
         add('blocking', J, 'too_heavy', { name: nuit.name, max: num(nuit.info.max_weight_t, L), weight: num(settings.vehicle_weight_t, L) }, extra);
       }
-      const win = rules.welcomeWindow(nuit.text) || facts.arrivalWindow;
-      if (win && arr != null && (arr < win[0] || arr > win[1])) add('blocking', J, 'welcome_window', { arr: hhmm(arr), name: nuit.name, open: hhmm(win[0]), close: hhmm(win[1]) }, extra);
+      // Every window the notes or the sheet state; an arrival inside any one of them is fine.
+      const wins = [...rules.welcomeWindows(nuit.text), ...facts.arrivalWindows];
+      const win = wins[0];
+      if (win && arr != null && !wins.some((w) => arr >= w[0] && arr <= w[1])) add('blocking', J, 'welcome_window', { arr: hhmm(arr), name: nuit.name, open: hhmm(win[0]), close: hhmm(win[1]) }, extra);
       const mini = rules.minNights(nuit.text);
       if (mini && nuit.nights < mini) add('blocking', J, 'min_nights', { name: nuit.name, n: nuit.nights }, extra);
       // The price against the target and the ceiling, both in the trip's currency: a night
