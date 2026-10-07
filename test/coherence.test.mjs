@@ -561,3 +561,14 @@ describe('the 0.6.3 audit: the sheet speaks every language to every rule', () =>
     expect(cols.some((x) => x.entityId === 18 && x.id === 'vanlife-am-no')).toBe(true);
   });
 });
+
+describe('an unstated answer is not a refusal', () => {
+  it('"non précisé" and "not stated" leave the dog unknown; a bare "Non" or "Нет" is a no', () => {
+    const { dogOf } = require('../server/lib/place-sheet.js');
+    expect(dogOf('non précisé')).toBeNull();
+    expect(dogOf('non specificato')).toBeNull();
+    expect(dogOf('Non.')).toBe(false);
+    expect(dogOf('Нет')).toBe(false);
+    expect(dogOf('はい')).toBe(true);
+  });
+});

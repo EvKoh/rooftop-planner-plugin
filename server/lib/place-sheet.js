@@ -199,12 +199,13 @@ const DOG_YES = /\b(admis|bienvenu\w*|accepte\w*|autorise\w*|allowed|welcome|acc
 const ANSWER = (key) => [...new Set(CODES.map((c) => norm(MESSAGES[c][key] || '')).filter(Boolean))];
 const NO_WORDS = ANSWER('opt.no');
 const YES_WORDS = ANSWER('opt.yes');
-const startsWithWord = (t, w) => t === w || (t.startsWith(w) && !/[\p{L}\p{N}]/u.test(t.charAt(w.length)));
+// The whole answer only ("Non.", "Нет"): "non précisé" (not stated) is not a no.
+const isAnswer = (t, w) => t.replace(/[\s.!。！]+$/u, '') === w;
 /** Is it allowed: false / true / null, from a free answer ("not allowed", "Nein", "Да"). */
 const dogOf = (s) => {
   const t = norm(s).trim();
-  if (DOG_NO.test(t) || NO_WORDS.some((w) => startsWithWord(t, w))) return false;
-  if (DOG_YES.test(t) || YES_WORDS.some((w) => startsWithWord(t, w))) return true;
+  if (DOG_NO.test(t) || NO_WORDS.some((w) => isAnswer(t, w))) return false;
+  if (DOG_YES.test(t) || YES_WORDS.some((w) => isAnswer(t, w))) return true;
   return null;
 };
 
