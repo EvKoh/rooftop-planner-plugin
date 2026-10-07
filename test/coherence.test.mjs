@@ -972,3 +972,47 @@ describe('the 0.6.13 audit', () => {
     expect(trip.places.find((p) => p.id === 13).currency).toBeNull();
   });
 });
+
+describe('the 0.6.14 audit', () => {
+  it('sources listed with any bullet are never the host\'s contact', () => {
+    const fillLib = require('../server/lib/amenity-fill.js');
+    for (const b of ['–', '1.', '●']) {
+      expect(fillLib.ownContacts({ notes: `Sources :\n${b} https://www.tourism.example.com/camping-list` }), b).toEqual([]);
+    }
+  });
+
+  it('an hour opening a span is not a time on site', () => {
+    const { parseVisit } = require('../server/lib/visit.js');
+    expect(parseVisit('Ouvert de 9h à 12h, visite libre.')).toBeNull();
+    expect(parseVisit('Accueil de 8h à 10h, visite de la ferme possible.')).toBeNull();
+    expect(parseVisit('Lake walk, 2 h.')).toMatchObject({ min: 120 });
+  });
+
+  it('two campsites sharing a name stay two candidates; a tagged campsite named "Ferme" is a campsite', async () => {
+    const { kindOf } = require('../server/lib/nights.js');
+    expect(kindOf({ tourism: 'camp_site', name: 'Camping La Ferme du Lac' })).toBe('campsite');
+    expect(kindOf({ tourism: 'guest_house', name: 'Ferme Example' })).toBe('farm');
+    const base = stubFetch();
+    vi.stubGlobal('fetch', vi.fn(async (url, init) => {
+      const res = await base(url, init);
+      if (!String(url).includes('overpass') || !/camp_site/.test(decodeURIComponent(String(init.body)))) return res;
+      const body = await res.json();
+      body.elements = [{ type: 'node', id: 91, lat: 46.6, lon: 12.16, tags: { tourism: 'camp_site', name: 'Camping Sole', charge: '40 EUR' } },
+        { type: 'node', id: 92, lat: 46.6, lon: 12.34, tags: { tourism: 'camp_site', name: 'Camping Sole', charge: '18 EUR' } },
+        { type: 'way', id: 93, lat: 46.6005, lon: 12.1605, tags: { tourism: 'camp_site', name: 'Camping Sole', charge: '40 EUR' } }];
+      return { ok: true, status: 200, json: async () => body };
+    }));
+    try {
+      const r = await call(makeHost(), 'vanlife_find_nights', { tripId: 1, dayNumber: 1 });
+      expect(r.candidates.filter((c) => c.name === 'Camping Sole').map((c) => c.price).sort()).toEqual([18, 40]);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('metres and kilometres speak the reader\'s language', () => {
+    const sheet = require('../server/lib/place-sheet.js');
+    const v = sheet.view(sheet.sheetOf({ name: 'Example', categoryName: 'Hike', notes: 'Distance : 10.9 km\nD+ : 770 m' }), 'ru');
+    const figs = v.sections.flatMap((s) => s.rows).filter((r) => r.figure).map((r) => r.figure);
+    expect(figs).toEqual(expect.arrayContaining(['10,9 км', '+770 м']));
+    expect(pi.refusalText(pi.merge(null, { max_height_m: 2.1 }), { vehicle_height_m: 2.5, vehicle_length_m: 5, vehicle_weight_t: 2 }, 'ru')).toBe('↕ 2,1 м');
+  });
+});

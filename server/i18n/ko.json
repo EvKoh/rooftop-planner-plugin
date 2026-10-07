@@ -404,5 +404,7 @@
   "unit.durHM": "{h}시간 {mm}분",
   "unit.durH": "{h}시간",
   "unit.durM": "{m}분",
-  "route.leg": "{km} km / {time}"
+  "route.leg": "{km} km / {time}",
+  "unit.km": "{n} km",
+  "unit.m": "{n} m"
 }

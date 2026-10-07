@@ -404,5 +404,7 @@
   "unit.durHM": "{h} ชม. {mm} นาที",
   "unit.durH": "{h} ชม.",
   "unit.durM": "{m} นาที",
-  "route.leg": "{km} กม. / {time}"
+  "route.leg": "{km} กม. / {time}",
+  "unit.km": "{n} กม.",
+  "unit.m": "{n} ม."
 }

@@ -404,5 +404,7 @@
   "unit.durHM": "{h} ó {mm} p",
   "unit.durH": "{h} ó",
   "unit.durM": "{m} perc",
-  "route.leg": "{km} km / {time}"
+  "route.leg": "{km} km / {time}",
+  "unit.km": "{n} km",
+  "unit.m": "{n} m"
 }

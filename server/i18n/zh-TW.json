@@ -404,5 +404,7 @@
   "unit.durHM": "{h} 小時 {mm} 分",
   "unit.durH": "{h} 小時",
   "unit.durM": "{m} 分鐘",
-  "route.leg": "{km} 公里 / {time}"
+  "route.leg": "{km} 公里 / {time}",
+  "unit.km": "{n} 公里",
+  "unit.m": "{n} 公尺"
 }
