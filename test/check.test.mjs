@@ -26,7 +26,7 @@ describe('check_trip on the fictional trip', () => {
     expect(has(r, 'verify', 'closure_cited', 1)).toBe(true);
     expect(has(r, 'fix', 'shop_detour', 1)).toBe(true);
     expect(has(r, 'verify', 'price_high', 1)).toBe(true);
-    expect(has(r, 'blocking', 'outside_hours', 2)).toBe(true);
+    expect(has(r, 'verify', 'outside_hours', 2)).toBe(true); // hours quoted from the notes: to verify
     expect(has(r, 'blocking', 'night_aire', 2)).toBe(true);
     expect(has(r, 'fix', 'trace_not_first', 2)).toBe(true);
     expect(has(r, 'info', 'night_farm_zone', 3)).toBe(true); // allowed on a private farm: a reminder, not a problem
@@ -46,7 +46,7 @@ describe('check_trip on the fictional trip', () => {
     expect(late.placeId).toBe(13);
     // sorted: blocking first
     expect(r.findings[0].level).toBe('blocking');
-    expect(r.counts.blocking).toBeGreaterThanOrEqual(3);
+    expect(r.counts.blocking).toBeGreaterThanOrEqual(2);
   });
 
   it('flags a night whose only booking is cancelled, and stays quiet once another booking holds it', async () => {
@@ -77,7 +77,7 @@ describe('check_trip on the fictional trip', () => {
   it('stays quiet on what the fixed trip corrects (it proved above that it detects them)', async () => {
     const r = await run({ fixed: true });
     expect(has(r, 'blocking', 'night_late', 1)).toBe(false);
-    expect(has(r, 'blocking', 'outside_hours', 2)).toBe(false);
+    expect(has(r, 'verify', 'outside_hours', 2)).toBe(false);
     expect(r.findings.some((f) => f.key === 'night_margin' && f.dayNumber === 1)).toBe(true);
   });
 

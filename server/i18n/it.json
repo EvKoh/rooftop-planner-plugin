@@ -400,5 +400,8 @@
   "ui.failed": "Non ha funzionato. Riprova tra un momento.",
   "sheet_refusal": "«{name}»: le note dicono «{quote}» per {what}: conferma con l’host che la notte è possibile",
   "s.sheet_refusal": "{what}: le note dicono no",
-  "ui.notesSay": "Note: {list} — da verificare"
+  "ui.notesSay": "Note: {list} — da verificare",
+  "unit.durHM": "{h} h {mm}",
+  "unit.durH": "{h} h",
+  "unit.durM": "{m} min"
 }

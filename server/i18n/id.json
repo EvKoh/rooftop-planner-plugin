@@ -400,5 +400,8 @@
   "ui.failed": "Tidak berhasil. Coba lagi sebentar lagi.",
   "sheet_refusal": "“{name}”: catatannya menyebut “{quote}” soal {what}: pastikan ke tuan rumah bahwa menginap bisa",
   "s.sheet_refusal": "{what}: catatan bilang tidak",
-  "ui.notesSay": "Catatan: {list} — perlu dicek"
+  "ui.notesSay": "Catatan: {list} — perlu dicek",
+  "unit.durHM": "{h} j {mm} m",
+  "unit.durH": "{h} jam",
+  "unit.durM": "{m} menit"
 }

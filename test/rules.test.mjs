@@ -45,7 +45,7 @@ describe('rules', () => {
   });
   it('blocks a visit outside the quoted opening hours', () => {
     const [f] = rules.closures('Lundi : 8h00–12h00', 1, 13 * 60, 14 * 60);
-    expect(f).toMatchObject({ key: 'outside_hours', level: 'blocking', params: { open: 480, close: 720 } });
+    expect(f).toMatchObject({ key: 'outside_hours', level: 'verify', params: { open: 480, close: 720 } });
     expect(rules.closures('Lundi : 8h00–12h00', 1, 9 * 60, 10 * 60)).toEqual([]);
   });
   it('reads check-in windows, minimum stays, water and tent bans', () => {

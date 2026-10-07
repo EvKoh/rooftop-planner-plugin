@@ -400,5 +400,8 @@
   "ui.failed": "うまくいきませんでした。少ししてからもう一度お試しください。",
   "sheet_refusal": "「{name}」：メモには{what}について「{quote}」とあります。宿泊できるかホストに確認してください",
   "s.sheet_refusal": "{what}：メモでは不可",
-  "ui.notesSay": "メモ：{list} — 要確認"
+  "ui.notesSay": "メモ：{list} — 要確認",
+  "unit.durHM": "{h}時間{mm}分",
+  "unit.durH": "{h}時間",
+  "unit.durM": "{m}分"
 }

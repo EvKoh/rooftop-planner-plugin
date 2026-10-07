@@ -59,7 +59,7 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
     if (network === false) { results[i] = { day: { id: day.id, number: day.n }, skipped: 'network disabled' }; return; }
     try {
       const r = await routing.route(pts, { ...routing.vehicleOpts(settings, motorway), maxPoints: 800, timeoutMs: deadline ? Math.min(12000, deadline.left() - 2000) : 12000 });
-      results[i] = { day: { id: day.id, number: day.n, date: day.date }, from: names[0], to: names[names.length - 1], via: names.slice(1, -1), motorway, km: r.km, minutes: r.minutes, drive: durationText(r.minutes), legs: r.legs, points: r.points };
+      results[i] = { day: { id: day.id, number: day.n, date: day.date }, from: names[0], to: names[names.length - 1], via: names.slice(1, -1), motorway, km: r.km, minutes: r.minutes, drive: durationText(r.minutes, settings.language), legs: r.legs, points: r.points };
     } catch (e) {
       results[i] = { day: { id: day.id, number: day.n }, error: String(e.message || e) };
     }
@@ -84,7 +84,7 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
         notes: t(settings.language, 'route.notes', {
           mode: t(settings.language, r.motorway ? 'route.mode.motorway' : 'route.mode.notolls'),
           height: num(settings.vehicle_height_m, settings.language),
-          legs: r.legs.map((l) => `${num(l.km, settings.language, 1)} km / ${durationText(l.minutes)}`).join('; '),
+          legs: r.legs.map((l) => `${num(l.km, settings.language, 1)} km / ${durationText(l.minutes, settings.language)}`).join('; '),
         }).slice(0, 2000),
       });
       const asg = await ctx.itinerary.assign(model.tripId, day.id, place.id, null);

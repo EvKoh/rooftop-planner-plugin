@@ -20,15 +20,15 @@ describe('warnings banner', () => {
     expect(w.length).toBeLessThanOrEqual(BANNER_MAX + 1);
     expect(fetch).not.toHaveBeenCalled(); // cache only, never the network
     const lines = w.slice(0, -1);
-    expect(lines.every((x) => x.level === 'error')).toBe(true); // 5 blocking: only those get a chip
-    expect(lines.map((x) => x.message)).toEqual([
-      'D1 Camping Example: arrives 18:40, latest 17:31',
-      'D2 Visitor Centre Ex…: closed at 14:00 (09:00–12:00)',
-      'D2 Aire Example Misu…: motorhome area: no tent',
+    // blocking first (hours quoted from notes are only a point to verify), then to-fix
+    expect(lines.map((x) => [x.level, x.message])).toEqual([
+      ['error', 'D1 Camping Example: arrives 18:40, latest 17:31'],
+      ['error', 'D2 Aire Example Misu…: motorhome area: no tent'],
+      ['warning', 'D2: route not first'],
     ]);
     expect(lines.every((x) => !/BLOCKING|TO FIX|TO VERIFY/.test(x.message))).toBe(true);
     // the day and the place are inside the visible part of every chip
-    expect(lines.every((x) => /^D\d+ \S/.test(x.message.slice(0, VISIBLE)))).toBe(true);
+    expect(lines.every((x) => /^D\d+(:| \S)/.test(x.message.slice(0, VISIBLE)))).toBe(true); // a day-wide point has no place
     expect(lines.every((x) => x.message.length <= 60)).toBe(true);
     expect(lines[0]).toMatchObject({ dayId: 101, placeId: 13 });
     const sum = w[w.length - 1];

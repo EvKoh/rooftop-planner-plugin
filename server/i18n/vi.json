@@ -400,5 +400,8 @@
   "ui.failed": "Không thành công. Hãy thử lại sau giây lát.",
   "sheet_refusal": "“{name}”: ghi chú nói “{quote}” về {what}: hãy xác nhận với chủ nhà rằng có thể nghỉ đêm",
   "s.sheet_refusal": "{what}: ghi chú nói không",
-  "ui.notesSay": "Ghi chú: {list} — cần kiểm tra"
+  "ui.notesSay": "Ghi chú: {list} — cần kiểm tra",
+  "unit.durHM": "{h} giờ {mm}",
+  "unit.durH": "{h} giờ",
+  "unit.durM": "{m} phút"
 }

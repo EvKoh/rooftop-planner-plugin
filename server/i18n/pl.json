@@ -400,5 +400,8 @@
   "ui.failed": "Nie udało się. Spróbuj ponownie za chwilę.",
   "sheet_refusal": "„{name}”: notatki mówią „{quote}” o {what}: potwierdź u gospodarza, że nocleg jest możliwy",
   "s.sheet_refusal": "{what}: notatki mówią nie",
-  "ui.notesSay": "Notatki: {list} — do sprawdzenia"
+  "ui.notesSay": "Notatki: {list} — do sprawdzenia",
+  "unit.durHM": "{h} godz. {mm}",
+  "unit.durH": "{h} godz.",
+  "unit.durM": "{m} min"
 }

@@ -400,5 +400,8 @@
   "ui.failed": "Det fungerade inte. Försök igen om en stund.",
   "sheet_refusal": "”{name}”: anteckningarna säger ”{quote}” om {what}: bekräfta med värden att natten går",
   "s.sheet_refusal": "{what}: anteckningarna säger nej",
-  "ui.notesSay": "Anteckningar: {list} — att kontrollera"
+  "ui.notesSay": "Anteckningar: {list} — att kontrollera",
+  "unit.durHM": "{h} tim {mm}",
+  "unit.durH": "{h} tim",
+  "unit.durM": "{m} min"
 }

@@ -25,9 +25,19 @@ function zoneText(L, p) {
   const id = p.zoneId || 'unknown';
   return { zone: t(L, `zone.${id}.name`), note: t(L, `zone.${id}.${p.rule}`) };
 }
-const fmtDur = (m) => (m == null ? '—' : durationText(m));
+const fmtDur = (m, L) => (m == null ? '—' : durationText(m, L));
 const located = (p) => p && p.lat != null && p.lng != null;
 const pos = (p) => [p.lat, p.lng];
+
+/**
+ * What a night says about itself, the text its hours and rules are read from: its place's
+ * description and notes, its stay's notes, and that day's stop notes. The check and the
+ * schedule read the same text, on the stay's first evening.
+ */
+function nightText(model, day, nuit) {
+  const stop = day.assignments.find((a) => a.accommodationId === nuit.id);
+  return `${nuit.text}\n${stop ? stop.notes : ''}`;
+}
 
 /** The stops of a day that the car drives between, with where the car actually goes. */
 function dayPlan(model, day) {
@@ -83,7 +93,7 @@ function dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L,
   // big activity; a shorter one (over a quick stop) is half of one, so two fit in a day.
   const load = acts.reduce((n, v) => n + (v.minutes <= STOP_MIN ? 0 : v.minutes >= big ? 1 : 0.5), 0);
   if (load > 1) {
-    add('fix', J, 'too_many_activities', { list: acts.filter((v) => v.minutes > STOP_MIN).map((v) => `${v.s.place.name} (${fmtDur(v.minutes)})`).join(', '), big: fmtDur(big), nBig: acts.filter((v) => v.minutes >= big).length }, ids);
+    add('fix', J, 'too_many_activities', { list: acts.filter((v) => v.minutes > STOP_MIN).map((v) => `${v.s.place.name} (${fmtDur(v.minutes, L)})`).join(', '), big: fmtDur(big, L), nBig: acts.filter((v) => v.minutes >= big).length }, ids);
   }
 
   if (!complete || !nuit || !located(nuit) || !d.date) return;
@@ -99,7 +109,7 @@ function dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L,
   if (needMin > windowMin) {
     const biggest = visits.filter((v) => v.minutes != null).sort((a, b) => b.minutes - a.minutes).slice(0, 2).map((v) => v.s.place.name);
     add('fix', J, 'day_overloaded', {
-      need: fmtDur(needMin), window: fmtDur(windowMin), from: hhmm(from), to: hhmm(to), visits: fmtDur(visitMin), drive: fmtDur(drive), list: biggest.join(', ') || '—',
+      need: fmtDur(needMin, L), window: fmtDur(windowMin, L), from: hhmm(from), to: hhmm(to), visits: fmtDur(visitMin, L), drive: fmtDur(drive, L), list: biggest.join(', ') || '—',
     }, { ...ids, needMinutes: needMin, windowMinutes: windowMin, visitMinutes: visitMin, driveMinutes: drive });
   }
 }
@@ -292,7 +302,8 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
         }
       }
       if (prec && prec.end != null && prec.end > start) add('fix', J, 'overlap', { name: p.name, start: hhmm(start), prev: prec.name, prevEnd: hhmm(prec.end) }, extra);
-      if (d.wd != null) {
+      // A night's hours are judged once, with the night (nightText), not as a stop.
+      if (d.wd != null && !isTonight) {
         const text = `${p.description}\n${p.notes}\n${s.notes}`;
         for (const c of rules.closures(text, d.wd, start, end, { placeName: p.name, isNight: !!isTonight || isNightPlace(model, p) })) {
           const params = { name: p.name, day: dayName(L, d.wd), ...c.params };
@@ -330,7 +341,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       }
       const written = rules.writtenArrival(nuit.notes);
       if (arr != null && written != null && Math.abs(written - arr) > 5) add('fix', J, 'checkin_mismatch', { name: nuit.name, checkin: hhmm(written), arr: hhmm(arr) }, extra);
-      else if (arr != null && cs != null && arr <= limit) add('info', J, 'night_margin', { name: nuit.name, arr: hhmm(arr), sunset: hhmm(cs), margin: fmtDur(cs - arr) }, extra);
+      else if (arr != null && cs != null && arr <= limit) add('info', J, 'night_margin', { name: nuit.name, arr: hhmm(arr), sunset: hhmm(cs), margin: fmtDur(cs - arr, L) }, extra);
 
       accessFindings({ model, info: nuit.info, name: nuit.name, arr, notes: a ? a.notes : '', placeId: nuit.placeId, add, J, extra, L });
 
@@ -349,7 +360,8 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       // says yes, since the two then disagree.
       const notesNo = (k, fact) => !recordNo(k) && facts[fact] === false;
       const refused = settings.vehicle === 'rooftop_tent' && recordNo('rooftop_tent');
-      if (settings.vehicle === 'rooftop_tent' && notesNo('rooftop_tent', 'tentAllowed')) add('verify', J, 'sheet_refusal', { name: nuit.name, what: t(L, 'am.rooftop_tent'), quote: facts.tentText }, extra);
+      // A ban in free notes is reported once, as tent_banned below; a sheet line answering no, here.
+      if (settings.vehicle === 'rooftop_tent' && facts.tentFromSheet && notesNo('rooftop_tent', 'tentAllowed')) add('verify', J, 'sheet_refusal', { name: nuit.name, what: t(L, 'am.rooftop_tent'), quote: facts.tentText }, extra);
       if (settings.dog && notesNo('dog', 'dogAllowed')) add('verify', J, 'sheet_refusal', { name: nuit.name, what: t(L, 'am.dog'), quote: facts.dogText }, extra);
       const banned = settings.vehicle !== 'rooftop_tent' || refused ? null : rules.tentBanned(nuit.text);
       if (refused) add('blocking', J, 'tent_refused', { name: nuit.name }, extra);
@@ -367,6 +379,15 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
         add('blocking', J, 'too_heavy', { name: nuit.name, max: num(nuit.info.max_weight_t, L), weight: num(settings.vehicle_weight_t, L) }, extra);
       }
       // Every window the notes or the sheet state; an arrival inside any one of them is fine.
+      // The night's own opening hours ("Accueil — lundi : 8h00-12h00"), from the text the
+      // schedule reads too; quoted from notes, a point to verify.
+      if (d.wd != null && arr != null) {
+        for (const c of rules.closures(nightText(model, d, nuit), d.wd, arr, arr, { placeName: nuit.name, isNight: true })) {
+          const params = { name: nuit.name, day: dayName(L, d.wd), ...c.params };
+          if (c.key === 'outside_hours') Object.assign(params, { from: hhmm(arr), to: hhmm(arr), open: hhmm(c.params.open), close: hhmm(c.params.close) });
+          add(c.level, J, c.key, params, extra);
+        }
+      }
       const wins = [...rules.welcomeWindows(nuit.text), ...facts.arrivalWindows];
       const win = wins[0];
       if (win && arr != null && !wins.some((w) => arr >= w[0] && arr <= w[1])) add('blocking', J, 'welcome_window', { arr: hhmm(arr), name: nuit.name, open: hhmm(win[0]), close: hhmm(win[1]) }, extra);
@@ -483,4 +504,4 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
   return { ok: counts.blocking === 0, counts, findings, pendingRoutes: pending };
 }
 
-module.exports = { checkTrip, dayPlan, carPos, isVisit, bookingNoted, LEVELS, nameKey };
+module.exports = { nightText, checkTrip, dayPlan, carPos, isVisit, bookingNoted, LEVELS, nameKey };
