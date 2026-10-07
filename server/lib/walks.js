@@ -16,7 +16,7 @@
 // cached in db:own. The map hook reads the cache and
 // computes what is missing only while its 5 s budget allows; the place tool fills it.
 
-const { activityKind, WALK_LINE, TONE } = require('./design');
+const { activityKind, isParkingPlace, WALK_LINE, TONE } = require('./design');
 const { distKm, roundPt, pmap, durationText, urlsIn, shortName } = require('./util');
 const { parkingFromNotes, isTrace } = require('./classify');
 const { stayOn, stayBefore } = require('./trip');
@@ -115,7 +115,7 @@ function walkPoints(hike, access, info) {
 }
 
 /** The car parks of the trip (planned or not), as { place, point }. */
-const tripParkings = (model) => model.pool.filter((p) => p.lat != null && p.lng != null && activityKind(p) === 'parking').map((p) => ({ place: p, point: pt(p) }));
+const tripParkings = (model) => model.pool.filter((p) => p.lat != null && p.lng != null && isParkingPlace(p)).map((p) => ({ place: p, point: pt(p) }));
 
 /**
  * What breaks the rule "from one P, back to the same P", or null:

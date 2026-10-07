@@ -416,7 +416,7 @@ function clearPatch(fields) {
     else if (k === 'parking') for (const w of PARKING_FIELDS) patch[w] = null;
     else if (PARKING_FIELDS.includes(k)) patch[k] = null;
     else if (contacts.FIELDS.includes(k)) contactPatch[k] = null;
-    else throw new InfoError(`cannot clear "${f}": name an amenity (${Object.keys(AMENITIES).slice(0, 4).join(', ')}...), ${NUMBER_FIELDS.join(', ')}, per, price_note, source, checked, ${ACCESS_FIELDS.join(', ')}, ${WALK_FIELDS.join(', ')}, a contact field (${contacts.FIELDS.join(', ')}), or amenities / contacts / log`);
+    else throw new InfoError(`cannot clear "${f}": name an amenity (${Object.keys(AMENITIES).slice(0, 4).join(', ')}...), ${NUMBER_FIELDS.join(', ')}, per, price_note, source, checked, ${ACCESS_FIELDS.join(', ')}, ${WALK_FIELDS.join(', ')}, a contact field (${contacts.FIELDS.join(', ')}), ${PARKING_FIELDS.join(', ')}, or amenities / contacts / log / walk / parking / all`);
   }
   if (Object.keys(contactPatch).length) patch.contacts = contactPatch;
   return patch;

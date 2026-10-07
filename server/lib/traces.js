@@ -5,7 +5,7 @@
 // applying a new route RECREATES the place (create + assign + delete the old one). The SDK
 // cannot reorder a day either: the result lists the core `reorder_day_assignments` call that
 // puts the route first (otherwise TREK draws a straight line to the morning start).
-const { pmap, hhmm, norm, durationText } = require('./util');
+const { pmap, norm, durationText } = require('./util');
 const routing = require('./routing');
 const { highwayAllowed } = require('./settings');
 const { dayPlan, carPos } = require('./check');
@@ -59,7 +59,7 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
     if (network === false) { results[i] = { day: { id: day.id, number: day.n }, skipped: 'network disabled' }; return; }
     try {
       const r = await routing.route(pts, { ...routing.vehicleOpts(settings, motorway), maxPoints: 800, timeoutMs: deadline ? Math.min(12000, deadline.left() - 2000) : 12000 });
-      results[i] = { day: { id: day.id, number: day.n, date: day.date }, from: names[0], to: names[names.length - 1], via: names.slice(1, -1), motorway, km: r.km, minutes: r.minutes, drive: hhmm(r.minutes).replace(/^0/, ''), legs: r.legs, points: r.points };
+      results[i] = { day: { id: day.id, number: day.n, date: day.date }, from: names[0], to: names[names.length - 1], via: names.slice(1, -1), motorway, km: r.km, minutes: r.minutes, drive: durationText(r.minutes), legs: r.legs, points: r.points };
     } catch (e) {
       results[i] = { day: { id: day.id, number: day.n }, error: String(e.message || e) };
     }
@@ -69,7 +69,7 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
   const coreCalls = [];
   if (o.apply) {
     for (const r of done.filter((x) => x.points)) {
-      const day = model.days.find((d) => d.id === r.day.id);
+      const day = findDay(model, { dayId: r.day.id });
       const { trace } = dayPlan(model, day);
       const old = trace ? model.poolById.get(trace.place.id) : null;
       const place = await ctx.places.create(model.tripId, {

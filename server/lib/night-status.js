@@ -177,7 +177,7 @@ function placeNights(model, placeId) {
     });
   });
   const pick = rows.find((r) => r.reservationId) || rows.find((r) => r.planned && r.planned.mine)
-    || rows.find((r) => (model.days.find((d) => d.id === r.dayId) || { assignments: [] }).assignments.some((x) => x.place.id === placeId))
+    || rows.find((r) => (findDay(model, { dayId: r.dayId }) || { assignments: [] }).assignments.some((x) => x.place.id === placeId))
     || rows[0] || null;
   return { nights: rows, dayId: pick ? pick.dayId : null, status: pick ? pick.status : null };
 }
@@ -222,7 +222,7 @@ function list(model, settings, { now } = {}) {
     const others = unlinked.filter((u) => u.day && u.day.id === d.id && !same(u.placeId, night.placeId));
     const alsoAsked = others.length ? { alsoAsked: others.map((u) => ({ placeId: u.placeId, title: u.res.title, status: statusOf(u.res), reservationId: u.res.id })) } : {};
     if (!isFirstEvening(night, d)) {
-      const first = model.days.find((x) => x.id === night.startDayId);
+      const first = findDay(model, { dayId: night.startDayId });
       rows.push({ ...base, continues: first ? first.n : null, ...alsoAsked });
       continue;
     }
@@ -331,7 +331,7 @@ async function set(ctx, model, a) {
     action = 'created';
   }
   if (a.status === 'booked' && !(input.confirmation_number || (res && res.confirmation_number))) {
-    warnings.push('No confirmation number: the trip check lists a confirmed booking without one as a point to verify, until one is recorded (a donation farm may have none: say so in the notes).');
+    warnings.push('No confirmation number: the trip check lists a confirmed booking without one as a point to verify, until one is recorded (a donation farm may have none: write "confirmed" or "donation" in the notes, which clears it).');
   }
   const after = { status: input.status, notes: notes !== undefined ? notes : res ? res.notes : '' };
   if (staleWaitingNote(after)) warnings.push('The booking\'s notes still say it is waiting for an answer: give notes to replace them.');

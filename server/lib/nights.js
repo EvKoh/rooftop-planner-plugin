@@ -44,6 +44,18 @@ function anchors(model, day) {
   };
 }
 
+/**
+ * The currency an OSM charge states ("15 EUR", "€ 12", "CHF 20", "20 Fr."), else `local`:
+ * a bare amount is in the money of the place, which the caller gives.
+ */
+function priceCurrency(tags, local) {
+  const txt = String(tags.charge || tags['charge:tent'] || tags['charge:caravan'] || '');
+  if (/€|\beur\b/i.test(txt)) return 'EUR';
+  if (/\bchf\b|\bfr\.?(?=\s|$)/i.test(txt)) return 'CHF';
+  const code = txt.match(/\b([A-Z]{3})\b/);
+  return code ? code[1] : local;
+}
+
 /** "15 EUR", "€ 12-18", "12,50" → the lowest number, or null. */
 function parsePrice(tags) {
   if (tags.fee === 'no') return 0;
@@ -78,6 +90,7 @@ const KIND_CATEGORY = { farm: 'farm', campsite: 'campsite', aire: 'motorhome are
  * @param o.evening {lat,lng,name?}  last visit of the evening (required)
  * @param o.morning {lat,lng,name?}  first stop next morning (defaults to evening)
  * @param o.date    ISO date of the night (opening hours)
+ * @param o.currency the money of the area (the trip's): a bare OSM charge is read in it
  */
 async function findNights(ctx, o, { settings, deadline, network = true, highway = false } = {}) {
   const ev = [+o.evening.lat, +o.evening.lng];
@@ -132,7 +145,7 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     const price = parsePrice(tg);
     cands.push({
       name: name || '(unnamed)', kind, source: 'osm', lat: e.lat, lng: e.lng, osm: overpass.osmUrl(e.id),
-      price, priceText: tg.charge || null,
+      price, priceText: tg.charge || null, currency: price == null ? null : priceCurrency(tg, o.currency || null),
       website: tg.website || tg['contact:website'] || null,
       // What OSM states to reach the host (email, phone, website and their contact:* forms).
       contacts: fromOsmTags(tg),
@@ -153,7 +166,8 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     if (p.kind === 'aire' && vehicle === 'rooftop_tent') { excluded++; continue; }
     cands.push({
       name: p.name, kind: p.kind, source: 'park4night', lat: p.lat, lng: p.lng, page: p.page,
-      price: p.priceHint, priceText: null, rating: p.rating, reviews: p.reviews,
+      // park4night quotes euros only (park4night.js priceHint).
+      price: p.priceHint, priceText: null, currency: p.priceHint == null ? null : 'EUR', rating: p.rating, reviews: p.reviews,
       contacts: p.contact || { email: null, phone: null, website: null },
       dog: p.services.includes('dogs') ? 'yes' : null, tents: null,
       water: p.services.includes('water') ? 'yes' : null, toilets: p.services.includes('toilets') ? 'yes' : null,
@@ -222,9 +236,11 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
 function cheaperNight(res, settings) {
   const cur = res.currentNight && res.currentNight.comparablePrice;
   if (cur == null) return null;
+  const sameCurrency = (c) => c.currency === res.currentNight.currency;
   const perKm = fuelPerKm(settings);
   const best = res.candidates
-    .filter((c) => !c.blocked.length && !c.legalRisk && c.openOnDate !== 'closed' && c.price != null && c.price < cur && c.detourMinutes != null && c.detourMinutes <= 20)
+    // "legal, open and cheaper", as the message says: an opening not known is not an open place.
+    .filter((c) => !c.blocked.length && !c.legalRisk && c.openOnDate === 'open' && sameCurrency(c) && c.price != null && c.price < cur && c.detourMinutes != null && c.detourMinutes <= 20)
     .map((c) => ({ candidate: c, net: Math.round((cur - c.price - Math.max(0, c.detourKm || 0) * perKm) * 100) / 100 }))
     .filter((x) => x.net > 0)
     .sort((a, b) => b.net - a.net)[0];
@@ -237,7 +253,7 @@ async function findNightsForDay(ctx, model, ref, opts) {
   if (!day) throw new Error('day not found in this trip');
   const a = anchors(model, day);
   if (!a.evening) throw new Error(`day ${day.n} has no located stop or night to search from`);
-  const res = await findNights(ctx, { evening: a.evening, morning: a.morning, date: day.date, radiusKm: opts.radiusKm, sources: ref.sources }, {
+  const res = await findNights(ctx, { evening: a.evening, morning: a.morning, date: day.date, currency: model.currency, radiusKm: opts.radiusKm, sources: ref.sources }, {
     ...opts, highway: highwayAllowed(opts.settings, day.index, model.days.length),
   });
   res.day = { id: day.id, number: day.n, date: day.date };
@@ -250,4 +266,4 @@ async function findNightsForDay(ctx, model, ref, opts) {
   return res;
 }
 
-module.exports = { findNights, findNightsForDay, cheaperNight, anchors, parsePrice, kindOf, overpassBody };
+module.exports = { priceCurrency, findNights, findNightsForDay, cheaperNight, anchors, parsePrice, kindOf, overpassBody };

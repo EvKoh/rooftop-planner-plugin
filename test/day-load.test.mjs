@@ -273,7 +273,10 @@ describe('possible savings in the check', () => {
     vi.stubGlobal('fetch', stubFetch());
     const van = makeHost({ userSettings: { timezone: 'Europe/Rome', vehicle: 'campervan' } });
     await call(van, 'vanlife_find_nights', { tripId: 1, dayNumber: 1 });
-    expect(of(await check(van), 'saving_night')[0].message).toContain('"Motorhome Area Example" (€10.00, 20 min detour)');
+    // the motorhome area is cheaper still, but its opening is not known: never called "open"
+    const vanFound = await call(van, 'vanlife_find_nights', { tripId: 1, dayNumber: 1 });
+    expect(vanFound.candidates.find((c) => c.name === 'Motorhome Area Example')).toMatchObject({ price: 10, openOnDate: 'unknown' });
+    expect(of(await check(van), 'saving_night')[0].message).toContain('"Camping Lakeside Example"');
     // a night within the target price: not challenged
     const cheap = makeHost({ userSettings: { timezone: 'Europe/Rome', night_price_target: 40 } });
     await call(cheap, 'vanlife_find_nights', { tripId: 1, dayNumber: 1 });

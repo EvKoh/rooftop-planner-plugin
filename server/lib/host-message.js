@@ -932,7 +932,8 @@ function draft(model, settings, a) {
   const routes = contacts.channels(contacts.reachOf(info, place.raw));
   const booking = planned ? nightStatus.reservationFor(planned, model.reservations) : nightStatus.candidateReservation(model.reservations, place.id, day.id);
   const status = nightStatus.statusOf(booking);
-  const dateShort = day.date.split('-').reverse().join('/');
+  // The date in the user's own language (English when the user's is not a message language).
+  const dateShort = new Intl.DateTimeFormat(LOCALE[mine || 'en'], { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${day.date}T12:00:00Z`));
   const subject = `${langs.map((lg) => TEXT[lg].subject).join(' / ')} — ${dateShort}${nights > 1 ? ` (${nights})` : ''}`;
   return {
     placeId: place.id, place: place.name, date: day.date, nights,

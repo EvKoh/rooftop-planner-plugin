@@ -20,6 +20,12 @@ function bannerText(f, settings) {
   return t(L, 'ui.labelValue', { label: [where, who].filter(Boolean).join(' '), value: what }).slice(0, 120);
 }
 
+// Points worth a list, not a chip: every night of a new trip lacks a contact at first, and
+// a chip per night would push the real problems out of the banner. vanlife_check_trip and
+// vanlife_night list them.
+// Same for the visits with no known duration and the possible savings (never a problem).
+const NOT_IN_BANNER = new Set(['night_no_contact', 'visit_unknown', 'saving_night', 'backtrack']);
+
 /**
  * The planner banner. The host shows each warning as a chip that shares the navbar on a
  * desktop (truncated to a few words) and as a full-width block over the map on a phone, with
@@ -29,12 +35,6 @@ function bannerText(f, settings) {
  *  - at most BANNER_MAX individual lines, the rest summed up in ONE chip (the full list is
  *    what vanlife_check_trip returns); prices above the ceiling are never one chip each.
  */
-// Points worth a list, not a chip: every night of a new trip lacks a contact at first, and
-// a chip per night would push the real problems out of the banner. vanlife_check_trip and
-// vanlife_night list them.
-// Same for the visits with no known duration and the possible savings (never a problem).
-const NOT_IN_BANNER = new Set(['night_no_contact', 'visit_unknown', 'saving_night', 'backtrack']);
-
 function bannerFrom(all, settings) {
   const findings = all.filter((f) => !NOT_IN_BANNER.has(f.key));
   const sev = findings.filter((f) => f.level === 'blocking' || f.level === 'fix');

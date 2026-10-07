@@ -371,3 +371,59 @@ describe('the last audit: car parks, currencies, the day\'s road', () => {
     } finally { spy.mockRestore(); }
   });
 });
+
+describe('the post-fix audit', () => {
+  it('the planner route profiles apply the drive-time factor, as every other drive time', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const route = async (factor) => (await makeHost({ userSettings: { language: 'en', timezone: 'Europe/Rome', drive_time_factor: factor } }).run(plugin)
+        .hook('routeProvider', 'getRoute', { tripId: 1, dayId: 101, profile: 'vanlife', waypoints: [{ lat: 46.69, lng: 12.08 }, { lat: 46.53, lng: 12.13 }] })).duration;
+      const one = await route(1);
+      const slow = await route(1.5);
+      expect(slow).toBeGreaterThan(one * 1.45); // rounded to the minute
+      expect(slow).toBeLessThan(one * 1.55);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('a candidate\'s price is read in its own currency and compared only in the trip\'s', () => {
+    const { priceCurrency } = require('../server/lib/nights.js');
+    expect(priceCurrency({ charge: '15 EUR' }, 'CHF')).toBe('EUR');
+    expect(priceCurrency({ charge: 'CHF 20' }, 'EUR')).toBe('CHF');
+    expect(priceCurrency({ charge: '15' }, 'CHF')).toBe('CHF'); // a bare amount: the money of the place
+    const cand = { name: 'Camping Cheap Example', price: 20, currency: 'EUR', blocked: [], legalRisk: null, openOnDate: 'open', detourMinutes: 10, detourKm: 5 };
+    const settings = { fuel_l_per_100km: 8, fuel_price_per_l: 1.8 };
+    expect(cheaperNight({ currentNight: { comparablePrice: 38, currency: 'CHF' }, candidates: [cand] }, settings)).toBeNull();
+    expect(cheaperNight({ currentNight: { comparablePrice: 38, currency: 'EUR' }, candidates: [cand] }, settings)).not.toBeNull();
+    expect(cheaperNight({ currentNight: { comparablePrice: 38, currency: 'EUR' }, candidates: [{ ...cand, openOnDate: 'unknown' }] }, settings)).toBeNull();
+  });
+
+  it('a new trip\'s plan allows motorhome areas to a van, never to a rooftop tent', () => {
+    const { planRequest } = require('../server/lib/plan.js');
+    const why = (vehicle) => planRequest({ destination: 'Example' }, { vehicle }).steps[2].why;
+    expect(why('rooftop_tent')).toMatch(/never a motorhome area/);
+    expect(why('campervan')).toMatch(/campsite, farm or motorhome area/);
+  });
+
+  it('a donation farm\'s "confirmed" note clears the no-number hint, as the warning says', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      expect(keys(await check(makeHost({ trip })), 'resa_confirmed')).toHaveLength(1);
+      trip.reservations[0].notes = 'Donation farm, no number';
+      expect(keys(await check(makeHost({ trip })), 'resa_confirmed')).toEqual([]);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('the schedule points to a field vanlife_place accepts', async () => {
+    const { TOOL_SPECS } = require('../server/lib/tool-specs.js');
+    const set = TOOL_SPECS.find((t) => t.name === 'vanlife_place').inputSchema.properties.set.properties;
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      for (const a of trip.days[2].assignments) { a.place.place_time = null; a.place.end_time = null; }
+      const r = await call(makeHost({ trip }), 'vanlife_day', { tripId: 1, action: 'schedule', dayNumber: 3 });
+      const field = r.assumedStays.note.match(/set\.(\w+)/)[1];
+      expect(set[field]).toBeDefined();
+    } finally { vi.unstubAllGlobals(); }
+  });
+});

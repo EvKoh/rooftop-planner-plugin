@@ -249,7 +249,7 @@ describe('access tolls in the budget', () => {
     expect(r.accessTolls.map((x) => [x.name, x.inBudget, x.counted])).toEqual([['Passo Giau', true, false], ['Lago di Carezza', false, false]]);
     expect(r.accessTollTotal).toBe(0);
     expect(r.note).toContain('Access tolls in another currency, not in the total: Lago di Carezza 12 CHF.');
-    expect(r.coreCalls.filter((c) => /^Toll day/.test(c.args.name)).map((c) => c.args.name)).toEqual(['Toll day 3 — Lago di Carezza (12 CHF)']);
+    expect(r.coreCalls.filter((c) => /^Toll day/.test(c.args.name)).map((c) => [c.args.name, c.args.total_price, c.args.currency])).toEqual([['Toll day 3 — Lago di Carezza', 12, 'CHF']]);
   });
 
   it('plan_trip reports the access tolls and the departure moved for an access', async () => {
