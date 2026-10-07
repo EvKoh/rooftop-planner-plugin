@@ -118,9 +118,13 @@ async function remember(ctx, ids) {
 
 const CONTACT_KEYS = ['email', 'phone', 'website'];
 
-/** Is anything left to look for on this record? (an unknown amenity, or an empty contact) */
-function incomplete(r) {
-  return !r || Object.values(r.amenities).some((v) => v === 'unknown') || CONTACT_KEYS.some((k) => !r.contacts[k]);
+/**
+ * Is anything left to look for on this place? An unknown amenity, an empty contact, or a time
+ * on site its notes state that the record does not have yet (what fill promises to read).
+ */
+function incomplete(r, place) {
+  if (!r || Object.values(r.amenities).some((v) => v === 'unknown') || CONTACT_KEYS.some((k) => !r.contacts[k])) return true;
+  return !!place && r.visit_min_minutes == null && !!parseVisit(`${place.notes || ''}\n${place.description || ''}`);
 }
 
 /**
@@ -143,9 +147,10 @@ function candidates(places) {
 }
 
 /**
- * Fill the amenities of up to BATCH places of a trip that have unknown ones.
+ * Fill up to BATCH places of a trip that still miss something (incomplete): amenities,
+ * contacts, a time on site their notes state.
  * opts: { placeIds?: number[] (only these, rechecked even if seen lately), park4night: boolean,
- * }
+ *         budgetMs?: number (time allowed; the rest is left for the next call) }
  * → { looked, filled, contacts, nothing, remaining, park4nightLimited, osmBusy }
  */
 async function fill(ctx, tripId, opts = {}) {
@@ -172,7 +177,7 @@ async function fill(ctx, tripId, opts = {}) {
     if (batch.length >= BATCH || Date.now() > until) break;
     read++;
     const r = await placeInfo.get(ctx, p.id);
-    if (!incomplete(r)) { complete.push(p.id); continue; }
+    if (!incomplete(r, p)) { complete.push(p.id); continue; }
     records.set(p.id, r);
     batch.push(p);
   }
