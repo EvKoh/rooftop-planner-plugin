@@ -361,11 +361,12 @@ function parse(description, notes, { kind = 'activity' } = {}) {
  * arrival window [from, to] in minutes. The check, the schedule, the fill, the planner
  * columns and the panel read these, so a sheet line counts everywhere it shows.
  */
-function factsOf(place) {
+function factsOf(place, { stayNotes = '' } = {}) {
   if (!place) return { visitMinutes: null, dogAllowed: null, tentAllowed: null, arrivalWindows: [] };
   const f = sheetOf(place).fields;
   const raw = (place && place.raw) || place;
-  const tentBan = require('./rules').tentBanned(`${raw.description || ''}\n${raw.notes || ''}`);
+  // The place's own text and the notes of its stays (what the check reads for a night).
+  const tentBan = require('./rules').tentBanned(`${raw.description || ''}\n${raw.notes || ''}\n${stayNotes}`);
   // Every line of the arrival field (its value and its bullets): a window on any line counts.
   const windows = f.arrival ? f.arrival.text.split('\n').flatMap((l) => require('./rules').windowsIn(l.replace(/^\s*[•\-*]\s*/, ''))) : [];
   return {

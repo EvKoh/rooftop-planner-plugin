@@ -403,5 +403,6 @@
   "ui.notesSay": "備註：{list} — 待確認",
   "unit.durHM": "{h} 小時 {mm} 分",
   "unit.durH": "{h} 小時",
-  "unit.durM": "{m} 分鐘"
+  "unit.durM": "{m} 分鐘",
+  "route.leg": "{km} 公里 / {time}"
 }

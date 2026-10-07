@@ -403,5 +403,6 @@
   "ui.notesSay": "Заметки: {list} — проверить",
   "unit.durHM": "{h} ч {mm}",
   "unit.durH": "{h} ч",
-  "unit.durM": "{m} мин"
+  "unit.durM": "{m} мин",
+  "route.leg": "{km} км / {time}"
 }

@@ -403,5 +403,6 @@
   "ui.notesSay": "메모: {list} — 확인 필요",
   "unit.durHM": "{h}시간 {mm}분",
   "unit.durH": "{h}시간",
-  "unit.durM": "{m}분"
+  "unit.durM": "{m}분",
+  "route.leg": "{km} km / {time}"
 }

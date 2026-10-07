@@ -135,8 +135,10 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     const kind = kindOf(tg);
     const reasons = [];
     if (kind === 'aire' && vehicle === 'rooftop_tent') reasons.push('motorhome area: an opened rooftop tent is camping');
-    const banned = rules.tentBanned(`${tg.description || ''} ${tg.note || ''}`, tg);
-    if (banned) reasons.push(`tents not allowed (${banned})`);
+    // OSM's own tag tents=no refuses a rooftop tent; a ban quoted from its free description
+    // is a point to verify (the rule of the check), and neither matters to a van.
+    if (vehicle === 'rooftop_tent' && tg.tents === 'no') reasons.push('tents not allowed (tents=no)');
+    const tentNote = vehicle === 'rooftop_tent' && tg.tents !== 'no' ? rules.tentBanned(`${tg.description || ''} ${tg.note || ''}`) : null;
     if (settings.dog && tg.dog === 'no') reasons.push('dogs not allowed');
     const open = o.date && tg.opening_hours ? statusAt(tg.opening_hours, o.date, 18 * 60) : 'unknown';
     if (open === 'closed') reasons.push(`closed on ${o.date} (${tg.opening_hours})`);
@@ -145,6 +147,7 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     const price = parsePrice(tg);
     cands.push({
       name: name || '(unnamed)', kind, source: 'osm', lat: e.lat, lng: e.lng, osm: overpass.osmUrl(e.id),
+      tentNote,
       price, priceText: tg.charge || null, currency: price == null ? null : priceCurrency(tg, o.currency || null),
       website: tg.website || tg['contact:website'] || null,
       // What OSM states to reach the host (email, phone, website and their contact:* forms).
@@ -210,6 +213,7 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     if (settings.dog && !['yes', 'leashed'].includes(c.dog)) tv.push('dog accepted');
     if (c.openOnDate !== 'open') tv.push(`open on ${o.date || 'the date'}`);
     if (c.rating == null) tv.push('recent reviews (rating >= 4/5)');
+    if (c.tentNote) tv.push(`rooftop tent accepted despite the OSM note "${c.tentNote}"`);
     c.toVerify = tv;
     // Night + fuel of the detour: what the option really costs compared to the others.
     // Fuel is in the trip's currency: a candidate priced in another one has no total.

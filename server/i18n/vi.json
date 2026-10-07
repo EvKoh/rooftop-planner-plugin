@@ -403,5 +403,6 @@
   "ui.notesSay": "Ghi chú: {list} — cần kiểm tra",
   "unit.durHM": "{h} giờ {mm}",
   "unit.durH": "{h} giờ",
-  "unit.durM": "{m} phút"
+  "unit.durM": "{m} phút",
+  "route.leg": "{km} km / {time}"
 }

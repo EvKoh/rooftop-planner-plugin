@@ -403,5 +403,6 @@
   "ui.notesSay": "Notizen: {list} — zu prüfen",
   "unit.durHM": "{h} Std. {mm}",
   "unit.durH": "{h} Std.",
-  "unit.durM": "{m} Min."
+  "unit.durM": "{m} Min.",
+  "route.leg": "{km} km / {time}"
 }

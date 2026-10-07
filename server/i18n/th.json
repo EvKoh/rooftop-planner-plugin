@@ -403,5 +403,6 @@
   "ui.notesSay": "บันทึก: {list} — ต้องตรวจสอบ",
   "unit.durHM": "{h} ชม. {mm} นาที",
   "unit.durH": "{h} ชม.",
-  "unit.durM": "{m} นาที"
+  "unit.durM": "{m} นาที",
+  "route.leg": "{km} กม. / {time}"
 }
