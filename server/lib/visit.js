@@ -11,6 +11,7 @@ const CUE = /randonn|rando\b|balade|marche|promenade|boucle|aller.?retour|\ba\/r
 const DUR = /(\d{1,2})\s*(?:h|hrs?|hours?|heures?|ore|std\.?|stunden?)\s*(\d{2})?(?:\s*min)?(?:\s*[-–à]\s*(\d{1,2})\s*(?:h|hrs?|hours?|heures?|ore|std\.?|stunden?)\s*(\d{2})?)?|(\d{2,3})\s*(?:min|minutes?|minuti|minuten)\b/g;
 // "2-3 h": a range of hours with one unit.
 const RANGE = /\b(\d{1,2})\s*[-–]\s*(\d{1,2})\s*(?:h|hrs?|hours?|heures?|ore|std)\b/g;
+const MIN_RANGE = /\b(\d{1,3})\s*[-–]\s*(\d{1,3})\s*(?:min|minutes?|minuti|minuten)\b/g;
 const SPAN = /\b(?:de|from|dalle|von)\s+(\d{1,2})\s*[h:]\s*(\d{2})?\s*(?:a|to|alle|bis|-|–)\s+(\d{1,2})\s*[h:]\s*(\d{2})?/;
 
 const quote = (s, i, len) => s.slice(Math.max(0, i - 30), i + len + 20).replace(/\s+/g, ' ').trim();
@@ -28,6 +29,14 @@ function parseVisit(text) {
     // "open 7/7 from 8:30 to 20:30" is opening hours, not a time on site.
     const before = s.slice(Math.max(0, span.index - 40), span.index);
     if (b > a && b - a <= 8 * 60 && !OPENING.test(before)) return { min: b - a, max: null, quote: quote(s, span.index, span[0].length) };
+  }
+  // "30-45 min": a range of minutes, its lower end as the minimum (as the sheet reads it).
+  for (const m of s.matchAll(MIN_RANGE)) {
+    const a = +m[1];
+    const b = +m[2];
+    if (b <= a || a < 5) continue;
+    if (!CUE.test(s.slice(Math.max(0, m.index - 40), m.index + m[0].length + 30))) continue;
+    return { min: a, max: b, quote: quote(s, m.index, m[0].length) };
   }
   for (const m of s.matchAll(RANGE)) {
     const a = +m[1];

@@ -644,3 +644,54 @@ describe('the 0.6.6 audit: the sheet is read strictly', () => {
     expect(cols.find((x) => x.entityId === 13 && x.id === 'vanlife-am-no').value).toBe('✗ dog');
   });
 });
+
+describe('the 0.6.7 audit', () => {
+  const sheet = require('../server/lib/place-sheet.js');
+  const rules = require('../server/lib/rules.js');
+  const { parseVisit } = require('../server/lib/visit.js');
+
+  it('a negated approval is a refusal; a restriction on part of the place is not', () => {
+    expect(sheet.dogOf('non autorisés')).toBe(false);
+    expect(sheet.dogOf('not accepted')).toBe(false);
+    expect(sheet.dogOf('nicht willkommen')).toBe(false);
+    expect(sheet.dogOf('interdits')).toBe(false);
+    expect(sheet.dogOf('not allowed in the pool area')).toBeNull();
+    expect(sheet.dogOf('admis')).toBe(true);
+  });
+
+  it('a check-in window on a later labelled line counts', () => {
+    expect(rules.welcomeWindows('Arrivée : par la D12, chemin de terre\nCheck-in : 15h-20h')).toEqual([[900, 1200]]);
+  });
+
+  it('both duration readers read a range the same way', () => {
+    expect(sheet.minutesOf('1h30-2h')).toBe(90);
+    expect(sheet.minutesOf('30-45 min')).toBe(30);
+    expect(parseVisit('Visite guidée 30-45 min').min).toBe(30);
+    expect(parseVisit('Visite 1h30-2h').min).toBe(90);
+  });
+
+  it('the schedule waits for the check-in window rather than proposing a blocked arrival', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      trip.places.find((p) => p.id === 18).notes = 'Arrivée : 17h-20h';
+      const r = await call(makeHost({ trip, userSettings: { language: 'en', timezone: 'Europe/Rome', sunset_margin_min: 30 } }), 'vanlife_day', { tripId: 1, action: 'schedule', dayNumber: 3 });
+      expect(r.night.arrival).toBe('17:00');
+      expect(r.coreCalls.find((c) => c.args.assignmentId === 3002).args.place_time).toBe('17:00');
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('the record\'s answer wins over the notes, everywhere', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      trip.places.find((p) => p.id === 13).notes = 'Chiens : non';
+      const h = makeHost({ trip, userSettings: { language: 'en', timezone: 'Europe/Rome', dog: true }, queryResults: { [pi.INDEX_SQL]: [{ place_id: 13 }] } });
+      expect(keys(await check(h), 'dog_refused').filter((f) => f.dayNumber === 1)).toHaveLength(1);
+      await h.ctx.meta.set('place', 13, pi.META_KEY, pi.merge(null, { dog: 'yes' }));
+      expect(keys(await check(h), 'dog_refused').filter((f) => f.dayNumber === 1)).toEqual([]);
+      const w = JSON.parse((await h.run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13 } })).body);
+      expect(w.refused).toBe(false);
+    } finally { vi.unstubAllGlobals(); }
+  });
+});

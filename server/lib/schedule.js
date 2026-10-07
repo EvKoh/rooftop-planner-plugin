@@ -14,6 +14,7 @@ const routing = require('./routing');
 const { highwayAllowed, DEFAULTS } = require('./settings');
 const { dayPlan, carPos } = require('./check');
 const placeInfo = require('./place-info');
+const placeSheet = require('./place-sheet');
 const { findDay } = require('./trip');
 const { dayStopMinutes } = require('./visit');
 
@@ -154,6 +155,21 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
       name: nuit.name, assignmentId: day.assignments.find((a) => a.accommodationId === nuit.id)?.id ?? null,
       driveMinutes: lastMin, arrival: hhmm(arrival), sunset: hhmm(cs), latestArrival: hhmm(latest), ok: lateBy == null ? null : lateBy === 0, lateByMinutes: lateBy,
     };
+    // The host's check-in windows (notes and sheet, the check's rule): an arrival before the
+    // first one waits for it when that is still before the latest arrival; one outside every
+    // window is a conflict, as the check reports it.
+    const place = model.poolById && model.poolById.get(nuit.placeId);
+    const wins = [...rules.welcomeWindows(nuit.text), ...placeSheet.factsOf((place && place.raw) || { notes: nuit.notes }).arrivalWindows];
+    if (arrival != null && wins.length && !wins.some((w) => arrival >= w[0] && arrival <= w[1])) {
+      const next = wins.map((w) => w[0]).filter((from) => from > arrival && (latest == null || from <= latest)).sort((a, b) => a - b)[0];
+      if (next != null) {
+        night.arrival = hhmm(next);
+        night.waitMinutes = next - arrival;
+      } else {
+        night.windowOk = false;
+        conflicts.push({ assignmentId: night.assignmentId, name: nuit.name, reason: `arrival ${hhmm(arrival)} outside the check-in window ${wins.map((w) => `${hhmm(w[0])}-${hhmm(w[1])}`).join(' / ')}` });
+      }
+    }
     if (lateBy) {
       night.fixes = [
         `leave ${lateBy} min earlier (departure ${hhmm(t0 - lateBy)})`,
