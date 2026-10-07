@@ -177,7 +177,7 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
         night.waitMinutes = next - arrival;
       } else {
         night.windowOk = false;
-        conflicts.push({ assignmentId: night.assignmentId, name: nuit.name, reason: `arrival ${hhmm(arrival)} outside the check-in window ${wins.map((w) => `${hhmm(w[0])}-${hhmm(w[1])}`).join(' / ')}` });
+        conflicts.push({ assignmentId: night.assignmentId, name: nuit.name, level: 'verify', reason: `arrival ${hhmm(arrival)} outside the check-in window ${wins.map((w) => `${hhmm(w[0])}-${hhmm(w[1])}`).join(' / ')} (from the notes: to verify)` });
       }
     }
     if (lateBy) {

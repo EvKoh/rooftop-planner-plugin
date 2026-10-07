@@ -381,6 +381,7 @@ function factsOf(place, { stayNotes = '' } = {}) {
     // that shows a no from the notes shows this one too.
     tentAllowed: f.rooftop_tent && f.rooftop_tent.allowed != null ? f.rooftop_tent.allowed : (tentBan ? false : null),
     tentFromSheet: !!(f.rooftop_tent && f.rooftop_tent.allowed != null),
+    tentBan,
     arrivalWindows: windows,
   };
 }

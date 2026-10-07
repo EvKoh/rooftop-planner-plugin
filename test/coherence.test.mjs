@@ -926,3 +926,49 @@ describe('the 0.6.12 audit', () => {
     } finally { vi.unstubAllGlobals(); }
   });
 });
+
+describe('the 0.6.13 audit', () => {
+  it('a check-in window from the notes is a point to verify in the check, the schedule and the plan', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      trip.places.find((p) => p.id === 13).notes = 'Arrivée : 8h-10h'; // the camp is reached at 18:40
+      const h = makeHost({ trip });
+      expect(keys(await check(h), 'welcome_window').find((f) => f.dayNumber === 1).level).toBe('verify');
+      const r = await call(h, 'vanlife_day', { tripId: 1, action: 'schedule', dayNumber: 1 });
+      expect(r.conflicts.filter((c) => /check-in/.test(c.reason)).every((c) => c.level === 'verify')).toBe(true);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('a source line is never taken for the host\'s contact', () => {
+    const fillLib = require('../server/lib/amenity-fill.js');
+    const txt = 'Sources :\n• https://www.tourism.example.com/camping-list\nSite : https://camp.example.com';
+    const kept = fillLib.hostText(txt, new Set(['sources']));
+    expect(kept).not.toMatch(/tourism\.example/);
+    expect(kept).toMatch(/camp\.example\.com/);
+    expect(fillLib.ownContacts({ notes: 'Sources : https://www.tourism.example.com/x' })).toEqual([]);
+  });
+
+  it('a check-in or reception span is not a time on site', () => {
+    const { parseVisit } = require('../server/lib/visit.js');
+    expect(parseVisit('Arrivée de 15h à 20h.')).toBeNull();
+    expect(parseVisit('Accueil de 9h à 17h. Fermé le lundi.')).toBeNull();
+    expect(parseVisit('Visite guidée de 10h à 12h.')).toMatchObject({ min: 120 });
+  });
+
+  it('a free-text tent ban shows on the chip even when a sheet line says yes', async () => {
+    const trip = build();
+    trip.places.find((p) => p.id === 13).notes = 'Rooftop tent: yes\nNo tents on the lakeside meadow.';
+    const w = JSON.parse((await makeHost({ trip }).run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13 } })).body);
+    expect(w.notesRefusedText).toBe('Notes: ✗ roof tent — to verify');
+  });
+
+  it('a place\'s currency can be cleared back to the trip\'s', async () => {
+    const trip = build();
+    const h = makeHost({ trip });
+    await call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: { currency: 'CHF' } });
+    expect(trip.places.find((p) => p.id === 13).currency).toBe('CHF');
+    await call(h, 'vanlife_place', { tripId: 1, placeId: 13, clear_fields: ['currency'] });
+    expect(trip.places.find((p) => p.id === 13).currency).toBeNull();
+  });
+});

@@ -408,6 +408,7 @@ function clearPatch(fields) {
     const k = String(f).replace(/^contacts\./, '');
     if (k in AMENITIES) patch[k] = 'unknown';
     else if (NUMBER_FIELDS.includes(k)) patch[k] = null;
+    else if (k === 'currency') patch.currency = null;
     else if (k === 'per' || k === 'price_note' || k === 'source' || k === 'checked' || ACCESS_FIELDS.includes(k) || WALK_FIELDS.includes(k)) patch[k] = null;
     else if (k === 'amenities') for (const a of Object.keys(AMENITIES)) patch[a] = 'unknown';
     else if (k === 'contacts') for (const c of contacts.FIELDS) contactPatch[c] = null;
@@ -449,7 +450,8 @@ function nativePrice(p) {
     const v = numberField(p, 'price_amount', 0, 100000);
     out.price = v === undefined ? null : v;
   }
-  if ('currency' in p) {
+  if ('currency' in p && p.currency === null) out.currency = null; // back to the trip's currency
+  else if ('currency' in p) {
     if (!/^[A-Z]{3}$/.test(String(p.currency))) throw new InfoError('currency must be a 3-letter ISO code (EUR, CHF...)');
     out.currency = String(p.currency);
   }
@@ -675,7 +677,8 @@ function refusalText(info, settings, L) {
 function notesRefusalText(info, settings, L, facts = {}) {
   const am = (info && info.amenities) || {};
   const no = [];
-  if (settings.vehicle === 'rooftop_tent' && am.rooftop_tent !== 'no' && facts.tentAllowed === false) no.push(t(L, 'am.rooftop_tent'));
+  // A sheet no, or a ban quoted from free notes even when a sheet line says yes (as the check).
+  if (settings.vehicle === 'rooftop_tent' && am.rooftop_tent !== 'no' && (facts.tentAllowed === false || facts.tentBan)) no.push(t(L, 'am.rooftop_tent'));
   if (settings.dog && am.dog !== 'no' && facts.dogAllowed === false) no.push(t(L, 'am.dog'));
   return no.length ? t(L, 'ui.notesSay', { list: `✗ ${no.join(' · ')}` }) : null;
 }
