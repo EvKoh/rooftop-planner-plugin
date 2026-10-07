@@ -1,7 +1,7 @@
 'use strict';
 // Fills the amenities of a trip's places from open sources, so the hover card and the
 // columns show them without anyone typing them in:
-// - OpenStreetMap: the campsite or motorhome area mapped within 150 m of the place;
+// - OpenStreetMap: the campsite, motorhome area or farm (agriturismo) mapped within 150 m of the place;
 // - park4night, when the instance enables it: the place it links to (its park4night page).
 //   A place without a link is matched within 60 m only against lists already fetched for a
 //   linked neighbour: the hourly park4night budget is not spent on museums and lakes.
@@ -145,7 +145,7 @@ function candidates(places) {
 /**
  * Fill the amenities of up to BATCH places of a trip that have unknown ones.
  * opts: { placeIds?: number[] (only these, rechecked even if seen lately), park4night: boolean,
- *         language?: the language the "notes of the place" source is named in }
+ * }
  * → { looked, filled, contacts, nothing, remaining, park4nightLimited, osmBusy }
  */
 async function fill(ctx, tripId, opts = {}) {

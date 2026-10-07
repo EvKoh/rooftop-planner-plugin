@@ -99,7 +99,7 @@ async function tripBudget(ctx, model, o, { settings, deadline, network = true })
       if (!exists) coreCalls.push({ tool: 'create_budget_item', args: { tripId: model.tripId, name: t(L, 'budget.fuel_line', { day: f.day, km: f.km }), category: 'Transport', total_price: f.cost } });
     }
     for (const x of accessTolls.filter((y) => !y.inBudget)) {
-      coreCalls.push({ tool: 'create_budget_item', args: { tripId: model.tripId, name: `${t(L, 'budget.toll_line', { day: x.day, name: x.name })}${x.currency !== model.currency ? ` (${x.amount} ${x.currency})` : ''}`, category: 'Transport', total_price: x.amount } });
+      coreCalls.push({ tool: 'create_budget_item', args: { tripId: model.tripId, name: t(L, 'budget.toll_line', { day: x.day, name: x.name }), category: 'Transport', total_price: x.amount, ...(x.currency !== model.currency ? { currency: x.currency } : {}) } });
     }
   }
 

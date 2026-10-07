@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // assets/icons/*.svg (the plugin's own pictograms, 24-unit stroke icons) → server/lib/glyphs.json,
-// the shapes the plugin sends on its map markers. TREK accepts path, circle, rect, line and
-// polyline with numeric attributes only; anything else fails here, not on the map.
+// the pictograms' shapes (design.js GLYPHS). TREK accepts path, circle, rect, line and polyline
+// with numeric attributes only; anything else fails here, not in TREK.
 const fs = require('fs');
 const path = require('path');
 

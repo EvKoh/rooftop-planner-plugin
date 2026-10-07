@@ -99,7 +99,7 @@ module.exports = definePlugin({
       // `vanlife`: no tolls (on-site days); `vanlife-highway`: tolls allowed (getting there
       // and back). The vehicle's height (and length/weight for a motorhome) from the settings.
       async getRoute(request, ctx) {
-        const settings = await readSettings(gentle(ctx), ['vehicle', 'vehicle_height_m', 'vehicle_length_m', 'vehicle_weight_t']);
+        const settings = await readSettings(gentle(ctx), ['vehicle', 'vehicle_height_m', 'vehicle_length_m', 'vehicle_weight_t', 'drive_time_factor']);
         const r = await routing.route(request.waypoints.map((w) => [w.lat, w.lng]), {
           ...routing.vehicleOpts(settings, request.profile === 'vanlife-highway'), maxPoints: 5000, timeoutMs: 17000,
         });
@@ -225,7 +225,7 @@ module.exports = definePlugin({
         if (!Number.isInteger(tripId) || tripId < 1) return json(400, { error: 'tripId required' });
         try {
           const settings = await readSettings(ctx, ['language'], { tripId });
-          const opts = { park4night: settings.park4night, language: settings.language };
+          const opts = { park4night: settings.park4night };
           if (Number.isInteger(placeId) && placeId > 0) {
             if (!(await placeOf(ctx, tripId, placeId))) return json(404, { error: 'place not in this trip' });
             opts.placeIds = [placeId];

@@ -11,7 +11,7 @@ const { isShopping, isTrace, parkingFromNotes } = require('./classify');
 const rules = require('./rules');
 const { isHikePlace, isParkingPlace } = require('./design');
 const routing = require('./routing');
-const { highwayAllowed, fuelPerKm } = require('./settings');
+const { highwayAllowed, fuelPerKm, DEFAULTS } = require('./settings');
 const { dayStopMinutes } = require('./visit');
 const { stayOn, stayBefore, isFirstEvening, findDay, isNightPlace, nameKey, unplannedNights } = require('./trip');
 const contacts = require('./contacts');
@@ -89,7 +89,7 @@ function dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L,
   const to = rules.latestArrival(cs, settings);
   if (to == null) return;
   const times = stops.map((s) => s.place.time).filter((x) => x != null);
-  const from = Math.min(hm(settings.day_start) ?? 510, ...times);
+  const from = Math.min(hm(settings.day_start) ?? hm(DEFAULTS.day_start), ...times);
   const visitMin = visits.reduce((n, v) => n + (v.minutes || 0), 0);
   let needMin = visitMin + drive;
   if (needMin > LONG_DAY_MIN) needMin += MEAL_MIN;
@@ -103,7 +103,7 @@ function dayLoad({ model, settings, d, plan, legIdx, toNight, M, add, J, ids, L,
 }
 
 // Words in a stop's notes saying the slot, car park or road is booked.
-const BOOKED_NOTE = /\b(booked|reserved|reservation|confirmation|confirmed|ticket|reserve|prenotat|gebucht|reserviert|buchung)/;
+const BOOKED_NOTE = /\b(booked|reserved|reservation|confirm|ticket|reserv|prenotat|confermat|gebucht|reserviert|buchung|bestatigt|donation|don\b|offerta libera|spende)/;
 
 /** Is a booking of this place recorded: a TREK booking that reads "booked" (night-status.js), or words in the stop's notes? */
 function bookingNoted(model, placeId, notes) {

@@ -43,7 +43,6 @@ function nightKind(categoryName, placeName) {
 
 const isNightCategory = (cat) => test(RE.night, cat);
 const isShopping = (cat, stopType) => stopType === 'fuel' || test(RE.shop, cat) || test(RE.fuel, cat);
-/** A car park (by its category): where the car waits, not a visit. */
 /** A route place carries a geometry; the category name is the fallback when it is not loaded. */
 // A drawn route, whatever its category: TREK's row (route_geometry) or the loaded model (geometry).
 const isTrace = (cat, place) => !!(place && (place.route_geometry || place.geometry?.length)) || test(RE.trace, cat);

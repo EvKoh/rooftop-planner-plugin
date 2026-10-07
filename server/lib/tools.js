@@ -22,7 +22,7 @@ const contacts = require('./contacts');
 const nightStatus = require('./night-status');
 const hostMessage = require('./host-message');
 const walks = require('./walks');
-const { activityKind, KINDS, categoryForKind } = require('./design');
+const { isParkingPlace, KINDS, categoryForKind } = require('./design');
 
 const TOOL_BUDGET_MS = 12500;
 const MAX_BYTES = 60000; // under the host's 64 KiB, with room for its envelope
@@ -209,7 +209,7 @@ async function createPlace(ctx, model, c) {
 }
 
 async function placeToolOn(ctx, model, a, settings, opts = {}) {
-  if (a.fill) return amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, language: settings.language, budgetMs: 6000 });
+  if (a.fill) return amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, budgetMs: 6000 });
   if (!a.placeId) {
     if (a.set || a.log || a.clear || a.sheet_set || (a.clear_fields && a.clear_fields.length)) throw new Error('placeId is required to set, log or clear');
     // Three sets of nights: planned (a lodging in the trip), candidates (a night category but
@@ -269,7 +269,7 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
     if (Number(parkId) === place.id) throw new Error('walk.parking_place_id must be another place: the car park the hike starts from');
     const park = model.poolById.get(Number(parkId));
     if (!park) throw new Error(`place ${parkId} is not in trip ${model.tripId}`);
-    if (activityKind(park) !== 'parking') throw new Error(`place ${parkId} ("${park.name}") is not a car park (category "${park.categoryName || 'none'}"): file it as one first (vanlife_place kind "parking"), a walk starts at a car park "P"`);
+    if (!isParkingPlace(park)) throw new Error(`place ${parkId} ("${park.name}") is not a car park (category "${park.categoryName || 'none'}"): file it as one first (vanlife_place kind "parking"), a walk starts at a car park "P"`);
   }
   if (placeInfo.WALK_FIELDS.some((k) => k in patch)) await checkWalk(ctx, model, place, patch);
   if (a.clear_fields && a.clear_fields.length) Object.assign(patch, placeInfo.clearPatch(a.clear_fields));
@@ -348,7 +348,7 @@ async function callTool({ name, args }, ctx, { now } = {}) {
   let res;
   switch (name) {
     case 'vanlife_plan_trip':
-      res = model ? await planTrip(ctx, model, a, opts) : a.request ? planRequest(a.request) : (() => { throw new Error('give tripId, or request for a new trip'); })();
+      res = model ? await planTrip(ctx, model, a, opts) : a.request ? planRequest(a.request, settings) : (() => { throw new Error('give tripId, or request for a new trip'); })();
       break;
     case 'vanlife_check_trip': {
       needTrip();

@@ -22,14 +22,14 @@ function parseToken(tok) {
 }
 
 /** Plan for a trip that does not exist yet: the core calls to create it, then come back. */
-function planRequest(req) {
+function planRequest(req, settings = {}) {
   const wishes = (req.wishes || []).map((w, i) => `${i + 1}. ${w}`);
   return {
     mode: 'request',
     steps: [
       { tool: 'create_trip', args: { title: req.destination ? `${req.destination}` : 'Road trip', start_date: req.start_date, end_date: req.end_date }, why: 'days are generated from the dates' },
       { tool: 'search_place / create_and_assign_place', why: 'one sourced place per wish (closing days, hours, season, booking, parking, dog rules, time on site), grouped by area so no valley is crossed twice', wishes },
-      { tool: 'create_place + create_accommodation', why: 'one campsite or farm per night (never a motorhome area); use vanlife_find_nights for candidates, vanlife_host_message to draft the question to the host, vanlife_night to record where each night stands' },
+      { tool: 'create_place + create_accommodation', why: `${settings.vehicle && settings.vehicle !== 'rooftop_tent' ? 'one campsite, farm or motorhome area per night' : 'one campsite or farm per night (never a motorhome area: an opened rooftop tent is camping)'}; use vanlife_find_nights for candidates, vanlife_host_message to draft the question to the host, vanlife_night to record where each night stands` },
       { tool: 'plugin_vanlife_vanlife_plan_trip', args: { tripId: '<new trip id>' }, why: 'check, routes, schedules and budget' },
     ],
     reminder: SAFETY,

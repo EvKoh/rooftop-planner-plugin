@@ -11,7 +11,7 @@ const { sunset } = require('./sun');
 const { isHikePlace } = require('./design');
 const rules = require('./rules');
 const routing = require('./routing');
-const { highwayAllowed } = require('./settings');
+const { highwayAllowed, DEFAULTS } = require('./settings');
 const { dayPlan, carPos } = require('./check');
 const placeInfo = require('./place-info');
 const { findDay } = require('./trip');
@@ -61,7 +61,7 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
   let t0 = asked;
   if (t0 == null) {
     const first = visits.find((s) => s.place.time != null);
-    t0 = first && legMin[visits.indexOf(first)] != null ? first.place.time - legMin[visits.indexOf(first)] : hm(settings.day_start) ?? 9 * 60;
+    t0 = first && legMin[visits.indexOf(first)] != null ? first.place.time - legMin[visits.indexOf(first)] : hm(settings.day_start) ?? hm(DEFAULTS.day_start);
   }
 
   /** The day's times from a departure: the stops, the arrival at the night, the access verdicts. */
@@ -179,7 +179,7 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
     stops: out,
     night,
     conflicts,
-    ...(assumed.size ? { assumedStays: { minutes: DEFAULT_STAY, assignmentIds: [...assumed], note: 'Time on site unknown: an hour assumed. Record it with vanlife_place set.visit.' } } : {}),
+    ...(assumed.size ? { assumedStays: { minutes: DEFAULT_STAY, assignmentIds: [...assumed], note: 'Time on site unknown: an hour assumed. Record it with vanlife_place set.visit_min_minutes.' } } : {}),
     pendingRoutes: r.pending,
     coreCalls,
   };
