@@ -867,3 +867,62 @@ describe('the 0.6.11 audit', () => {
     expect(pi.visitText(pi.merge(null, { visit_min_minutes: 90 }), 'ru')).toBe('1 ч 30');
   });
 });
+
+describe('the 0.6.12 audit', () => {
+  const rules = require('../server/lib/rules.js');
+  const withOsm = (extra) => {
+    const base = stubFetch();
+    vi.stubGlobal('fetch', vi.fn(async (url, init) => {
+      const res = await base(url, init);
+      if (!String(url).includes('overpass') || !/camp_site/.test(decodeURIComponent(String(init.body)))) return res;
+      const body = await res.json();
+      body.elements = [...body.elements, ...extra];
+      return { ok: true, status: 200, json: async () => body };
+    }));
+  };
+
+  it('the night search keeps a place whose free note bans tents, to verify, and never for a van', async () => {
+    withOsm([{ type: 'node', id: 77, lat: 46.6, lon: 12.16, tags: { tourism: 'camp_site', name: 'Camping Alpha Example', charge: '12 EUR', note: 'No tents.' } },
+      { type: 'node', id: 78, lat: 46.6, lon: 12.17, tags: { tourism: 'caravan_site', name: 'Area Sosta Beta Example', charge: '10 EUR', note: 'no tents' } }]);
+    try {
+      const tent = await call(makeHost(), 'vanlife_find_nights', { tripId: 1, dayNumber: 1 });
+      const a = tent.candidates.find((c) => c.name === 'Camping Alpha Example');
+      expect(a.blocked).toEqual([]);
+      expect(a.toVerify.some((x) => /OSM note/.test(x))).toBe(true);
+      const van = await call(makeHost({ userSettings: { language: 'en', timezone: 'Europe/Rome', vehicle: 'campervan' } }), 'vanlife_find_nights', { tripId: 1, dayNumber: 1 });
+      expect(van.candidates.some((c) => c.name === 'Area Sosta Beta Example')).toBe(true);
+      expect(van.candidates.find((c) => c.name === 'Camping Alpha Example').toVerify.some((x) => /OSM note/.test(x))).toBe(false);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('the hours message gives every range of the day', () => {
+    const { hhmm } = require('../server/lib/util.js');
+    const [f] = rules.closures('Accueil — lundi : 8h00-12h00 / 17h30-19h00', 1, 1020, 1020, { isNight: true });
+    expect(rules.rangesParams(f.params.ranges, hhmm)).toEqual({ open: '08:00–12:00 / 17:30', close: '19:00' });
+  });
+
+  it('a tent ban in a stay\'s notes shows on the chip as the check reads it', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      trip.accommodations[0].notes = 'No tents.';
+      const h = makeHost({ trip });
+      expect(keys(await check(h), 'tent_banned').some((f) => f.dayNumber === 1)).toBe(true);
+      const w = JSON.parse((await h.run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 13 } })).body);
+      expect(w.notesRefusedText).toBe('Notes: ✗ roof tent — to verify');
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('a route place\'s legs are written in the reader\'s units', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      const h = makeHost({ trip, userSettings: { language: 'ru', timezone: 'Europe/Rome' } });
+      const create = vi.spyOn(h.ctx.places, 'create');
+      await call(h, 'vanlife_day', { tripId: 1, action: 'routes', dayNumbers: [3], apply: true });
+      const notes = create.mock.calls.map((c) => c[1].notes).find(Boolean);
+      expect(notes).toMatch(/км \//);
+      expect(notes).not.toMatch(/\d km \//);
+    } finally { vi.unstubAllGlobals(); }
+  });
+});

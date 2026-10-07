@@ -403,5 +403,6 @@
   "ui.notesSay": "Anteckningar: {list} — att kontrollera",
   "unit.durHM": "{h} tim {mm}",
   "unit.durH": "{h} tim",
-  "unit.durM": "{m} min"
+  "unit.durM": "{m} min",
+  "route.leg": "{km} km / {time}"
 }

@@ -198,7 +198,7 @@ module.exports = definePlugin({
             // What the record refuses, in words ("✗ dog"), for the panel's red chip; what only
             // the notes say no to, for an amber one (a point to verify, as in the check).
             refusedText: placeInfo.refusalText(info, settings, L),
-            notesRefusedText: placeInfo.notesRefusalText(info, settings, L, placeSheet.factsOf({ ...place, categoryName })),
+            notesRefusedText: placeInfo.notesRefusalText(info, settings, L, placeSheet.factsOf({ ...place, categoryName }, { stayNotes: (accs || []).filter((a) => a.place_id === at.placeId).map((a) => a.notes || '').join('\n') })),
             amenities: placeInfo.AMENITIES,
             channels: contacts.CHANNELS,
             // The host's ways in: the record, then TREK's own fields (contacts.js reachOf; a

@@ -403,5 +403,6 @@
   "ui.notesSay": "Нотатки: {list} — перевірити",
   "unit.durHM": "{h} год {mm}",
   "unit.durH": "{h} год",
-  "unit.durM": "{m} хв"
+  "unit.durM": "{m} хв",
+  "route.leg": "{km} км / {time}"
 }

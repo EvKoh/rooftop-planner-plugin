@@ -307,7 +307,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
         const text = `${p.description}\n${p.notes}\n${s.notes}`;
         for (const c of rules.closures(text, d.wd, start, end, { placeName: p.name, isNight: !!isTonight || isNightPlace(model, p) })) {
           const params = { name: p.name, day: dayName(L, d.wd), ...c.params };
-          if (c.key === 'outside_hours') Object.assign(params, { from: hhmm(start), to: hhmm(end ?? start), open: hhmm(c.params.open), close: hhmm(c.params.close) });
+          if (c.key === 'outside_hours') Object.assign(params, { from: hhmm(start), to: hhmm(end ?? start), ...rules.rangesParams(c.params.ranges, hhmm) });
           add(c.level, J, c.key, params, extra);
         }
       }
@@ -350,7 +350,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       if (legal) add(legal.level, J, legal.key, { name: nuit.name, ...(legal.params.rule ? zoneText(L, legal.params) : {}) }, extra);
       const am = nuit.info ? nuit.info.amenities : {};
       // What the place's sheet states, in whatever language its notes are written.
-      const facts = placeSheet.factsOf((model.poolById.get(nuit.placeId) || {}).raw || { notes: nuit.notes });
+      const facts = placeSheet.factsOf((model.poolById.get(nuit.placeId) || {}).raw || {}, { stayNotes: nuit.notes });
       // A tent ban only matters to a rooftop tent: a van or a motorhome deploys nothing.
       // The record or the sheet says no (tent_refused), or free notes do (tent_banned, quoted).
       // Blocking only when the record says no; a no read from the notes' sheet is a point to
@@ -384,7 +384,7 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       if (d.wd != null && arr != null) {
         for (const c of rules.closures(nightText(model, d, nuit), d.wd, arr, arr, { placeName: nuit.name, isNight: true })) {
           const params = { name: nuit.name, day: dayName(L, d.wd), ...c.params };
-          if (c.key === 'outside_hours') Object.assign(params, { from: hhmm(arr), to: hhmm(arr), open: hhmm(c.params.open), close: hhmm(c.params.close) });
+          if (c.key === 'outside_hours') Object.assign(params, { from: hhmm(arr), to: hhmm(arr), ...rules.rangesParams(c.params.ranges, hhmm) });
           add(c.level, J, c.key, params, extra);
         }
       }

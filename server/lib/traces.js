@@ -84,7 +84,7 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
         notes: t(settings.language, 'route.notes', {
           mode: t(settings.language, r.motorway ? 'route.mode.motorway' : 'route.mode.notolls'),
           height: num(settings.vehicle_height_m, settings.language),
-          legs: r.legs.map((l) => `${num(l.km, settings.language, 1)} km / ${durationText(l.minutes, settings.language)}`).join('; '),
+          legs: r.legs.map((l) => t(settings.language, 'route.leg', { km: num(l.km, settings.language, 1), time: durationText(l.minutes, settings.language) })).join('; '),
         }).slice(0, 2000),
       });
       const asg = await ctx.itinerary.assign(model.tripId, day.id, place.id, null);

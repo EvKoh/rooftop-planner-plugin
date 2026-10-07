@@ -125,7 +125,7 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
   const out = plan.out.map(({ s, startMin, endMin, ...x }) => {
     if (day.wd != null) {
       for (const c of rules.closures(`${s.place.description}\n${s.place.notes}\n${s.notes}`, day.wd, startMin, endMin, { placeName: s.place.name })) {
-        if (c.key === 'outside_hours') conflicts.push({ assignmentId: s.id, name: s.place.name, level: c.level, reason: `outside opening hours ${hhmm(c.params.open)}-${hhmm(c.params.close)} (from the notes: to verify)` });
+        if (c.key === 'outside_hours') conflicts.push({ assignmentId: s.id, name: s.place.name, level: c.level, reason: `outside opening hours ${c.params.ranges.map(([o, k]) => `${hhmm(o)}-${hhmm(k)}`).join(' / ')} (from the notes: to verify)` });
       }
     }
     return x;
@@ -167,7 +167,7 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
     // closures rule judges the arrival.
     if (arrival != null && day.wd != null && isFirstEvening(nuit, day)) {
       for (const c of rules.closures(nightText(model, day, nuit), day.wd, arrival, arrival, { placeName: nuit.name, isNight: true })) {
-        if (c.key === 'outside_hours') conflicts.push({ assignmentId: night.assignmentId, name: nuit.name, level: c.level, reason: `arrival ${hhmm(arrival)} outside opening hours ${hhmm(c.params.open)}-${hhmm(c.params.close)} (from the notes: to verify)` });
+        if (c.key === 'outside_hours') conflicts.push({ assignmentId: night.assignmentId, name: nuit.name, level: c.level, reason: `arrival ${hhmm(arrival)} outside opening hours ${c.params.ranges.map(([o, k]) => `${hhmm(o)}-${hhmm(k)}`).join(' / ')} (from the notes: to verify)` });
       }
     }
     if (arrival != null && wins.length && !wins.some((w) => arrival >= w[0] && arrival <= w[1])) {

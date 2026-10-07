@@ -73,7 +73,7 @@ function closures(text, wd, from, to, { placeName = '', isNight = false } = {}) 
     if (ranges.length && from != null && !ranges.some(([o, c]) => from >= o && (to ?? from) <= c)) {
       const neighbour = new RegExp(`${NEIGHBOUR.source}\\b[^.;\\n]*$`).test(tn.slice(Math.max(0, h.index - 70), h.index)) && !NEIGHBOUR.test(norm(placeName));
       const [open, close] = ranges[0];
-      out.push({ key: neighbour ? 'closure_neighbour' : 'outside_hours', level: neighbour ? 'info' : 'verify', params: neighbour ? { quote: quote(tn, h.index, 50, 40) } : { open, close } });
+      out.push({ key: neighbour ? 'closure_neighbour' : 'outside_hours', level: neighbour ? 'info' : 'verify', params: neighbour ? { quote: quote(tn, h.index, 50, 40) } : { open, close, ranges } });
     }
   }
   return out;
@@ -215,4 +215,14 @@ function writtenArrival(text) {
   return m ? +m[1] * 60 + +m[2] : null;
 }
 
-module.exports = { WEEKDAYS, closures, windowsIn, welcomeWindows, welcomeWindow, minNights, noWater, tentBanned, nightLegality, priceVerdict, latestArrival, writtenArrival, hm };
+/**
+ * Every range of a day for the hours message "({open}–{close})": open = "08:00–12:00 / 17:30",
+ * close = "19:00" — the whole line, not its first range.
+ */
+function rangesParams(ranges, fmt) {
+  const parts = ranges.map(([o, c]) => `${fmt(o)}–${fmt(c)}`);
+  const last = ranges[ranges.length - 1];
+  return { open: [...parts.slice(0, -1), fmt(last[0])].join(' / '), close: fmt(last[1]) };
+}
+
+module.exports = { rangesParams, WEEKDAYS, closures, windowsIn, welcomeWindows, welcomeWindow, minNights, noWater, tentBanned, nightLegality, priceVerdict, latestArrival, writtenArrival, hm };

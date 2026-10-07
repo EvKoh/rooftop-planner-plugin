@@ -69,7 +69,7 @@ async function placeColumns(ctx, tripId, settings) {
     const missing = placeInfo.refusalText(rec, settings, L);
     if (missing) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-am-no', label: t(L, 'col.amenities'), value: missing.slice(0, 256), ...CHIP.missing });
     // What only the notes say no to: a point to verify, not a refusal.
-    const notesNo = placeInfo.notesRefusalText(rec, settings, L, placeSheet.factsOf(p));
+    const notesNo = placeInfo.notesRefusalText(rec, settings, L, placeSheet.factsOf(p, { stayNotes: (accs || []).filter((a) => a.place_id === p.id).map((a) => a.notes || '').join('\n') }));
     if (notesNo) out.push({ kind: 'column', entityId: p.id, id: 'vanlife-am-check', label: t(L, 'col.amenities'), value: notesNo.slice(0, 256), ...CHIP.notesNo });
     if (!rec) continue;
     // Timed access, booking, toll: one small chip each, only when recorded.
