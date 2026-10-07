@@ -390,7 +390,8 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       }
       const wins = [...rules.welcomeWindows(nuit.text), ...facts.arrivalWindows];
       const win = wins[0];
-      if (win && arr != null && !wins.some((w) => arr >= w[0] && arr <= w[1])) add('blocking', J, 'welcome_window', { arr: hhmm(arr), name: nuit.name, open: hhmm(win[0]), close: hhmm(win[1]) }, extra);
+      // Read from the notes or the sheet: a point to verify (free text never blocks).
+      if (win && arr != null && !wins.some((w) => arr >= w[0] && arr <= w[1])) add('verify', J, 'welcome_window', { arr: hhmm(arr), name: nuit.name, open: hhmm(win[0]), close: hhmm(win[1]) }, extra);
       const mini = rules.minNights(nuit.text);
       // Quoted from free notes (often seasonal): a point to verify, as its message says.
       if (mini && nuit.nights < mini) add('verify', J, 'min_nights', { name: nuit.name, n: nuit.nights }, extra);

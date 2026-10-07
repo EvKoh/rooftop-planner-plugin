@@ -129,7 +129,7 @@ describe('check_trip on the fictional trip', () => {
     expect(has(r, 'fix', 'trace_end', 2)).toBe(true);
     expect(has(r, 'fix', 'no_time', 3)).toBe(true);
     expect(has(r, 'fix', 'ends_before_start', 1)).toBe(true);
-    expect(has(r, 'blocking', 'welcome_window', 1)).toBe(true);
+    expect(has(r, 'verify', 'welcome_window', 1)).toBe(true);
     expect(has(r, 'verify', 'tent_banned', 1)).toBe(true); // quoted from free notes: to verify
     expect(has(r, 'fix', 'checkin_mismatch', 1)).toBe(true);
   });

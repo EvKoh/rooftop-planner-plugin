@@ -132,11 +132,29 @@ function incomplete(r, place) {
  * Contacts a place states itself: TREK's own website and phone fields, and what its notes
  * or description quote. → [{ values: {email, phone, website}, source }], best first.
  */
+/**
+ * The text of the notes without the lines that cite a source, a link list, reviews, a map or
+ * a photo: a "Sources : …" line and the bullets listed under it.
+ */
+function hostText(text, notHost) {
+  let current = null;
+  return String(text || '').split('\n').filter((line) => {
+    const bullet = /^\s*[•*-]\s+/.test(line);
+    const kv = bullet ? null : placeSheet.splitKey(line);
+    if (kv) current = placeSheet.fieldOf(kv[0]);
+    else if (!bullet) current = null;
+    return !(current && notHost.has(current));
+  }).join('\n');
+}
+
 function ownContacts(place) {
   const out = [];
   const trek = contacts.fromOsmTags({ website: place.website && !contacts.notOwnSite(place.website) ? place.website : null, phone: place.phone });
   if (trek.website || trek.phone) out.push({ values: trek, source: placeInfo.SRC.trek });
-  const x = contacts.extract(`${place.notes || ''}\n${place.description || ''}`);
+  // The host's contacts are never taken from a line that cites a source, a link list,
+  // reviews, a map or a photo (a tourist-office page is not the host's site).
+  const notHost = new Set(['sources', 'links', 'reviews', 'photo', 'map_url', 'gpx_url', 'checked', 'doubts']);
+  const x = contacts.extract(hostText(`${place.notes || ''}\n${place.description || ''}`, notHost));
   const fromText = { email: x.emails[0] || null, phone: x.phones[0] || null, website: x.urls[0] || null };
   if (fromText.email || fromText.phone || fromText.website) out.push({ values: fromText, source: placeInfo.SRC.notes });
   return out;
@@ -287,4 +305,4 @@ async function fill(ctx, tripId, opts = {}) {
   return res;
 }
 
-module.exports = { CONTACT_KEYS, incomplete, ownContacts, P4N, LOG_SQL, fill, fromOsm, fromP4n, p4nId, migrate, MIGRATION, BATCH, OSM_RADIUS_M, P4N_RADIUS_M };
+module.exports = { hostText, CONTACT_KEYS, incomplete, ownContacts, P4N, LOG_SQL, fill, fromOsm, fromP4n, p4nId, migrate, MIGRATION, BATCH, OSM_RADIUS_M, P4N_RADIUS_M };
