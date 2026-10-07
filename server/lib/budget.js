@@ -117,14 +117,15 @@ async function tripBudget(ctx, model, o, { settings, deadline, network = true })
 
   // Budget lines the trip is missing, as core calls the assistant can make (after the
   // user agrees): one fuel line per driving day.
+  // Categories are TREK's fixed keys (fuel, transport...), which TREK shows in the user's language.
   const coreCalls = [];
   if (costs) {
     for (const f of fuel) {
       const exists = costs.some((b) => isFuelLine(b) && fuelDayOf(b) === f.day);
-      if (!exists) coreCalls.push({ tool: 'create_budget_item', args: { tripId: model.tripId, name: t(L, 'budget.fuel_line', { day: f.day, km: f.km }), category: 'Transport', total_price: f.cost } });
+      if (!exists) coreCalls.push({ tool: 'create_budget_item', args: { tripId: model.tripId, name: t(L, 'budget.fuel_line', { day: f.day, km: f.km }), category: 'fuel', total_price: f.cost } });
     }
     for (const x of accessTolls.filter((y) => !y.inBudget)) {
-      coreCalls.push({ tool: 'create_budget_item', args: { tripId: model.tripId, name: t(L, 'budget.toll_line', { day: x.day, name: x.name }), category: 'Transport', total_price: x.amount, ...(x.currency !== model.currency ? { currency: x.currency } : {}) } });
+      coreCalls.push({ tool: 'create_budget_item', args: { tripId: model.tripId, name: t(L, 'budget.toll_line', { day: x.day, name: x.name }), category: 'transport', total_price: x.amount, ...(x.currency !== model.currency ? { currency: x.currency } : {}) } });
     }
   }
 

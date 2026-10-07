@@ -102,7 +102,9 @@ function windowsIn(value) {
 /** The arrival windows the notes quote ("Arrivée : 15h–23h"), from the label on. */
 function welcomeWindows(text) {
   // Every labelled line: "Arrivée : by the D12" then "Check-in : 15h-20h" — the second counts.
-  return [...norm(text).matchAll(/(?:arrivee|arrival|check-?in|arrivo|anreise|ankunft|llegada)\s*:\s*([^\n]*)/g)].flatMap((m) => windowsIn(m[1]));
+  // The label must open its line (a bullet aside): "Pas d'arrivée : 12h-14h" or "Late arrival:
+  // 22h-23h" are not the check-in window.
+  return [...norm(text).matchAll(/(?:^|\n)\s*(?:[•*-]\s*)?(?:arrivee|arrival|check-?in|arrivo|anreise|ankunft|llegada)\s*:\s*([^\n]*)/g)].flatMap((m) => windowsIn(m[1]));
 }
 
 /** The first arrival window of the notes, or null. */

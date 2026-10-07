@@ -266,7 +266,7 @@ function typed(field, value, items) {
   const out = { text };
   if (field === 'level') out.grade = gradeOf(text);
   if (field === 'route_type') out.kind = routeKindOf(text);
-  if (field === 'dog') out.allowed = dogOf(text);
+  if (field === 'dog' || field === 'rooftop_tent') out.allowed = dogOf(text);
   return out;
 }
 
@@ -374,7 +374,7 @@ function factsOf(place) {
     tentText: f.rooftop_tent ? f.rooftop_tent.text : null,
     visitQuote: f.duration ? f.duration.text : null,
     dogAllowed: f.dog ? (f.dog.allowed ?? null) : null,
-    tentAllowed: f.rooftop_tent ? dogOf(f.rooftop_tent.text) : null,
+    tentAllowed: f.rooftop_tent ? (f.rooftop_tent.allowed ?? null) : null,
     arrivalWindows: windows,
   };
 }

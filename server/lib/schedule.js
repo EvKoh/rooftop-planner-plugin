@@ -163,6 +163,13 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
     // the check judges it); the notes and the sheet may state the same window once each.
     const all = isFirstEvening(nuit, day) ? [...rules.welcomeWindows(nuit.text), ...placeSheet.factsOf((place && place.raw) || { notes: nuit.notes }).arrivalWindows] : [];
     const wins = all.filter((w, i) => all.findIndex((x) => x[0] === w[0] && x[1] === w[1]) === i);
+    // The night's opening hours from its notes ("Accueil — lundi : 8h00-12h00"), as the check's
+    // closures rule judges the arrival.
+    if (arrival != null && day.wd != null) {
+      for (const c of rules.closures(nuit.text, day.wd, arrival, arrival, { placeName: nuit.name, isNight: true })) {
+        if (c.level === 'blocking') conflicts.push({ assignmentId: night.assignmentId, name: nuit.name, reason: `arrival ${hhmm(arrival)} outside opening hours ${hhmm(c.params.open)}-${hhmm(c.params.close)}` });
+      }
+    }
     if (arrival != null && wins.length && !wins.some((w) => arrival >= w[0] && arrival <= w[1])) {
       const next = wins.map((w) => w[0]).filter((from) => from > arrival && (latest == null || from <= latest)).sort((a, b) => a - b)[0];
       if (next != null) {

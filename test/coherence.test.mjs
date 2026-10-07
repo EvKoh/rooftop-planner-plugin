@@ -782,3 +782,46 @@ describe('the 0.6.9 audit: free notes never block', () => {
     expect(w).toMatchObject({ refused: false, refusedText: null, notesRefusedText: 'Notes: ✗ dog — to verify' });
   });
 });
+
+describe('the 0.6.10 audit', () => {
+  const rules = require('../server/lib/rules.js');
+  it('a check-in label must open its line', () => {
+    expect(rules.welcomeWindows("Pas d'arrivée : 12h-14h (pause déjeuner)")).toEqual([]);
+    expect(rules.welcomeWindows('Late arrival: 22h-23h, 10 € extra')).toEqual([]);
+    expect(rules.welcomeWindows('Notes\n• Arrivée : 15h-20h')).toEqual([[900, 1200]]);
+  });
+
+  it('a no from the notes colours the sheet row amber, dog and tent alike', () => {
+    const sheet = require('../server/lib/place-sheet.js');
+    const v = sheet.view(sheet.sheetOf({ name: 'Example', notes: 'Chiens : non\nTente de toit : non' }, { night: true }), 'fr');
+    const rows = v.sections.flatMap((s) => s.rows);
+    expect(rows.find((r) => r.field === 'dog').tone).toBe('warn');
+    expect(rows.find((r) => r.field === 'rooftop_tent').tone).toBe('warn');
+  });
+
+  it('the schedule and the check judge a night\'s opening hours alike', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      trip.places.find((p) => p.id === 13).notes = 'Accueil — lundi : 8h00-12h00';
+      trip.days[0].assignments.find((a) => a.id === 1005).place.notes = 'Accueil — lundi : 8h00-12h00';
+      const h = makeHost({ trip });
+      const checkSays = keys(await check(h), 'outside_hours').some((f) => f.dayNumber === 1);
+      const r = await call(h, 'vanlife_day', { tripId: 1, action: 'schedule', dayNumber: 1 });
+      const scheduleSays = r.conflicts.some((c) => /opening hours/.test(c.reason) && c.name === 'Camping Example');
+      expect(checkSays).toBe(true);
+      expect(scheduleSays).toBe(checkSays);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('budget lines use TREK\'s fixed category keys', async () => {
+    const { tripBudget } = require('../server/lib/budget.js');
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const h = makeHost({ userSettings: { language: 'ja', timezone: 'Europe/Rome' } });
+      const settings = await readSettings(h.ctx);
+      const r = await tripBudget(h.ctx, await loadTrip(h.ctx, 1, settings), {}, { settings, deadline: deadline(10000) });
+      expect(new Set(r.coreCalls.map((c) => c.args.category))).toEqual(new Set(['fuel']));
+    } finally { vi.unstubAllGlobals(); }
+  });
+});
