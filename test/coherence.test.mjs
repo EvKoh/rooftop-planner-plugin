@@ -572,3 +572,13 @@ describe('an unstated answer is not a refusal', () => {
     expect(dogOf('はい')).toBe(true);
   });
 });
+
+describe('finding params', () => {
+  it('a finding carries no placeholder text from a missing zone rule', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const r = await check(makeHost());
+      for (const f of r.findings) expect(JSON.stringify(f.params), f.key).not.toMatch(/undefined/);
+    } finally { vi.unstubAllGlobals(); }
+  });
+});

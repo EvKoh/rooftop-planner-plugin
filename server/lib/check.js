@@ -335,7 +335,8 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
       accessFindings({ model, info: nuit.info, name: nuit.name, arr, notes: a ? a.notes : '', placeId: nuit.placeId, add, J, extra, L });
 
       const legal = rules.nightLegality({ categoryName: nuit.categoryName, placeName: nuit.name, lat: nuit.lat, lng: nuit.lng, text: nuit.text, vehicle: settings.vehicle });
-      if (legal) add(legal.level, J, legal.key, { name: nuit.name, ...zoneText(L, legal.params) }, extra);
+      // A zone and its note only for a rule that has one (night_private, night_aire have none).
+      if (legal) add(legal.level, J, legal.key, { name: nuit.name, ...(legal.params.rule ? zoneText(L, legal.params) : {}) }, extra);
       const am = nuit.info ? nuit.info.amenities : {};
       // What the place's sheet states, in whatever language its notes are written.
       const facts = placeSheet.factsOf((model.poolById.get(nuit.placeId) || {}).raw || { notes: nuit.notes });
