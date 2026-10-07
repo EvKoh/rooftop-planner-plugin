@@ -254,7 +254,7 @@ function walkMinutes(geo) {
 function statsText(geo, L, { climb: withClimb = true } = {}) {
   if (!geo) return null;
   const s = t(L, 'walk.stats', { km: num(geo.km, L, 1), time: durationText(walkMinutes(geo), L) });
-  return withClimb && geo.up != null ? `${s} · +${geo.up} m` : s;
+  return withClimb && geo.up != null ? `${s} · +${t(L, 'unit.m', { n: geo.up })}` : s;
 }
 
 // Pages hosting a full hike (exact track, elevation profile), best known first: Outdooractive

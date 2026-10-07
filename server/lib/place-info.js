@@ -527,8 +527,8 @@ function limitsParts(info, lang) {
   const parts = [];
   const missing = Object.keys(AMENITIES).filter((k) => info.amenities[k] === 'no').map((k) => t(lang, `am.${k}`));
   if (missing.length) parts.push(`✗ ${missing.join(' · ')}`);
-  if (info.max_height_m != null) parts.push(`↕ ${num(info.max_height_m, lang)} m`);
-  if (info.max_length_m != null) parts.push(`↔ ${num(info.max_length_m, lang)} m`);
+  if (info.max_height_m != null) parts.push(`↕ ${t(lang, 'unit.m', { n: num(info.max_height_m, lang) })}`);
+  if (info.max_length_m != null) parts.push(`↔ ${t(lang, 'unit.m', { n: num(info.max_length_m, lang) })}`);
   if (info.max_weight_t != null) parts.push(t(lang, 'unit.maxWeight', { t: num(info.max_weight_t, lang) }));
   return parts;
 }
@@ -664,8 +664,8 @@ function refusalText(info, settings, L) {
   if (settings.vehicle === 'rooftop_tent' && am.rooftop_tent === 'no') no.push(t(L, 'am.rooftop_tent'));
   if (settings.dog && am.dog === 'no') no.push(t(L, 'am.dog'));
   const parts = no.length ? [`✗ ${no.join(' · ')}`] : [];
-  if (info && info.max_height_m != null && info.max_height_m < settings.vehicle_height_m) parts.push(`↕ ${num(info.max_height_m, L)} m`);
-  if (info && info.max_length_m != null && info.max_length_m < settings.vehicle_length_m) parts.push(`↔ ${num(info.max_length_m, L)} m`);
+  if (info && info.max_height_m != null && info.max_height_m < settings.vehicle_height_m) parts.push(`↕ ${t(L, 'unit.m', { n: num(info.max_height_m, L) })}`);
+  if (info && info.max_length_m != null && info.max_length_m < settings.vehicle_length_m) parts.push(`↔ ${t(L, 'unit.m', { n: num(info.max_length_m, L) })}`);
   if (info && info.max_weight_t != null && info.max_weight_t < settings.vehicle_weight_t) parts.push(t(L, 'unit.maxWeight', { t: num(info.max_weight_t, L) }));
   return parts.length ? parts.join('  ') : null;
 }

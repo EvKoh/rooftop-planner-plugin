@@ -404,5 +404,7 @@
   "unit.durHM": "{h} saat {mm} dəq",
   "unit.durH": "{h} saat",
   "unit.durM": "{m} dəq",
-  "route.leg": "{km} km / {time}"
+  "route.leg": "{km} km / {time}",
+  "unit.km": "{n} km",
+  "unit.m": "{n} m"
 }

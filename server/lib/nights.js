@@ -66,9 +66,12 @@ function parsePrice(tags) {
 
 function kindOf(tags) {
   const name = norm(tags.name);
+  // The structured tags first; the name only when they say nothing ("Camping La Ferme du Lac"
+  // tagged camp_site is a campsite).
   if (tags.tourism === 'caravan_site') return 'aire';
-  if (tags.agriturismo === 'yes' || /agritur|agricamp|bauernhof|\bferme\b|\bfarm\b/.test(name)) return 'farm';
+  if (tags.agriturismo === 'yes') return 'farm';
   if (tags.tourism === 'camp_site') return 'campsite';
+  if (/agritur|agricamp|bauernhof|\bferme\b|\bfarm\b/.test(name)) return 'farm';
   return 'unknown';
 }
 
@@ -123,15 +126,22 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     }
   }
 
-  const seen = new Set();
+  // One row per place: the same name within a kilometre (OSM and park4night, or a node and
+  // its way) is one place; two campsites sharing a name farther apart, and unnamed places,
+  // stay distinct.
+  const seen = [];
+  const isSeen = (name, lat, lng) => {
+    const key = norm(name);
+    if (key && seen.some((x) => x.key === key && distKm([x.lat, x.lng], [lat, lng]) < 1)) return true;
+    seen.push({ key, lat, lng });
+    return false;
+  };
   const cands = [];
   let excluded = 0;
   for (const e of els) {
     const tg = e.tags;
     const name = tg.name || tg['name:en'] || '';
-    const key = norm(name) || e.id;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    if (isSeen(name, e.lat, e.lng)) continue;
     const kind = kindOf(tg);
     const reasons = [];
     if (kind === 'aire' && vehicle === 'rooftop_tent') reasons.push('motorhome area: an opened rooftop tent is camping');
@@ -161,9 +171,7 @@ async function findNights(ctx, o, { settings, deadline, network = true, highway 
     });
   }
   for (const p of p4n) {
-    const key = norm(p.name);
-    if (seen.has(key)) continue; // OSM already has it: keep one row
-    seen.add(key);
+    if (isSeen(p.name, p.lat, p.lng)) continue; // OSM already has it: keep one row
     const legal = rules.nightLegality({ categoryName: KIND_CATEGORY[p.kind] || '', placeName: p.name, lat: p.lat, lng: p.lng, vehicle });
     // The same exclusions as the OSM results: a motorhome area is no night for a rooftop tent.
     if (p.kind === 'aire' && vehicle === 'rooftop_tent') { excluded++; continue; }

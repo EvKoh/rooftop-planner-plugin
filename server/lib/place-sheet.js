@@ -430,10 +430,10 @@ const FIGURE_FIELDS = new Set(['distance_km', 'ascent_m', 'descent_m', 'duration
 /** The short value a key figure shows ("10.9 km", "+770 m", "Medium"); its full text stays the title. */
 function figure(field, v, L) {
   const n = (x, d = 0) => new Intl.NumberFormat(locale(L), { maximumFractionDigits: d }).format(x);
-  if (field === 'distance_km' && v.value != null) return `${n(v.value, 1)} km`;
-  if (field === 'ascent_m' && v.value != null) return `+${n(v.value)} m`;
-  if (field === 'descent_m' && v.value != null) return `−${n(Math.abs(v.value))} m`;
-  if (/^alt/.test(field) && v.value != null) return `${n(v.value)} m`;
+  if (field === 'distance_km' && v.value != null) return t(L, 'unit.km', { n: n(v.value, 1) });
+  if (field === 'ascent_m' && v.value != null) return `+${t(L, 'unit.m', { n: n(v.value) })}`;
+  if (field === 'descent_m' && v.value != null) return `−${t(L, 'unit.m', { n: n(Math.abs(v.value)) })}`;
+  if (/^alt/.test(field) && v.value != null) return t(L, 'unit.m', { n: n(v.value) });
   if (field === 'spots' && v.value != null) return n(v.value);
   if (field === 'duration' && v.minutes != null) return durationText(v.minutes, L);
   if (field === 'level' && v.grade) return t(L, `sh.v.${v.grade}`);
@@ -547,5 +547,5 @@ function setField(description, notes, field, value, L = 'en') {
 module.exports = {
   FIELDS, SECTIONS, TAIL, FIELD_NAMES: Object.keys(FIELDS),
   typeOf, aliasesOf, keyForm, fieldOf, splitKey, lines, minutesOf, gradeOf, routeKindOf, dogOf, urlsIn,
-  parse, sheetOf, factsOf, kindOf, view, setField, FIGURE_FIELDS,
+  BULLET, parse, sheetOf, factsOf, kindOf, view, setField, FIGURE_FIELDS,
 };

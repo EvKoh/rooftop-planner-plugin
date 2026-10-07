@@ -139,7 +139,7 @@ function incomplete(r, place) {
 function hostText(text, notHost) {
   let current = null;
   return String(text || '').split('\n').filter((line) => {
-    const bullet = /^\s*[•*-]\s+/.test(line);
+    const bullet = placeSheet.BULLET.test(line); // the sheet's own bullets (•, –, 1., ●...)
     const kv = bullet ? null : placeSheet.splitKey(line);
     if (kv) current = placeSheet.fieldOf(kv[0]);
     else if (!bullet) current = null;
