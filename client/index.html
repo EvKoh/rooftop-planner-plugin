@@ -178,6 +178,7 @@
       var state = status && stateOf(d, status);
       if (state && CHIP_CLASS[state.tone]) kids.push(h('span', { class: 'trek-chip ' + CHIP_CLASS[state.tone], text: S('ui.night').replace('{status}', S('st.' + status)) }));
       if (d.refused) kids.push(h('span', { class: 'trek-chip trek-chip--danger', text: d.refusedText ? S('ui.vehicleRefused') + ' — ' + d.refusedText : S('ui.vehicleRefused') }));
+      if (d.notesRefusedText) kids.push(h('span', { class: 'trek-chip trek-chip--warning', text: d.notesRefusedText }));
       return kids.length ? [h('div', { class: 'line' }, kids)] : [];
     }
     // What the plugin keeps itself: amenities (a night always, others when recorded), the

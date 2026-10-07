@@ -399,5 +399,6 @@
   "ui.notInTrip": "Bu yer bu gezide değil.",
   "ui.failed": "Olmadı. Birazdan tekrar deneyin.",
   "sheet_refusal": "“{name}”: notlar {what} için “{quote}” diyor: gecenin mümkün olduğunu ev sahibiyle doğrulayın",
-  "s.sheet_refusal": "{what}: notlar hayır diyor"
+  "s.sheet_refusal": "{what}: notlar hayır diyor",
+  "ui.notesSay": "Notlar: {list} — doğrulanacak"
 }

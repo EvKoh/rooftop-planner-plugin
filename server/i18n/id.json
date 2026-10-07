@@ -399,5 +399,6 @@
   "ui.notInTrip": "Tempat ini tidak ada di perjalanan ini.",
   "ui.failed": "Tidak berhasil. Coba lagi sebentar lagi.",
   "sheet_refusal": "“{name}”: catatannya menyebut “{quote}” soal {what}: pastikan ke tuan rumah bahwa menginap bisa",
-  "s.sheet_refusal": "{what}: catatan bilang tidak"
+  "s.sheet_refusal": "{what}: catatan bilang tidak",
+  "ui.notesSay": "Catatan: {list} — perlu dicek"
 }

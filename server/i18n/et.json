@@ -399,5 +399,6 @@
   "ui.notInTrip": "Seda kohta pole selles reisis.",
   "ui.failed": "See ei õnnestunud. Proovi hetke pärast uuesti.",
   "sheet_refusal": "„{name}“: märkmetes on {what} kohta „{quote}“: kinnita võõrustajaga, et ööbimine on võimalik",
-  "s.sheet_refusal": "{what}: märkmed ütlevad ei"
+  "s.sheet_refusal": "{what}: märkmed ütlevad ei",
+  "ui.notesSay": "Märkmed: {list} — kontrollida"
 }

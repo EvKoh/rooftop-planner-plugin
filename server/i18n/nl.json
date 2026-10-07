@@ -399,5 +399,6 @@
   "ui.notInTrip": "Deze plek hoort niet bij deze reis.",
   "ui.failed": "Dat is niet gelukt. Probeer het zo opnieuw.",
   "sheet_refusal": "“{name}”: de notities zeggen “{quote}” over {what}: bevestig bij de gastheer dat de overnachting kan",
-  "s.sheet_refusal": "{what}: notities zeggen nee"
+  "s.sheet_refusal": "{what}: notities zeggen nee",
+  "ui.notesSay": "Notities: {list} — te controleren"
 }

@@ -399,5 +399,6 @@
   "ui.notInTrip": "Este local não está nesta viagem.",
   "ui.failed": "Não funcionou. Tente de novo em instantes.",
   "sheet_refusal": "“{name}”: as notas dizem “{quote}” sobre {what}: confirme com o anfitrião que a noite é possível",
-  "s.sheet_refusal": "{what}: as notas dizem não"
+  "s.sheet_refusal": "{what}: as notas dizem não",
+  "ui.notesSay": "Notas: {list} — a verificar"
 }

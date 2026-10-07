@@ -399,5 +399,6 @@
   "ui.notInTrip": "Toto miesto nie je v tejto ceste.",
   "ui.failed": "Nepodarilo sa. Skúste to o chvíľu znova.",
   "sheet_refusal": "„{name}“: poznámky k {what} hovoria „{quote}“: potvrďte u hostiteľa, že je noc možná",
-  "s.sheet_refusal": "{what}: poznámky hovoria nie"
+  "s.sheet_refusal": "{what}: poznámky hovoria nie",
+  "ui.notesSay": "Poznámky: {list} — overiť"
 }

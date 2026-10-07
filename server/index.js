@@ -194,9 +194,11 @@ module.exports = definePlugin({
             access: placeInfo.accessChips(info, L, currency).map((c) => ({ key: c.key, value: c.value, tone: c.tone })),
             recorded: !!info,
             summary: placeInfo.amenitiesText(info, L),
-            refused: placeInfo.refuses(info, settings, placeSheet.factsOf({ ...place, categoryName })),
-            // What refuses, in words ("✗ dog"), for the panel's red chip.
-            refusedText: placeInfo.refusalText(info, settings, L, placeSheet.factsOf({ ...place, categoryName })),
+            refused: placeInfo.refuses(info, settings),
+            // What the record refuses, in words ("✗ dog"), for the panel's red chip; what only
+            // the notes say no to, for an amber one (a point to verify, as in the check).
+            refusedText: placeInfo.refusalText(info, settings, L),
+            notesRefusedText: placeInfo.notesRefusalText(info, settings, L, placeSheet.factsOf({ ...place, categoryName })),
             amenities: placeInfo.AMENITIES,
             channels: contacts.CHANNELS,
             // The host's ways in: the record, then TREK's own fields (contacts.js reachOf; a

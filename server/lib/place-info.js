@@ -638,8 +638,11 @@ const refusedBy = (info, facts, amenity, fact) => {
   return v === 'no' || ((v === 'unknown' || v == null) && facts[fact] === false);
 };
 
-function refuses(info, settings, facts = {}) {
-  if ((settings.vehicle === 'rooftop_tent' && refusedBy(info, facts, 'rooftop_tent', 'tentAllowed')) || (settings.dog && refusedBy(info, facts, 'dog', 'dogAllowed'))) return true;
+/**
+ * Does the record rule this vehicle or party out (what the check blocks on)? The notes alone
+ * never do: they are a point to verify (notesRefusalText), as in the check.
+ */
+function refuses(info, settings) {
   if (!info) return false;
   return (settings.vehicle === 'rooftop_tent' && info.amenities.rooftop_tent === 'no')
     || (settings.dog && info.amenities.dog === 'no')
@@ -653,15 +656,28 @@ function refuses(info, settings, facts = {}) {
  * "✗ dog · rooftop tent  ↕ 2 m" — only what refuses (refuses), from the record or the sheet.
  * null when nothing does.
  */
-function refusalText(info, settings, L, facts = {}) {
+function refusalText(info, settings, L) {
+  const am = (info && info.amenities) || {};
   const no = [];
-  if (settings.vehicle === 'rooftop_tent' && refusedBy(info, facts, 'rooftop_tent', 'tentAllowed')) no.push(t(L, 'am.rooftop_tent'));
-  if (settings.dog && refusedBy(info, facts, 'dog', 'dogAllowed')) no.push(t(L, 'am.dog'));
+  if (settings.vehicle === 'rooftop_tent' && am.rooftop_tent === 'no') no.push(t(L, 'am.rooftop_tent'));
+  if (settings.dog && am.dog === 'no') no.push(t(L, 'am.dog'));
   const parts = no.length ? [`✗ ${no.join(' · ')}`] : [];
   if (info && info.max_height_m != null && info.max_height_m < settings.vehicle_height_m) parts.push(`↕ ${num(info.max_height_m, L)} m`);
   if (info && info.max_length_m != null && info.max_length_m < settings.vehicle_length_m) parts.push(`↔ ${num(info.max_length_m, L)} m`);
   if (info && info.max_weight_t != null && info.max_weight_t < settings.vehicle_weight_t) parts.push(t(L, 'unit.maxWeight', { t: num(info.max_weight_t, L) }));
   return parts.length ? parts.join('  ') : null;
+}
+
+/**
+ * What the notes' sheet says no to while the record does not (the check's sheet_refusal, a
+ * point to verify): "Notes: ✗ dog", or null.
+ */
+function notesRefusalText(info, settings, L, facts = {}) {
+  const am = (info && info.amenities) || {};
+  const no = [];
+  if (settings.vehicle === 'rooftop_tent' && am.rooftop_tent !== 'no' && facts.tentAllowed === false) no.push(t(L, 'am.rooftop_tent'));
+  if (settings.dog && am.dog !== 'no' && facts.dogAllowed === false) no.push(t(L, 'am.dog'));
+  return no.length ? t(L, 'ui.notesSay', { list: `✗ ${no.join(' · ')}` }) : null;
 }
 
 async function migrate(ctx) {
@@ -753,4 +769,4 @@ function localized(rec, L) {
   return { ...rec, source: sourceText(rec.source, L), visit_source: sourceText(rec.visit_source, L), contact_sources: cs };
 }
 
-module.exports = { refusedBy, refusalText, SRC, sourceText, localized, lacksText, nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { refusedBy, refusalText, notesRefusalText, SRC, sourceText, localized, lacksText, nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
