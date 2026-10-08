@@ -570,14 +570,27 @@ function setField(description, notes, field, value, L = 'en') {
     : Array.isArray(value)
       ? [`${label} :`, ...value.map((v) => `• ${String(v).trim()}`)]
       : [`${label} : ${String(value).trim()}`];
-  const kept = n.lines.slice();
-  if (block.length) {
-    if (n.at >= 0) kept.splice(n.at, 0, ...block);
-    else { while (kept.length && !kept[kept.length - 1].trim()) kept.pop(); kept.push(...block); }
-  }
+  // Every other line must stay where the reader puts it (same field, same list): a list written
+  // under a header, or a line removed between a header and bullets, could hand those bullets to
+  // another entry, which a later sheet_set would then remove. The first layout that keeps the
+  // rest of the sheet as it was is written: as is, then on one line, then closed by a blank line.
+  const others = (text) => JSON.stringify(lines(text).filter((e) => e.text !== undefined || lineField(e.key, e.value, e.items) !== field)
+    .map((e) => (e.text !== undefined ? ['t', e.text] : [e.key, e.value, e.items])));
+  const want = others(notes);
+  const oneLine = Array.isArray(value) ? [`${bullet || ''}${label} : ${value.map((v) => String(v).trim()).join(' • ')}`] : block;
+  const layout = (b, close) => {
+    const kept = n.lines.slice();
+    if (n.at >= 0) {
+      const next = kept[n.at];
+      kept.splice(n.at, 0, ...b, ...(close && next !== undefined && next.trim() ? [''] : []));
+    } else if (b.length) { while (kept.length && !kept[kept.length - 1].trim()) kept.pop(); kept.push(...b); }
+    return kept.join('\n');
+  };
+  const tries = [layout(block, false), layout(oneLine, false), layout(block, true), layout(oneLine, true)];
+  const out = tries.find((x) => others(x) === want) ?? tries[2];
   return {
     description: d.at >= 0 ? d.lines.join('\n') : description ?? '',
-    notes: kept.join('\n'),
+    notes: out,
   };
 }
 
