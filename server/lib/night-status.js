@@ -277,12 +277,17 @@ async function set(ctx, model, a) {
   if (a.date && (a.dayNumber != null || a.dayId != null) && day.date !== a.date) throw new NightError(`date ${a.date} is not day ${day.n} (${day.date}): give one of them`);
   const place = model.poolById.get(a.placeId);
   if (!place) throw new NightError(`place ${a.placeId} is not in trip ${model.tripId}`);
-  // "A farm we booked": the kind sets the place's category (its pictogram) with the status.
-  const kindRes = a.kind ? await require('./place-kind').applyKind(ctx, model, place, a.kind) : null;
   const resas = model.reservations || [];
   const night = stayOn(model, day);
   const isNight = !!night && night.placeId === place.id;
   const res = isNight ? reservationFor(night, resas) : candidateReservation(resas, place.id, day.id);
+  // Refused before anything is written (the kind below writes the category).
+  if (a.status === 'spotted' && res && !a.clear) {
+    throw new NightError(`"${place.name}" already has a booking for day ${day.n} (${statusOf(res)}, reservation ${res.id}). `
+      + 'Use status "dropped" to mark it given up; deleting a booking is done in TREK itself, by the user.');
+  }
+  // "A farm we booked": the kind sets the place's category (its pictogram) with the status.
+  const kindRes = a.kind ? await require('./place-kind').applyKind(ctx, model, place, a.kind) : null;
   const notes = notesText(a, res, L);
   const warnings = [];
   if (a.reason && a.status !== 'dropped') warnings.push('reason: kept only with status "dropped"; give notes for anything else.');
@@ -297,11 +302,10 @@ async function set(ctx, model, a) {
       await ctx.reservations.delete(model.tripId, res.id);
       return { placeId: place.id, place: place.name, day: day.n, date: day.date, status: 'spotted', action: 'deleted', reservationId: res.id, ...(kindRes ? { kind: kindRes } : {}) };
     }
-    if (res) {
-      throw new NightError(`"${place.name}" already has a booking for day ${day.n} (${statusOf(res)}, reservation ${res.id}). `
-        + 'Use status "dropped" to mark it given up; deleting a booking is done in TREK itself, by the user.');
-    }
-    return { placeId: place.id, day: day.n, status: 'spotted', changed: false, ...(kindRes ? { kind: kindRes } : {}), note: 'No booking exists: the place is a spotted night.' };
+    // A spotted night has no booking: what only a booking carries is said, not dropped.
+    const unused = ['notes', 'confirmation', ...(night ? [] : ['nights'])].filter((k) => a[k] != null && a[k] !== '');
+    if (unused.length) warnings.push(`${unused.join(', ')}: not used, a spotted night has no booking.`);
+    return { placeId: place.id, day: day.n, status: 'spotted', changed: false, ...(kindRes ? { kind: kindRes } : {}), note: 'No booking exists: the place is a spotted night.', ...(warnings.length ? { warnings } : {}) };
   }
 
   const input = { status: TO_TREK[a.status] };

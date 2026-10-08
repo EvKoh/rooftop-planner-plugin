@@ -259,9 +259,16 @@ async function fill(ctx, tripId, opts = {}) {
   const seen = only ? new Set() : await recentlyChecked(ctx, pool.map((p) => p.id));
   lap('log', t);
   t = Date.now();
-  const todo = pool.filter((p) => !seen.has(p.id));
-  // Read records only until the batch is full: a trip can hold hundreds of places.
   const res0 = { resynced: 0 };
+  const todo = pool.filter((p) => !seen.has(p.id));
+  // Places looked at lately are not looked up again, but what was copied from their notes still
+  // follows the notes, at every fill (resync writes only when something changed).
+  const recent = pool.filter((p) => seen.has(p.id));
+  if (recent.length) {
+    const recs = await placeInfo.getAll(ctx, tripId, recent.map((p) => p.id));
+    for (const p of recent) if (recs.get(p.id) && await resync(ctx, tripId, p, recs.get(p.id))) res0.resynced++;
+  }
+  // Read records only until the batch is full: a trip can hold hundreds of places.
   const batch = [];
   const records = new Map();
   const complete = [];

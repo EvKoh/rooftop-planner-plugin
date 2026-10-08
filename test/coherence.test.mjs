@@ -1421,3 +1421,36 @@ describe('the 0.6.29 audit', () => {
     expect(r.warnings.join(' ')).toMatch(/nights/);
   });
 });
+
+describe('the 0.6.30 audit', () => {
+  it('the day\'s route place never goes into a user\'s "… route" hike category', () => {
+    const { routeCategoryId } = require('../server/lib/traces.js');
+    expect(routeCategoryId({ categories: [{ id: 9, name: 'Hiking route' }] }, null)).toBeNull();
+    expect(routeCategoryId({ categories: [{ id: 9, name: 'Hiking route' }, { id: 6, name: 'Route – Day route' }] }, null)).toBe(6);
+  });
+  it('a trip-wide fill resyncs places it looked at lately', async () => {
+    const af = require('../server/lib/amenity-fill.js');
+    const qr = { [pi.INDEX_SQL]: [{ place_id: 10 }], [af.LOG_SQL]: [] };
+    const h = makeHost({ trip: build(), queryResults: qr });
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      await call(h, 'vanlife_place', { tripId: 1, fill: true });
+      expect((await pi.get(h.ctx, 10)).visit_min_minutes).toBe(120);
+      qr[af.LOG_SQL] = (await h.ctx.trips.getPlaces(1)).map((p) => ({ place_id: p.id, checked_at: new Date().toISOString() }));
+      await h.ctx.places.update(1, 10, { notes: 'Lake walk, 3 h.' });
+      const f = await call(h, 'vanlife_place', { tripId: 1, fill: true });
+      expect(f.resynced).toBe(1);
+      expect((await pi.get(h.ctx, 10)).visit_min_minutes).toBe(180);
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it('night set "spotted" refuses before writing a kind, and says what a spotted night cannot keep', async () => {
+    const trip = build();
+    const h = makeHost({ trip });
+    await call(h, 'vanlife_night', { tripId: 1, action: 'set', placeId: 19, dayNumber: 1, status: 'contacted' });
+    const before = trip.places.find((p) => p.id === 19).category_id;
+    await expect(call(h, 'vanlife_night', { tripId: 1, action: 'set', placeId: 19, dayNumber: 1, status: 'spotted', kind: 'farm' })).rejects.toThrow(/already has a booking/);
+    expect(trip.places.find((p) => p.id === 19).category_id).toBe(before);
+    const r = await call(h, 'vanlife_night', { tripId: 1, action: 'set', placeId: 13, dayNumber: 2, status: 'spotted', notes: 'x', confirmation: 'C1' });
+    expect((r.warnings || []).join(' ')).toMatch(/notes, confirmation/);
+  });
+});
