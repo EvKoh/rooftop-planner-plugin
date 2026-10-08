@@ -1354,3 +1354,38 @@ describe('the 0.6.27 audit', () => {
     expect(JSON.stringify(w.sheet)).not.toContain('"field":"website"');
   });
 });
+
+describe('the 0.6.28 audit', () => {
+  it('routes for one dayNumber touch that day only', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const r = await call(makeHost(), 'vanlife_day', { tripId: 1, action: 'routes', dayNumber: 2 });
+      expect(r.days.map((d) => d.day.number)).toEqual([2]);
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it('the fill keeps a duration line that gives no figure: no figure taken from the summary', () => {
+    const fillLib = require('../server/lib/amenity-fill.js');
+    expect(fillLib.statedVisit({ categoryName: 'See – Hike', notes: '10.93 km · +770 m · 4 h 10\nDuration: depends on the snow, ask at the hut' })).toBeNull();
+    expect(fillLib.statedVisit({ categoryName: 'See – Hike', notes: '10.93 km · +770 m · 4 h 10' })).toMatchObject({ min: 250 });
+  });
+  it('fill=true creates no car park, and says set was not applied', async () => {
+    const trip = build();
+    const h = makeHost({ trip });
+    const n = trip.places.length;
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const r = await call(h, 'vanlife_place', { tripId: 1, placeId: 10, fill: true, set: { walk: { parking: { name: 'P Example', lat: 46.69, lng: 12.08 } } } });
+      expect(r.ignored).toMatch(/set/);
+      expect(r.created).toBeUndefined();
+    } finally { vi.unstubAllGlobals(); }
+    expect(trip.places.length).toBe(n);
+  });
+  it('arguments a mode does not use are refused or reported', async () => {
+    await expect(call(makeHost(), 'vanlife_place', { tripId: 1, kind: 'farm' })).rejects.toThrow(/placeId/);
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const r = await call(makeHost(), 'vanlife_find_nights', { lat: 46.5, lng: 12.1, dayNumber: 3 });
+      expect(r.ignored).toMatch(/dayNumber/);
+    } finally { vi.unstubAllGlobals(); }
+  });
+});
