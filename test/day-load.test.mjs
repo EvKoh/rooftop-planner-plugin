@@ -30,7 +30,7 @@ describe('visit duration read from a text', () => {
     expect(parseVisit('Compter 1 h 30 sur place')).toMatchObject({ min: 90 });
     expect(parseVisit('Loop hike, 2-3 h')).toMatchObject({ min: 120, max: 180 });
     expect(parseVisit('Allow 45 min for the visit')).toMatchObject({ min: 45 });
-    expect(parseVisit('Lake walk, 2 h.').quote).toContain('lake walk, 2 h');
+    expect(parseVisit('Lake walk, 2 h.').quote).toContain('Lake walk, 2 h'); // quoted as written (0.6.21)
   });
 
   it('takes no clock time or opening hours for a duration', () => {
