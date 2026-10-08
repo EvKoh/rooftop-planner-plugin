@@ -79,9 +79,11 @@ function accessFor(model, stop, info, parkings) {
  * Shape of a walk: the one set on the record, else a loop when the hike's place is the car park
  * itself (a tour that starts there), else an out-and-back to the hike's place.
  */
+/** The walk shape the record holds: walk_shape, else walk_loop (a loop), else null. */
+const recordedShape = (info) => (info && SHAPES.includes(info.walk_shape) ? info.walk_shape : info && info.walk_loop ? 'loop' : null);
+
 function shapeOf(hike, access, info) {
-  if (info && SHAPES.includes(info.walk_shape)) return info.walk_shape;
-  if (info && info.walk_loop) return 'loop';
+  if (recordedShape(info)) return recordedShape(info);
   // The route type the hike's own sheet states ("Type : boucle"), as its card shows it.
   const stated = require('./place-sheet').sheetOf(hike).fields.route_type;
   if (stated && SHAPES.includes(stated.kind)) return stated.kind;
@@ -297,4 +299,4 @@ function walkLayers(walks, geometry, settings) {
   return features.length ? [{ id: 'walks', name: t(L, 'walk.layer'), features }] : [];
 }
 
-module.exports = { SHAPES, shapeOf, problemOf, walked, climb, walkMinutes, hikeUrl, TRACK_HOSTS, shortName, hikeWalks, walkGeometry, walkLayers, walkPoints, walkKey, statsText, accessFor, plannedStops };
+module.exports = { SHAPES, recordedShape, shapeOf, problemOf, walked, climb, walkMinutes, hikeUrl, TRACK_HOSTS, shortName, hikeWalks, walkGeometry, walkLayers, walkPoints, walkKey, statsText, accessFor, plannedStops };

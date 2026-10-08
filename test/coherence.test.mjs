@@ -1816,3 +1816,26 @@ describe('the 0.6.41 audit', () => {
     expect(f.route_type).toEqual({ text: 'Out and back', kind: 'out_and_back' });
   });
 });
+
+describe('the 0.6.42 audit', () => {
+  it('a field bullet inside a list keeps the list\'s other bullets with the list', () => {
+    const s = require('../server/lib/place-sheet.js');
+    const notes = 'Règlement :\n• Chiens : en laisse\n• Pas de feu de camp\n• Silence après 22 h';
+    const out = s.setField('', notes, 'dog', 'admis, 3 €/nuit', 'fr').notes;
+    expect(out).toMatch(/Pas de feu de camp/);
+    expect(out).toMatch(/Silence après 22 h/);
+  });
+  it('a phone under a Sources list is never the host\'s, even on a bullet with its own label', () => {
+    const fillLib = require('../server/lib/amenity-fill.js');
+    const r = fillLib.ownContacts({ notes: 'Sources :\n• Office du tourisme : +39 0471 999 999\n• Avis Google 4,6/5' });
+    expect(r).toEqual([]);
+  });
+  it('one recorded walk shape: walk_loop counts as a loop on the card as on the map', () => {
+    const walks = require('../server/lib/walks.js');
+    expect(walks.recordedShape({ walk_shape: null, walk_loop: true })).toBe('loop');
+  });
+  it('create reports filter and scope it does not use', async () => {
+    const r = await call(makeHost(), 'vanlife_place', { tripId: 1, create: { name: 'Lago di Braies', lat: 46.69, lng: 12.08 }, scope: 'candidates' });
+    expect(r.ignored).toMatch(/scope/);
+  });
+});

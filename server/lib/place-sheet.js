@@ -139,23 +139,28 @@ function splitKey(line) {
 function lines(text) {
   const out = [];
   let open = null;
+  let list = null; // the plain "Key :" line whose bullets these are ("Règlement :")
   const all = String(text || '').split(/\r?\n/);
   for (let i = 0; i < all.length; i++) {
     const t = all[i].trim();
-    if (!t) { open = null; continue; }
-    if (SEPARATOR.test(t) && /[-—–=_]{1,}/.test(t)) { open = null; continue; }
+    if (!t) { open = null; list = null; continue; }
+    if (SEPARATOR.test(t) && /[-—–=_]{1,}/.test(t)) { open = null; list = null; continue; }
     const bullet = BULLET.test(t);
     const body = t.replace(BULLET, '');
     // A bullet under an open line is one of its items — unless it is itself a sheet field's line
     // ("- Durée : 3 h" in a list of "- Key : value"): then it opens its own entry.
     if (bullet && open) {
       const own = splitKey(body);
-      if (!(own && fieldOf(own[0]))) { open.items.push(body); open.idx.push(i); continue; }
+      // …and a plain bullet after such a field's line goes back to the list ("• Pas de feu"
+      // under "Règlement :", after "• Chiens : en laisse").
+      const to = list || open;
+      if (!(own && fieldOf(own[0]))) { to.items.push(body); to.idx.push(i); continue; }
     }
     const kv = splitKey(body);
     if (kv) {
       const [key, value] = kv;
       open = { key, field: fieldOf(key), value: '', items: [], idx: [i] };
+      if (!bullet) list = open; else if (!list) list = null;
       // "Itinéraire : • A • B" on one line.
       const inline = value.split(/\s+•\s+|^•\s*/).map((x) => x.trim()).filter(Boolean);
       if (/^•/.test(value) || inline.length > 1) open.items.push(...inline); else open.value = value;
@@ -163,6 +168,7 @@ function lines(text) {
       continue;
     }
     open = null;
+    list = null;
     out.push({ text: body, bullet });
   }
   return out;

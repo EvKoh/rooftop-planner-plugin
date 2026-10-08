@@ -143,8 +143,15 @@ function incomplete(r, place) {
 const NOT_HOST_LABEL = /^(sources?|liens?|links?|avis|reviews?|rating|photos?|images?|cartes?|maps?|plan|gpx|traces?|quellen?|bewertung\w*|fonti|fonte|recension\w*|fuentes?|resenas|webcams?)\b/;
 
 function hostText(text, notHost) {
+  // The reader's own entries for those fields (place-sheet.lines: a "• Office du tourisme : …"
+  // bullet stays under "Sources"), and the labels below for what the reader does not name.
+  const drop = new Set();
+  for (const e of placeSheet.lines(text)) {
+    if (e.idx && ((e.field && notHost.has(e.field)) || NOT_HOST_LABEL.test(placeSheet.keyForm(e.key || '')))) e.idx.forEach((i) => drop.add(i));
+  }
   let current = null;
-  return String(text || '').split('\n').filter((line) => {
+  return String(text || '').split('\n').filter((line, i) => {
+    if (drop.has(i)) return false;
     const bullet = placeSheet.BULLET.test(line); // the sheet's own bullets (•, –, 1., ●...)
     // A label may itself be bulleted ("- Sources : …") or start with a pictogram ("📎 Sources :").
     const kv = placeSheet.splitKey(line.replace(placeSheet.BULLET, '').replace(/^[^\p{L}\p{N}]+/u, ''));
