@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.6.34",
+  "version": "0.6.35",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -1226,7 +1226,7 @@
                 "type": "string",
                 "maxLength": 40
               },
-              "description": "Clear only these: a key of set (an amenity, dog_fee, per, walk...; the price: set.price_amount null), a contact field, amenities / contacts / log, or all."
+              "description": "Clear only these: a key of set (an amenity, dog_fee, per, walk...; the price: set.price_amount null), a contact field, amenities / contacts / log, or all (alone)."
             },
             "sheet_set": {
               "type": "object",

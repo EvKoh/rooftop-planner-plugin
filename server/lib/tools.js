@@ -165,6 +165,9 @@ function checkParkId(model, placeId, parkId) {
 async function precheck(ctx, model, a, settings) {
   if (a.placeId && !model.poolById.get(a.placeId)) throw new Error(`place ${a.placeId} is not in trip ${model.tripId}`);
   if (a.kind) await require('./place-kind').kindCategory(ctx, a.kind);
+  if ((a.clear || (a.clear_fields || []).includes('all')) && (a.set || a.sheet_set || a.log || a.create || a.kind)) {
+    throw new Error('a full clear is a call of its own: call again without set, sheet_set, log, create or kind');
+  }
   if (a.log) contacts.logEntry(a.log);
   if (a.create) {
     if (a.placeId) throw new Error('create makes a new place: leave placeId out');
@@ -179,7 +182,7 @@ async function precheck(ctx, model, a, settings) {
     checkParkId(model, a.placeId, walkIn.parking_place_id);
     // The walk's own rule (from a car park P, back to the same P), on the place as it stands.
     const place = a.placeId ? model.poolById.get(a.placeId) : null;
-    if (place) await checkWalk(ctx, model, place, placeInfo.expandWalk({ walk: walkIn }));
+    if (place && !a.kind) await checkWalk(ctx, model, place, placeInfo.expandWalk({ walk: walkIn }));
   }
   for (const [f, v] of Object.entries(a.sheet_set && typeof a.sheet_set === 'object' ? a.sheet_set : {})) placeSheet.setField('', '', f, v == null ? null : Array.isArray(v) ? v.map(String) : String(v), settings.language);
   if (a.clear_fields && a.clear_fields.length) placeInfo.clearPatch(a.clear_fields.filter((f) => f !== 'all'));
@@ -221,7 +224,19 @@ async function placeTool(ctx, model, a, settings, opts = {}) {
     a = { ...a, set: { ...a.set, walk: { ...rest, parking_place_id: park.placeId } } };
   }
   if (created.length) model = await loadTrip(ctx, model.tripId, settings);
-  const out = await placeToolOn(ctx, model, a, settings, opts);
+  // A refusal that only a later step can make (the walk rule on a new place or car park, in a
+  // new category): what this call wrote is undone — the places it made, the category and texts
+  // it changed — so a refused call leaves the trip as it was.
+  const was = a.placeId && !created.some((c) => c.placeId === a.placeId) ? model.poolById.get(a.placeId) : null;
+  const snapshot = was && was.raw ? { category_id: was.raw.category_id ?? null, notes: was.raw.notes ?? '', description: was.raw.description ?? '' } : null;
+  let out;
+  try {
+    out = await placeToolOn(ctx, model, a, settings, opts);
+  } catch (e) {
+    for (const c of created.slice().reverse()) await ctx.places.delete(model.tripId, c.placeId).catch(() => {});
+    if (snapshot && (a.kind || a.sheet_set)) await ctx.places.update(model.tripId, was.id, snapshot).catch(() => {});
+    throw e;
+  }
   return created.length && out && typeof out === 'object' ? { created, ...out } : out;
 }
 
@@ -326,7 +341,8 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
   // The kind first: it moves the place to the matching category, so the rest of the answer
   // (and the map) shows its new pictogram.
   const kindRes = a.kind ? await applyKind(ctx, model, place, a.kind) : null;
-  if (kindRes) { place.categoryId = kindRes.categoryId; place.categoryName = kindRes.category; place.raw = { ...place.raw, category_id: kindRes.categoryId }; }
+  // The rest of the call reads the place in its new category, in the pool and in the days.
+  if (kindRes && kindRes.changed) { model = await loadTrip(ctx, model.tripId, settings); place = model.poolById.get(a.placeId); }
   if (a.clear || (a.clear_fields || []).includes('all')) {
     await placeInfo.clear(ctx, model.tripId, place.id);
     const ignored = ['set', 'sheet_set', 'log'].filter((k) => a[k] != null);
@@ -362,11 +378,13 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
     const before = await placeInfo.get(ctx, place.id);
     const native = placeInfo.nativeContacts(place.raw, placeInfo.merge(before, { ...patch, price_amount: undefined, currency: undefined }), before);
     const rec = await placeInfo.set(ctx, model.tripId, place.id, patch, { place: place.raw });
-    place.info = rec;
-    const walk = await hikeWalk(ctx, model, place.id, settings, opts);
-    const priced = 'price_amount' in patch ? { ...place, price: patch.price_amount, raw: { ...place.raw, currency: patch.currency || place.raw.currency } } : place;
-    const raw = native ? { ...priced.raw, ...native } : priced.raw;
-    return { saved: true, ...(kindRes ? { kind: kindRes } : {}), ...(native ? { copiedToTrek: native } : {}), ...placeView(model, { ...priced, raw }, rec, settings, { full: true }), ...(walk ? { hike: walk } : {}) };
+    // The answer reads the trip as TREK now holds it (price, currency, website...), never a copy
+    // patched by hand.
+    model = await loadTrip(ctx, model.tripId, settings);
+    const fresh = model.poolById.get(a.placeId) || place;
+    fresh.info = rec; // the record just written (the reloaded trip reads records through the index)
+    const walk = await hikeWalk(ctx, model, fresh.id, settings, opts);
+    return { saved: true, ...(kindRes ? { kind: kindRes } : {}), ...(native ? { copiedToTrek: native } : {}), ...placeView(model, fresh, rec, settings, { full: true }), ...(walk ? { hike: walk } : {}) };
   }
   // One place: read its value directly, not through the index.
   const walk = await hikeWalk(ctx, model, place.id, settings, opts);
