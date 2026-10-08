@@ -331,7 +331,8 @@ function parse(description, notes, { kind = 'activity' } = {}) {
   // takes 5 h 30"): that sentence is the duration, read by the one length reader.
   if (summary.duration && !fields.duration) {
     const free = require('./visit').parseVisit(text.map((x) => x.text).join('\n'));
-    if (free) summary.duration = free.quote;
+    // Its minutes, as the reader gave them: re-reading a cut quote could take a start hour.
+    if (free) summary.duration = free.max ? `${free.min}-${free.max} min` : `${free.min} min`;
   }
   for (const [f, v] of Object.entries(summary)) if (!fields[f]) add(f, v, []);
   const out = {};

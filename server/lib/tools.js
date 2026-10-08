@@ -219,7 +219,13 @@ async function createPlace(ctx, model, c) {
 }
 
 async function placeToolOn(ctx, model, a, settings, opts = {}) {
-  if (a.fill) return amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, budgetMs: 6000 });
+  if (a.fill) {
+    const res = await amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, budgetMs: 6000 });
+    // fill is a call of its own: say what it did not do rather than drop it silently.
+    const ignored = ['set', 'sheet_set', 'log', 'kind', 'clear', 'clear_fields'].filter((k) => a[k] != null && !(Array.isArray(a[k]) && !a[k].length));
+    if (ignored.length) res.ignored = `${ignored.join(', ')}: not applied with fill=true; call again without fill`;
+    return res;
+  }
   if (!a.placeId) {
     if (a.set || a.log || a.clear || a.sheet_set || (a.clear_fields && a.clear_fields.length)) throw new Error('placeId is required to set, log or clear');
     // Three sets of nights: planned (a lodging in the trip), candidates (a night category but
