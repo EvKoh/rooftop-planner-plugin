@@ -256,7 +256,8 @@ const freeNotes = (notes) => String(notes || '').split('\n').filter((l) => !l.st
  */
 function notesText(a, res, L) {
   const before = res ? String(res.notes || '') : '';
-  const free = a.notes != null && a.notes !== '' ? String(a.notes).slice(0, 500) : freeNotes(before);
+  // notes replaces the free notes; "" empties them (only the plugin's own tagged line stays).
+  const free = a.notes != null ? String(a.notes).slice(0, 500) : freeNotes(before);
   const own = a.status === 'dropped' && a.reason ? `${NOTE_TAG} ${t(L, 'night.dropped_note', { reason: String(a.reason).slice(0, 200) })}` : null;
   const next = [free, own].filter(Boolean).join('\n');
   return next === before ? undefined : next;
@@ -275,6 +276,7 @@ async function set(ctx, model, a) {
   const day = findDay(model, { dayId: a.dayId, dayNumber: a.dayNumber, date: a.date });
   if (!day) throw new NightError('give dayNumber (or dayId) of the evening the night starts');
   if (a.date && (a.dayNumber != null || a.dayId != null) && day.date !== a.date) throw new NightError(`date ${a.date} is not day ${day.n} (${day.date}): give one of them`);
+  if (a.dayId != null && a.dayNumber != null && Number(a.dayNumber) !== day.n) throw new NightError(`dayId ${a.dayId} is day ${day.n}, not day ${a.dayNumber}: give one of them`);
   const place = model.poolById.get(a.placeId);
   if (!place) throw new NightError(`place ${a.placeId} is not in trip ${model.tripId}`);
   const resas = model.reservations || [];
@@ -285,6 +287,10 @@ async function set(ctx, model, a) {
   if (a.status === 'spotted' && res && !a.clear) {
     throw new NightError(`"${place.name}" already has a booking for day ${day.n} (${statusOf(res)}, reservation ${res.id}). `
       + 'Use status "dropped" to mark it given up; deleting a booking is done in TREK itself, by the user.');
+  }
+  // A new stay that would run past the trip is refused here, before the kind writes anything.
+  if (!night && a.status !== 'spotted' && !model.days[day.index + Math.max(1, Math.min(30, a.nights || 1))]) {
+    throw new NightError(`day ${day.n} + ${Math.max(1, Math.min(30, a.nights || 1))} night(s) goes past the last day of the trip`);
   }
   // "A farm we booked": the kind sets the place's category (its pictogram) with the status.
   const kindRes = a.kind ? await require('./place-kind').applyKind(ctx, model, place, a.kind) : null;

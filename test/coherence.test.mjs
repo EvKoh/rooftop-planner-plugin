@@ -1454,3 +1454,51 @@ describe('the 0.6.30 audit', () => {
     expect((r.warnings || []).join(' ')).toMatch(/notes, confirmation/);
   });
 });
+
+describe('the 0.6.31 audit', () => {
+  it('a hike with a GPX line is never taken for the day\'s trace', () => {
+    const { isTrace } = require('../server/lib/classify.js');
+    expect(isTrace('See – Hike', { name: 'Lago di Carezza loop hike', route_geometry: '[[1,2],[3,4]]' })).toBe(false);
+    expect(isTrace('See – Lake', { name: 'Route day 3', route_geometry: '[[1,2],[3,4]]' })).toBe(true);
+  });
+  it('vanlife_place refuses before any write: no kind, no new place, no car park', async () => {
+    const trip = build();
+    const h = makeHost({ trip });
+    const cat = trip.places.find((p) => p.id === 13).category_id;
+    const n = trip.places.length;
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 13, kind: 'farm', set: { visit_min_minutes: 120, visit_max_minutes: 60 } })).rejects.toThrow();
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 13, kind: 'farm', sheet_set: { opening_hourz: 'x' } })).rejects.toThrow(/unknown sheet field/);
+    expect(trip.places.find((p) => p.id === 13).category_id).toBe(cat);
+    await expect(call(h, 'vanlife_place', { tripId: 1, create: { name: 'New', lat: 46.5, lng: 12.1 }, set: { visit_min_minutes: 120, visit_max_minutes: 60 } })).rejects.toThrow();
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 10, set: { walk: { parking: { name: 'P', lat: 46.69, lng: 12.08 } } } })).rejects.toThrow(/walk.shape/);
+    expect(trip.places.length).toBe(n);
+  });
+  it('create keeps or refuses its currency, never drops it', async () => {
+    const trip = build();
+    const h = makeHost({ trip });
+    await call(h, 'vanlife_place', { tripId: 1, create: { name: 'Swiss camp', lat: 46.5, lng: 12.1, price_amount: 30, currency: 'CHF ' } });
+    expect(trip.places.find((p) => p.name === 'Swiss camp').currency).toBe('CHF');
+    await expect(call(h, 'vanlife_place', { tripId: 1, create: { name: 'X', lat: 46.5, lng: 12.1, currency: 'francs' } })).rejects.toThrow(/currency/);
+  });
+  it('night set: dayId and dayNumber must agree, the trip end is checked before the kind, notes "" empties', async () => {
+    const trip = build();
+    const h = makeHost({ trip });
+    await expect(call(h, 'vanlife_night', { tripId: 1, action: 'set', placeId: 19, dayId: 102, dayNumber: 3, status: 'contacted' })).rejects.toThrow(/dayId/);
+    const cat = trip.places.find((p) => p.id === 13).category_id;
+    const last = trip.days.length;
+    await expect(call(h, 'vanlife_night', { tripId: 1, action: 'set', placeId: 13, dayNumber: last, status: 'contacted', kind: 'farm', nights: 5 })).rejects.toThrow(/last day/);
+    expect(trip.places.find((p) => p.id === 13).category_id).toBe(cat);
+    const ns = require('../server/lib/night-status.js');
+    expect(ns.notesText({ notes: '', status: 'contacted' }, { notes: 'Waiting for the host to confirm' }, 'en')).toBe('');
+  });
+  it('arguments a mode does not read are said, and destructive tools say so', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const r = await call(makeHost(), 'vanlife_day', { tripId: 1, action: 'routes', dayNumber: 2, departure: '08:00', kinds: ['fuel'] });
+      expect(r.ignored).toMatch(/departure, kinds/);
+    } finally { vi.unstubAllGlobals(); }
+    const specs = require('../server/lib/tool-specs.js');
+    const list = specs.TOOL_SPECS || specs;
+    for (const n of ['vanlife_place', 'vanlife_plan_trip']) expect(list.find((t) => t.name === n).annotations.destructiveHint, n).toBe(true);
+  });
+});

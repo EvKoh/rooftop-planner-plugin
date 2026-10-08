@@ -54,7 +54,11 @@ const isNightCategory = (cat) => test(RE.night, cat);
 const isShopping = (cat, stopType) => stopType === 'fuel' || test(RE.shop, cat) || test(RE.fuel, cat);
 /** A route place carries a geometry; the category name is the fallback when it is not loaded. */
 // A drawn route, whatever its category: TREK's row (route_geometry) or the loaded model (geometry).
-const isTrace = (cat, place) => !!(place && (place.route_geometry || place.geometry?.length)) || test(RE.trace, cat);
+// The day's trace: the day-route category, or any place with a drawn line, whatever its
+// category — except a hike (a walk imported from a GPX, by its category or name): that line is
+// the walk, never the day's road, and routes apply would delete it.
+const isTrace = (cat, place) => test(RE.trace, cat) || (!!(place && (place.route_geometry || place.geometry?.length))
+  && !require('./design').isHikePlace({ name: place.name || '', categoryName: cat || '' }));
 
 /**
  * Where the car is left for a stop reached on foot: a "Departure/Start/Parking ... lat, lng"
