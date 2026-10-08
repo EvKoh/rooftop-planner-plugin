@@ -58,7 +58,7 @@ const isShopping = (cat, stopType) => stopType === 'fuel' || test(RE.shop, cat) 
 // category — except a hike (a walk imported from a GPX, by its category or name): that line is
 // the walk, never the day's road, and routes apply would delete it.
 const isTrace = (cat, place) => test(RE.trace, cat) || (!!(place && (place.route_geometry || place.geometry?.length))
-  && !require('./design').isHikePlace({ name: place.name || '', categoryName: cat || '' }));
+  && !['hike', 'bike'].includes(require('./design').activityKind({ name: place.name || '', categoryName: cat || '' })));
 
 /**
  * Where the car is left for a stop reached on foot: a "Departure/Start/Parking ... lat, lng"

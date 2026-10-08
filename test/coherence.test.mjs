@@ -1405,8 +1405,8 @@ describe('the 0.6.29 audit', () => {
     expect(sheet.factsOf({ categoryName: 'See – Hike', notes: '10.93 km · +770 m · 4 h 10\nFree car park 2 h for vans, lots of space there; the round trip takes 3 h.' }).visitMinutes).toBe(180);
   });
   it('a full clear and a fill report what they did not apply', async () => {
-    const r = await call(makeHost(), 'vanlife_place', { tripId: 1, placeId: 11, clear_fields: ['all'], set: { water: 'yes' } });
-    expect(r.ignored).toMatch(/^set/);
+    // since 0.6.35 a full clear is a call of its own: refused with other writes, before any write
+    await expect(call(makeHost(), 'vanlife_place', { tripId: 1, placeId: 11, clear_fields: ['all'], set: { water: 'yes' } })).rejects.toThrow(/full clear/);
     vi.stubGlobal('fetch', stubFetch());
     try {
       const f = await call(makeHost(), 'vanlife_place', { tripId: 1, fill: true, filter: 'missing_contacts', scope: 'candidates' });
@@ -1541,7 +1541,7 @@ describe('the 0.6.32 audit', () => {
 
 describe('the 0.6.33 audit', () => {
   const CATS = [{ id: 1, name: 'Night – Campsite' }, { id: 4, name: 'See – Lake' }, { id: 5, name: 'Food – Groceries' }, { id: 6, name: 'Route – Day route' }, { id: 7, name: 'See – Museum' }, { id: 8, name: 'Route – Parking' }, { id: 9, name: 'See – Hike' }, { id: 10, name: 'Bike – Cycling tour' }];
-  it('every drawn line of a day is a line, never a stop; the day-route one is the trace', () => {
+  it('a drawn line is the day\'s trace (day-route category first) unless it is an activity (hike, bike), which is a stop', () => {
     const { dayPlan } = require('../server/lib/check.js');
     const ride = { id: 30, name: 'Braies bike ride', categoryName: 'Bike – Cycling tour', route_geometry: '[[1,2],[3,4]]' };
     const own = { id: 20, name: 'Route day 1', categoryName: 'Route – Day route', route_geometry: '[[1,2],[3,4]]' };
@@ -1549,7 +1549,7 @@ describe('the 0.6.33 audit', () => {
     const day = { assignments: [{ id: 1, place: ride }, { id: 2, place: own }, { id: 3, place: lake }] };
     const plan = dayPlan({ days: [day], nights: [], accommodations: [] }, { ...day, index: 0, n: 1 });
     expect(plan.trace.place.id).toBe(20);
-    expect(plan.stops.map((s) => s.place.id)).toEqual([10]);
+    expect(plan.stops.map((s) => s.place.id)).toEqual([30, 10]); // the bike ride is an activity of the day (0.6.35)
   });
   it('vanlife_place refuses a bad kind, an empty log or a walk to another car park before any write', async () => {
     const trip = build();
@@ -1562,5 +1562,34 @@ describe('the 0.6.33 audit', () => {
     const before = [p17.category_id, p17.notes];
     await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 17, kind: 'hike', sheet_set: { duration: '2 h' }, log: { date: '2026-10-01', channel: 'email', direction: 'sent', summary: ' ' } })).rejects.toThrow(/summary/);
     expect([p17.category_id, p17.notes]).toEqual(before);
+  });
+});
+
+describe('the 0.6.34 audit', () => {
+  const CATS = [{ id: 1, name: 'Night – Campsite' }, { id: 4, name: 'See – Lake' }, { id: 5, name: 'Food – Groceries' }, { id: 6, name: 'Route – Day route' }, { id: 7, name: 'See – Museum' }, { id: 8, name: 'Route – Parking' }, { id: 9, name: 'See – Hike' }, { id: 10, name: 'Bike – Cycling tour' }];
+  it('a refused vanlife_place call undoes what it wrote: a new place, a category, the notes', async () => {
+    const trip = build();
+    const h = makeHost({ trip, categories: CATS });
+    const n = trip.places.length;
+    let fail = false;
+    // a refusal only a later step makes: simulated by a record write that fails
+    h.ctx.meta.set = ((f) => async (...x) => { if (fail) throw new Error('later refusal'); return f(...x); })(h.ctx.meta.set);
+    fail = true;
+    await expect(call(h, 'vanlife_place', { tripId: 1, create: { name: 'New hike', lat: 46.5, lng: 12.1 }, set: { water: 'yes' } })).rejects.toThrow(/later refusal/);
+    expect(trip.places.length).toBe(n);
+    const p17 = trip.places.find((p) => p.id === 17);
+    const before = [p17.category_id, p17.notes || ''];
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 17, kind: 'hike', sheet_set: { duration: '2 h' }, set: { water: 'yes' } })).rejects.toThrow(/later refusal/);
+    expect([p17.category_id, p17.notes || '']).toEqual(before);
+  });
+  it('a set answers with TREK\'s new values (currency alone)', async () => {
+    const trip = build();
+    const h = makeHost({ trip });
+    for (const k of ['getPlaces', 'getDays', 'getById', 'getAccommodations', 'getReservations']) {
+      const f = h.ctx.trips[k];
+      if (f) h.ctx.trips[k] = async (...x) => structuredClone(await f(...x)); // copies, as over TREK's RPC
+    }
+    const r = await call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: { currency: 'CHF' } });
+    expect(JSON.stringify(r.price)).toMatch(/CHF/);
   });
 });
