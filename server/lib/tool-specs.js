@@ -46,7 +46,7 @@ const TOOL_SPECS = [
         },
       },
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
   },
   {
     name: 'vanlife_check_trip',
@@ -177,7 +177,7 @@ const TOOL_SPECS = [
         fill: { type: 'boolean', default: false, description: 'Fill empty amenities and contacts: placeId, or the next 20 places; call again while "remaining" > 0. Never overwrites a typed value; copies from the notes follow them.' },
       },
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
   },
   {
     name: 'vanlife_night',

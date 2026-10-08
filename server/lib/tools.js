@@ -149,9 +149,31 @@ async function hikesList(ctx, model, settings, opts) {
 }
 
 /** List / read / set / log / clear / fill the record of the places of a trip. */
+/**
+ * Every write of a vanlife_place call checked before the first one (a new place, a car park, a
+ * kind): a refusal never comes after something was written.
+ */
+async function precheck(ctx, a, settings) {
+  for (const [f, v] of Object.entries(a.sheet_set && typeof a.sheet_set === 'object' ? a.sheet_set : {})) placeSheet.setField('', '', f, v == null ? null : Array.isArray(v) ? v.map(String) : String(v), settings.language);
+  if (a.clear_fields && a.clear_fields.length) placeInfo.clearPatch(a.clear_fields.filter((f) => f !== 'all'));
+  if (a.set && typeof a.set === 'object') {
+    const walk = a.set.walk && typeof a.set.walk === 'object' && a.set.walk.parking != null ? (({ parking, ...rest }) => ({ ...rest, parking_place_id: 1 }))(a.set.walk) : a.set.walk;
+    const patch = placeInfo.expandParking(placeInfo.expandWalk({ ...a.set, ...(walk !== undefined ? { walk } : {}) }));
+    placeInfo.nativePrice(patch);
+    const rest = { ...patch };
+    delete rest.price_amount;
+    delete rest.currency;
+    const rec = placeInfo.merge(a.placeId ? await placeInfo.get(ctx, a.placeId) : null, rest);
+    if (placeInfo.WALK_FIELDS.some((k) => k in patch) && rec.access_parking_place_id != null && !rec.walk_shape && !rec.walk_loop) {
+      throw new Error('walk.shape is required: "loop" (back to the same car park another way) or "out_and_back" (to a turnaround point and back the same way)');
+    }
+  }
+}
+
 async function placeTool(ctx, model, a, settings, opts = {}) {
   // fill is a call of its own: nothing else is written, no place is created (placeToolOn says so).
   if (a.fill) return placeToolOn(ctx, model, a, settings, opts);
+  await precheck(ctx, a, settings);
   if (!a.placeId && a.filter === 'hikes') return hikesList(ctx, model, settings, opts);
   // A new place (create), and a hike's car park given inline (set.walk.parking): made first,
   // so a whole hike — car park, hike, dotted walk — goes on the map in one call.
@@ -205,9 +227,13 @@ async function createPlace(ctx, model, c) {
     const v = Number(c.price_amount);
     if (!Number.isFinite(v) || v < 0) throw new Error('create.price_amount must be a positive number');
     input.price = v;
-    // A currency only when given: the trip's applies otherwise (currencyOf), and would stay
-    // frozen on the place if the trip's currency changed.
-    if (typeof c.currency === 'string' && /^[A-Za-z]{3}$/.test(c.currency)) input.currency = c.currency.toUpperCase();
+  }
+  // A currency only when given: the trip's applies otherwise (currencyOf), and would stay
+  // frozen on the place if the trip's currency changed. A wrong one is refused, never dropped.
+  if (c.currency != null) {
+    const cur = String(c.currency).trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(cur)) throw new Error('create.currency must be a 3-letter code (EUR, CHF...)');
+    input.currency = cur;
   }
   let day = null;
   if (c.day_number != null) {
@@ -431,7 +457,28 @@ async function callTool({ name, args }, ctx, { now } = {}) {
     default:
       throw new Error(`unhandled tool ${name}`);
   }
-  return fit(res);
+  return fit(withUnused(name, args, a, res));
+}
+
+// The arguments each mode reads: any other one given is said (ignored), never dropped silently.
+const MODE_ARGS = {
+  vanlife_day: {
+    routes: ['dayNumber', 'dayNumbers', 'apply', 'startAt'],
+    schedule: ['dayNumber', 'departure', 'stays'],
+    supplies: ['dayNumber', 'kinds', 'at', 'corridor_km'],
+  },
+};
+const COMMON_ARGS = ['tripId', 'action', 'language'];
+function withUnused(name, args, a, res) {
+  if (!res || typeof res !== 'object' || Array.isArray(res)) return res;
+  const given = Object.keys(args || {}).filter((k) => args[k] != null && !COMMON_ARGS.includes(k));
+  let unused = [];
+  if (MODE_ARGS[name] && MODE_ARGS[name][a.action]) unused = given.filter((k) => !MODE_ARGS[name][a.action].includes(k));
+  if (name === 'vanlife_plan_trip' && a.tripId && args && args.request != null) unused = ['request'];
+  if (name === 'vanlife_place' && a.placeId && !a.fill) unused = given.filter((k) => ['filter', 'scope'].includes(k));
+  if (!unused.length) return res;
+  const note = `${unused.join(', ')}: not used here`;
+  return { ...res, ignored: res.ignored ? `${res.ignored}; ${note}` : note };
 }
 
 module.exports = { callTool, fit, sunTable, keyAmenities, TOOL_BUDGET_MS };
