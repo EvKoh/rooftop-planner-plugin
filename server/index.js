@@ -33,6 +33,7 @@ const { gentle } = require('./lib/gentle');
 const { bundle, lang, locale, t } = require('./lib/i18n');
 const { NIGHT_STATES } = require('./lib/design');
 const placeSheet = require('./lib/place-sheet');
+const visit = require('./lib/visit');
 const walks = require('./lib/walks');
 
 const json = (status, body) => ({ status, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
@@ -169,7 +170,7 @@ module.exports = definePlugin({
           const categoryName = place.category_name || (catName && catName.name) || '';
           const sheet = placeSheet.view(placeSheet.sheetOf({ ...place, categoryName, raw: place }, { night }), L, {
             trackUrl: walks.hikeUrl({ raw: place, description: place.description, notes: place.notes }, info),
-            visitMinutes: info ? info.visit_min_minutes : null,
+            visitMinutes: visit.recordedMinutes(info),
           });
           return json(200, {
             language: L,

@@ -1151,3 +1151,27 @@ describe('the 0.6.18 audit: one reader of a length for the whole plugin', () => 
     expect(rec).toContain('"visit_min_minutes":null');
   });
 });
+
+describe('the 0.6.19 audit', () => {
+  const { parseVisit, recordedMinutes } = require('../server/lib/visit.js');
+  const sheet = require('../server/lib/place-sheet.js');
+  it('three-digit minutes are read by both readers', () => {
+    for (const [s, v] of [['120 min', 120], ['150 min', 150], ['180 min', 180]]) {
+      expect(sheet.minutesOf(s), s).toBe(v);
+      expect(parseVisit(`Durée : ${s}`).min, s).toBe(v);
+    }
+  });
+  it('a pair of hours after a clock word is times of day; a pair opener is its joint', () => {
+    for (const s of ['Randonnée, départ 6h-7h.', 'Visite guidée, rendez-vous 5h-6h30.', 'Visite guidée, avant 5h-6h.']) expect(parseVisit(s), s).toBeNull();
+    expect(parseVisit('Durée : entre 2h et 3h')).toMatchObject({ min: 120, max: 180 });
+  });
+  it('the place tool shows a lone typed maximum, as the day counts it', async () => {
+    expect(recordedMinutes({ visit_min_minutes: null, visit_max_minutes: 180 })).toBe(180);
+    const trip = build();
+    trip.places.find((p) => p.id === 13).notes = 'Durée : 1 h';
+    const h = makeHost({ trip });
+    await call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: { visit_max_minutes: 180 } });
+    const out = await call(h, 'vanlife_place', { tripId: 1, placeId: 13 });
+    expect(JSON.stringify(out)).toContain('"duration":{"minutes":180');
+  });
+});

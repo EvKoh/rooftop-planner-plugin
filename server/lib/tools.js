@@ -4,6 +4,7 @@
 // cuts at 15 s), and shrink the answer under the 64 KiB result cap.
 const { TOOL_NAMES, withDefaults } = require('./tool-specs');
 const placeSheet = require('./place-sheet');
+const { recordedMinutes } = require('./visit');
 const rules = require('./rules');
 const { readSettings } = require('./settings');
 const { loadTrip, findDay, stayOn, isNightPlace, candidateNights } = require('./trip');
@@ -110,7 +111,8 @@ function placeView(model, p, info, settings, { full = false } = {}) {
     // card shows; edit a field with sheet_set, which rewrites its line in the notes.
     const sh = placeSheet.sheetOf(p, { night });
     // The time on site the plan counts wins over the notes' figure, as on the panel's card.
-    const fields = info && info.visit_min_minutes != null ? { ...sh.fields, duration: { minutes: info.visit_min_minutes, text: durationText(info.visit_min_minutes, L) } } : sh.fields;
+    const onSite = recordedMinutes(info);
+    const fields = onSite != null ? { ...sh.fields, duration: { minutes: onSite, text: durationText(onSite, L) } } : sh.fields;
     out.sheet = { kind: sh.kind, fields, otherNotes: sh.other, about: sh.about, freeNotes: sh.text };
   }
   return out;
