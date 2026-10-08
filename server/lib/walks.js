@@ -86,7 +86,8 @@ function shapeOf(hike, access, info) {
   if (recordedShape(info)) return recordedShape(info);
   // The route type the hike's own sheet states ("Type : boucle"), as its card shows it.
   const stated = require('./place-sheet').sheetOf(hike).fields.route_type;
-  if (stated && SHAPES.includes(stated.kind)) return stated.kind;
+  // "One way" (a traverse, back by bus or lift) is the notes' word: walked once, never doubled.
+  if (stated && (SHAPES.includes(stated.kind) || stated.kind === 'one_way')) return stated.kind;
   return access && distKm(access.point, pt(hike)) <= SAME_POINT_KM ? 'loop' : 'out_and_back';
 }
 
@@ -291,7 +292,7 @@ function walkLayers(walks, geometry, settings) {
     // first meaningful part of its name ("Hike — Example loop → hut" → "Example loop").
     const label = [shortName(w.hike, 32), statsText(geo, L, { climb: false }), w.access && w.access.name ? t(L, 'walk.from', { parking: shortName(w.access.name, 24) }) : null].filter(Boolean).join(' · ');
     // The card a click opens: the hike, its walk, its car park, the page with the full track.
-    const shapeName = t(L, w.shape === 'loop' ? 'walk.loop' : 'walk.outAndBack');
+    const shapeName = t(L, w.shape === 'loop' ? 'walk.loop' : w.shape === 'one_way' ? 'sh.v.one_way' : 'walk.outAndBack');
     const popupText = [w.hike, [shapeName, statsText(geo, L)].filter(Boolean).join(' · '), w.access && w.access.name ? t(L, 'walk.from', { parking: w.access.name }) : null, w.url ? null : t(L, 'walk.noLink')]
       .filter(Boolean).join('\n').slice(0, 280);
     return { type: 'polyline', points: geo && geo.points && geo.points.length > 1 ? geo.points : w.points, tone: TONE.planned, ...WALK_LINE, label: label.slice(0, 80), popupText, ...(w.url ? { url: w.url } : {}) };
