@@ -193,7 +193,12 @@ const ROUTE_KINDS = [
 const routeKindOf = (s) => { const t = norm(s); const r = ROUTE_KINDS.find(([, re]) => re.test(t)); return r ? r[0] : null; };
 // The field a "Key : value" line fills, as the reader and the writer both decide it: a "Type"
 // line whose value is a route shape ("Type : boucle") is the route type.
-const lineField = (key, value) => { const f = fieldOf(key); return f === 'type' && routeKindOf(value) ? 'route_type' : f; };
+// …and a "Parcours" / "Route" line without a route shape is a free note, not the route type.
+const lineField = (key, value) => {
+  const f = fieldOf(key);
+  if (f === 'type' && routeKindOf(value)) return 'route_type';
+  return f === 'route_type' && !routeKindOf(value) ? null : f;
+};
 
 const DOG_NO = /\b(non admis|interdit|pas admis|refuse|not allowed|no dogs|forbidden|prohibited|verboten|nicht erlaubt|vietato|non ammess\w*|prohibido|no se admiten|no permitido)\b/;
 const DOG_YES = /\b(admis|bienvenu\w*|accepte\w*|autorise\w*|allowed|welcome|accepted|ok|oui|yes|erlaubt|willkommen|ammess\w*|benvenut\w*|consentit\w*|si|ja|permitid\w*|admitid\w*|bienvenid\w*)\b/;

@@ -52,8 +52,9 @@ async function placeColumns(ctx, tripId, settings) {
   const lodged = new Set((accs || []).map((a) => a.place_id));
   const catName = new Map((cats || []).map((c) => [c.id, c.name]));
   const isNight = (p) => isNightOf(lodged, p.id, p.category_name || catName.get(p.category_id), p.route_geometry);
-  // Route places carry a road geometry, not a price.
-  const real = places.filter((p) => !p.route_geometry);
+  // A day's line carries a road geometry, not a price; a hike or bike ride with its GPX line is
+  // a place (classify.isTrace, as the place tool lists it).
+  const real = places.filter((p) => !require('./classify').isTrace(p.category_name || catName.get(p.category_id) || '', p));
   const info = await placeInfo.getAll(ctx, tripId, real.map((p) => p.id));
   const out = [];
   for (const p of real) {

@@ -194,7 +194,13 @@ async function precheck(ctx, model, a, settings) {
   if (a.clear_fields && a.clear_fields.length) {
     placeInfo.clearPatch(a.clear_fields.filter((f) => f !== 'all'));
     // One field both set and cleared (or a log added and cleared): which one wins is the user's call.
-    const both = a.clear_fields.filter((f) => (a.set && typeof a.set === 'object' && f in a.set) || (f === 'log' && a.log));
+    const set = a.set && typeof a.set === 'object' ? a.set : {};
+    const setContacts = set.contacts && typeof set.contacts === 'object' ? set.contacts : {};
+    const both = a.clear_fields.filter((f) => {
+      const k = String(f).replace(/^contacts\./, '');
+      return k in set || k in setContacts || (k === 'log' && a.log) || (k === 'contacts' && set.contacts)
+        || (k === 'amenities' && Object.keys(set).some((x) => x in placeInfo.AMENITIES));
+    });
     if (both.length) throw new Error(`${both.join(', ')}: both set and cleared in one call; give one of them`);
   }
   if (a.set && typeof a.set === 'object') {
@@ -394,7 +400,12 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
       return { saved: true, placeId: place.id, sheetFields: sheetSet.map(([f]) => f), sheet: { kind: sh.kind, fields: withRecordedDuration(sh.fields, await placeInfo.get(ctx, place.id), settings.language), otherNotes: sh.other } };
     }
   }
-  if (a.clear_fields && a.clear_fields.length) Object.assign(patch, placeInfo.clearPatch(a.clear_fields));
+  if (a.clear_fields && a.clear_fields.length) {
+    // Contacts set and other contacts cleared in one call: both kept (the clear patch only names its own).
+    const cleared = placeInfo.clearPatch(a.clear_fields);
+    if (cleared.contacts && patch.contacts) cleared.contacts = { ...patch.contacts, ...cleared.contacts };
+    Object.assign(patch, cleared);
+  }
   if (a.log) patch.log = a.log;
   if (Object.keys(patch).length) {
     const before = await placeInfo.get(ctx, place.id);
@@ -446,6 +457,11 @@ async function hikeWalk(ctx, model, placeId, settings, opts) {
 async function dayTool(ctx, model, a, opts) {
   const needDay = () => { if (!a.dayNumber) throw new Error(`dayNumber is required for action "${a.action}"`); };
   // dayNumbers, else the one dayNumber given: never every day when one was named.
+  if (a.action === 'routes') {
+    const asked = a.dayNumbers && a.dayNumbers.length ? a.dayNumbers : a.dayNumber != null ? [a.dayNumber] : [];
+    const missing = asked.filter((n) => !findDay(model, { dayNumber: n }));
+    if (missing.length) throw new Error(`day ${missing.join(', ')} is not in this trip`);
+  }
   if (a.action === 'routes') return computeRoutes(ctx, model, { days: (a.dayNumbers && a.dayNumbers.length ? a.dayNumbers : a.dayNumber != null ? [a.dayNumber] : []).map((n) => ({ dayNumber: n })), apply: a.apply, startAt: a.startAt }, opts);
   if (a.action === 'schedule') {
     needDay();
