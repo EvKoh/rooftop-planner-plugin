@@ -107,6 +107,9 @@ async function planTrip(ctx, model, o, opts) {
       }
       if (index < model.days.length) { stop(step, index); break; }
     } else if (name === 'budget') {
+      // Routes may have been rewritten in this call (apply): the budget reads the trip as TREK
+      // holds it now, never the line it replaced.
+      if (o.apply) model = await require('./trip').loadTrip(ctx, model.tripId, opts.settings);
       const r = await tripBudget(ctx, model, {}, opts);
       out.results.budget = { total: r.total, nightsTotal: r.nightsTotal, fuelTotal: r.fuelTotal, tollTotal: r.tollTotal, accessTollTotal: r.accessTollTotal, accessTollDays: r.accessTollDays, unknownNightPrices: r.unknownNightPrices, note: r.note };
       out.coreCalls.push(...r.coreCalls);

@@ -1673,3 +1673,57 @@ describe('the 0.6.37 audit', () => {
     } finally { vi.unstubAllGlobals(); }
   });
 });
+
+describe('the 0.6.38 audit', () => {
+  it('sheet_set route_type replaces a "Type : boucle" line, which the reader reads as the route type', () => {
+    const sheet = require('../server/lib/place-sheet.js');
+    const r = sheet.setField('', 'Type : boucle\nDurée : 4 h', 'route_type', 'aller-retour', 'fr');
+    expect(r.notes).not.toMatch(/boucle/);
+    expect(sheet.setField('', 'Type : boucle\nDurée : 4 h', 'route_type', null, 'fr').notes).toBe('Durée : 4 h');
+    expect(sheet.setField('', 'Type : camping', 'route_type', null, 'fr').notes).toBe('Type : camping');
+  });
+  it('routes says a dayNumber it does not use when dayNumbers are given', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const r = await call(makeHost(), 'vanlife_day', { tripId: 1, action: 'routes', dayNumber: 2, dayNumbers: [1] });
+      expect(r.ignored).toMatch(/dayNumber/);
+      const r2 = await call(makeHost(), 'vanlife_day', { tripId: 1, action: 'routes', dayNumber: 2 });
+      expect(r2.ignored).toBeUndefined();
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it('a field both set and cleared in one call is refused', async () => {
+    await expect(call(makeHost(), 'vanlife_place', { tripId: 1, placeId: 13, set: { dog: 'yes' }, clear_fields: ['dog'] })).rejects.toThrow(/both set and cleared/);
+  });
+  it('a hike with its GPX line is a place for the list and the fill; its track page is the tool\'s website too', async () => {
+    const trip = build();
+    const hike = { id: 41, trip_id: 1, name: 'Seceda ridge', lat: 46.6, lng: 11.7, category_id: 9, notes: 'Duration : 4 h\nTrack: https://www.komoot.com/tour/123456', description: '', website: 'https://www.valgardena.it', route_geometry: JSON.stringify([[46.6, 11.7], [46.61, 11.72]]) };
+    trip.places.push(hike);
+    const cats = [{ id: 1, name: 'Night – Campsite' }, { id: 4, name: 'See – Lake' }, { id: 6, name: 'Route – Day route' }, { id: 9, name: 'See – Hike' }];
+    const h = makeHost({ trip, categories: cats });
+    const all = await call(h, 'vanlife_place', { tripId: 1, filter: 'all' });
+    expect(all.places.some((p) => p.placeId === 41 || p.id === 41)).toBe(true);
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const f = await call(h, 'vanlife_place', { tripId: 1, placeIds: [41], placeId: 41, fill: true });
+      expect(f.looked).toBe(1);
+    } finally { vi.unstubAllGlobals(); }
+    const t = await call(h, 'vanlife_place', { tripId: 1, placeId: 41 });
+    expect(t.sheet.fields.website.url).toMatch(/komoot/);
+  });
+});
+
+describe('the 0.6.38 audit: plan_trip apply', () => {
+  it('the budget reads the routes written in the same call, not the lines they replaced', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      let r = await call(makeHost(), 'vanlife_plan_trip', { tripId: 1, apply: true });
+      const h = makeHost();
+      r = await call(h, 'vanlife_plan_trip', { tripId: 1, apply: true });
+      while (r.continuation) r = await call(h, 'vanlife_plan_trip', { tripId: 1, apply: true, continuation: r.continuation });
+      const fuel = (r.coreCalls || []).find((c) => /Fuel day 1 /.test(c.args && c.args.name));
+      const day1 = r.results.routes && r.results.routes.days.find((d) => d.day.number === 1);
+      if (fuel && day1) expect(fuel.args.name).toContain(`(${Math.round(day1.km)} km)`);
+      else expect(fuel || day1).toBeTruthy();
+    } finally { vi.unstubAllGlobals(); }
+  });
+});

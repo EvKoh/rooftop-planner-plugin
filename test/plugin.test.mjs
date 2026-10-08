@@ -165,7 +165,7 @@ describe('MCP tools through the mock host', () => {
     const r = await call(h, 'vanlife_check_trip', { tripId: 1, sun: true, levels: ['info'] });
     expect(r.sun.days).toHaveLength(4);
     expect(r.sun.days[0]).toMatchObject({ day: 1, sunset: '18:31', latestArrival: '17:31', place: 'Camping Example' });
-    expect(r.sun.days[3].place).toBe('Route day 4'); // no night on the last day: last located stop
+    expect(r.sun.days[3].place).toBe('Farm Example'); // no night, no stop: last night's place, as find_nights (0.6.39)
     const n = await call(h, 'vanlife_find_nights', { lat: 46.4983, lng: 11.3548, date: '2026-10-11' });
     expect(n.sun).toEqual({ sunset: '18:36', latestArrival: '17:36' });
   });

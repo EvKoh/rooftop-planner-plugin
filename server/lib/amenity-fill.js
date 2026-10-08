@@ -231,7 +231,8 @@ async function resync(ctx, tripId, place, current) {
 
 /** Places worth looking at: real places (no road geometry) with a position. */
 function candidates(places) {
-  return places.filter((p) => !p.route_geometry && p.lat != null && p.lng != null);
+  // A day's line is not a place to fill; a hike or bike ride with its GPX line is (classify.isTrace).
+  return places.filter((p) => !require('./classify').isTrace(p.categoryName || '', p) && p.lat != null && p.lng != null);
 }
 
 /**
@@ -251,7 +252,7 @@ async function fill(ctx, tripId, opts = {}) {
   // hike filed only by its category reads its summary line ("10.93 km · +770 m · 4 h 10").
   const [rows, cats] = await Promise.all([ctx.trips.getPlaces(Number(tripId)), ctx.categories.list().catch(() => [])]);
   const catName = new Map((cats || []).map((c) => [c.id, c.name]));
-  const all = candidates(rows).map((p) => ({ ...p, categoryName: p.category_name || catName.get(p.category_id) || '' }));
+  const all = candidates(rows.map((p) => ({ ...p, categoryName: p.category_name || catName.get(p.category_id) || '' })));
   lap('places', t);
   const only = opts.placeIds ? new Set(opts.placeIds.map(Number)) : null;
   const pool = only ? all.filter((p) => only.has(p.id)) : all;

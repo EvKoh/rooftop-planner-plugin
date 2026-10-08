@@ -191,6 +191,9 @@ const ROUTE_KINDS = [
   ['one_way', /\b(aller simple|one way|one-way|point to point|traversee|linear|streckenwanderung|strecke|solo andata|traversata|lineal|solo ida)\b/],
 ];
 const routeKindOf = (s) => { const t = norm(s); const r = ROUTE_KINDS.find(([, re]) => re.test(t)); return r ? r[0] : null; };
+// The field a "Key : value" line fills, as the reader and the writer both decide it: a "Type"
+// line whose value is a route shape ("Type : boucle") is the route type.
+const lineField = (key, value) => { const f = fieldOf(key); return f === 'type' && routeKindOf(value) ? 'route_type' : f; };
 
 const DOG_NO = /\b(non admis|interdit|pas admis|refuse|not allowed|no dogs|forbidden|prohibited|verboten|nicht erlaubt|vietato|non ammess\w*|prohibido|no se admiten|no permitido)\b/;
 const DOG_YES = /\b(admis|bienvenu\w*|accepte\w*|autorise\w*|allowed|welcome|accepted|ok|oui|yes|erlaubt|willkommen|ammess\w*|benvenut\w*|consentit\w*|si|ja|permitid\w*|admitid\w*|bienvenid\w*)\b/;
@@ -281,7 +284,7 @@ function parse(description, notes, { kind = 'activity' } = {}) {
   const add = (field, value, items, label) => {
     let f = field;
     // "Type : boucle" on a hike is the route's shape; "Type : camping" is the place's type.
-    if (f === 'type' && routeKindOf(value)) f = 'route_type';
+    if (f === 'type' && routeKindOf(value)) f = 'route_type'; // = lineField
     if (f === 'route_type' && !routeKindOf([value, ...items].join(' '))) { keep(label, value, items); return; }
     const prev = fields[f];
     if (!prev) { fields[f] = { value, items }; return; }
@@ -513,7 +516,7 @@ function setField(description, notes, field, value, L = 'en') {
       if (inField && tt && BULLET.test(tt)) continue;
       inField = false;
       const kv = tt && !BULLET.test(tt) ? splitKey(tt) : null;
-      if (kv && fieldOf(kv[0]) === field) {
+      if (kv && lineField(kv[0], kv[1]) === field) {
         if (at < 0) { at = out.length; label = kv[0]; }
         inField = true;
         continue;

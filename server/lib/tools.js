@@ -10,7 +10,8 @@ const { readSettings } = require('./settings');
 const { loadTrip, findDay, stayOn, isNightPlace, candidateNights } = require('./trip');
 const { applyKind } = require('./place-kind');
 const { checkTrip } = require('./check');
-const { findNights, findNightsForDay } = require('./nights');
+const { isTrace } = require('./classify');
+const { findNights, findNightsForDay, anchors } = require('./nights');
 const { computeRoutes } = require('./traces');
 const { scheduleDay } = require('./schedule');
 const { suppliesForDay } = require('./supplies');
@@ -62,7 +63,9 @@ function sunTable(model, settings) {
   };
   return model.days.filter((d) => d.date).map((d) => {
     const n = stayOn(model, d);
-    const last = n && n.lat != null ? n : [...d.assignments].reverse().map((a) => a.place).find((p) => p.lat != null);
+    // Tonight's stay, else find_nights' own evening point (nights.anchors: the last stop, else
+    // last night's place; never a drawn line, whose pin is mid-route).
+    const last = n && n.lat != null ? n : anchors(model, d).evening;
     return last ? { day: d.n, ...row(d.date, last.lat, last.lng, last.name) } : { day: d.n, date: d.date, place: null };
   });
 }
@@ -112,6 +115,9 @@ function placeView(model, p, info, settings, { full = false } = {}) {
     const sh = placeSheet.sheetOf(p, { night });
     // The time on site the plan counts wins over the notes' figure, as on the panel's card.
     const fields = withRecordedDuration(sh.fields, info, L);
+    // A hike's track page is its reference page, as on the panel's card (place-sheet.view).
+    const track = sh.kind === 'hike' ? walks.hikeUrl({ raw: p.raw || p, description: p.description, notes: p.notes }, info) : null;
+    if (track && (!fields.website || fields.website.fromTrek)) fields.website = { url: track, text: track };
     out.sheet = { kind: sh.kind, fields, otherNotes: sh.other, about: sh.about, freeNotes: sh.text };
   }
   return out;
@@ -185,7 +191,12 @@ async function precheck(ctx, model, a, settings) {
     if (place && !a.kind) await checkWalk(ctx, model, place, placeInfo.expandWalk({ walk: walkIn }));
   }
   for (const [f, v] of Object.entries(a.sheet_set && typeof a.sheet_set === 'object' ? a.sheet_set : {})) placeSheet.setField('', '', f, v == null ? null : Array.isArray(v) ? v.map(String) : String(v), settings.language);
-  if (a.clear_fields && a.clear_fields.length) placeInfo.clearPatch(a.clear_fields.filter((f) => f !== 'all'));
+  if (a.clear_fields && a.clear_fields.length) {
+    placeInfo.clearPatch(a.clear_fields.filter((f) => f !== 'all'));
+    // One field both set and cleared (or a log added and cleared): which one wins is the user's call.
+    const both = a.clear_fields.filter((f) => (a.set && typeof a.set === 'object' && f in a.set) || (f === 'log' && a.log));
+    if (both.length) throw new Error(`${both.join(', ')}: both set and cleared in one call; give one of them`);
+  }
   if (a.set && typeof a.set === 'object') {
     const walk = a.set.walk && typeof a.set.walk === 'object' && a.set.walk.parking != null ? (({ parking, ...rest }) => ({ ...rest, parking_place_id: 1 }))(a.set.walk) : a.set.walk;
     const patch = placeInfo.expandParking(placeInfo.expandWalk({ ...a.set, ...(walk !== undefined ? { walk } : {}) }));
@@ -319,7 +330,7 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
     // Three sets of nights: planned (a lodging in the trip), candidates (a night category but
     // no lodging), and both together (trip.js decides both).
     const planned = new Set(model.nights.map((n) => n.placeId));
-    const real = model.pool.filter((p) => !p.geometry);
+    const real = model.pool.filter((p) => !isTrace(p.categoryName, p)); // a hike with its GPX line is a place
     const sets = {
       planned: real.filter((p) => planned.has(p.id)),
       candidates: candidateNights(model),
@@ -520,7 +531,7 @@ async function callTool({ name, args }, ctx, { now } = {}) {
 // The arguments each mode reads: any other one given is said (ignored), never dropped silently.
 const MODE_ARGS = {
   vanlife_day: {
-    routes: ['dayNumber', 'dayNumbers', 'apply', 'startAt'],
+    routes: ['dayNumbers', 'apply', 'startAt'], // + dayNumber when no dayNumbers (withUnused)
     schedule: ['dayNumber', 'departure', 'stays'],
     supplies: ['dayNumber', 'kinds', 'at', 'corridor_km'],
   },
@@ -531,6 +542,8 @@ function withUnused(name, args, a, res) {
   const given = Object.keys(args || {}).filter((k) => args[k] != null && !COMMON_ARGS.includes(k));
   let unused = [];
   if (MODE_ARGS[name] && MODE_ARGS[name][a.action]) unused = given.filter((k) => !MODE_ARGS[name][a.action].includes(k));
+  // routes: dayNumber is the day to route only when no dayNumbers are given.
+  if (name === 'vanlife_day' && a.action === 'routes' && !(args.dayNumbers && args.dayNumbers.length)) unused = unused.filter((k) => k !== 'dayNumber');
   if (name === 'vanlife_plan_trip' && a.tripId && args && args.request != null) unused = ['request'];
   if (name === 'vanlife_place' && a.placeId && !a.fill) unused = given.filter((k) => ['filter', 'scope'].includes(k));
   if (!unused.length) return res;
