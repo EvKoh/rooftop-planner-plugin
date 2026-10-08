@@ -202,7 +202,7 @@ const TOOL_SPECS = [
         nights: { type: 'integer', minimum: 1, maximum: 30, description: 'set, when the day has no night yet: how many nights (default 1).' },
       },
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   },
   {
     name: 'vanlife_host_message',

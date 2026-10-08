@@ -34,9 +34,8 @@ function waypoints(model, day) {
   return { pts: pts.slice(0, 30), names: names.slice(0, 30) };
 }
 
-function routeCategoryId(model, trace) {
-  if (trace) return model.poolById.get(trace.place.id)?.categoryId ?? null;
-  // The day-route category as classify recognises it (classify.RE.trace), never a bare "route":
+function routeCategoryId(model) {
+  // Always the day-route category: the old line may have been a place of another category.  // The day-route category as classify recognises it (classify.RE.trace), never a bare "route":
   // a user's "Hiking route" is a hike category, and the plugin would read its own line as a hike.
   const c = (model.categories || []).find((x) => require('./classify').RE.trace.test(norm(x.name)));
   return c ? c.id : null;
@@ -82,7 +81,7 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
         lat: r.points[Math.floor(r.points.length / 2)][0], lng: r.points[Math.floor(r.points.length / 2)][1],
         route_geometry: JSON.stringify(r.points),
         route_color: old?.raw?.route_color || COLORS[day.index % COLORS.length],
-        category_id: routeCategoryId(model, trace),
+        category_id: routeCategoryId(model),
         notes: t(settings.language, 'route.notes', {
           mode: t(settings.language, r.motorway ? 'route.mode.motorway' : 'route.mode.notolls'),
           height: num(settings.vehicle_height_m, settings.language),
@@ -90,8 +89,11 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
         }).slice(0, 2000),
       });
       const asg = await ctx.itinerary.assign(model.tripId, day.id, place.id, null);
-      if (old) await ctx.places.delete(model.tripId, old.id);
-      writes.push({ day: day.n, createdPlaceId: place.id, assignmentId: asg.id, deletedPlaceId: old ? old.id : null });
+      // The old line goes only when it is the plugin's kind of place (the day-route category, or
+      // none): a drawn line filed in a user's category (a bike ride from a GPX) is theirs, kept.
+      const ownLine = old && (!old.categoryId || require('./classify').RE.trace.test(norm(old.categoryName || '')));
+      if (ownLine) await ctx.places.delete(model.tripId, old.id);
+      writes.push({ day: day.n, createdPlaceId: place.id, assignmentId: asg.id, deletedPlaceId: ownLine ? old.id : null, ...(old && !ownLine ? { kept: `place ${old.id} ("${old.name}") is filed as "${old.categoryName}": kept; remove it in TREK if it was an old route` } : {}) });
       const rest = day.assignments.filter((a) => a !== trace).map((a) => a.id);
       coreCalls.push({ tool: 'reorder_day_assignments', args: { tripId: model.tripId, dayId: day.id, assignmentIds: [asg.id, ...rest] }, why: 'put the route first, or TREK draws a straight line to the morning start' });
     }

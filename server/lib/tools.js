@@ -153,7 +153,27 @@ async function hikesList(ctx, model, settings, opts) {
  * Every write of a vanlife_place call checked before the first one (a new place, a car park, a
  * kind): a refusal never comes after something was written.
  */
-async function precheck(ctx, a, settings) {
+/** A hike's car park must be another place of the trip, filed as a car park. */
+function checkParkId(model, placeId, parkId) {
+  if (parkId == null || parkId === '') return;
+  if (Number(parkId) === Number(placeId)) throw new Error('walk.parking_place_id must be another place: the car park the hike starts from');
+  const park = model.poolById.get(Number(parkId));
+  if (!park) throw new Error(`place ${parkId} is not in trip ${model.tripId}`);
+  if (!isParkingPlace(park)) throw new Error(`place ${parkId} ("${park.name}") is not a car park (category "${park.categoryName || 'none'}"): file it as one first (vanlife_place kind "parking"), a walk starts at a car park "P"`);
+}
+
+async function precheck(ctx, model, a, settings) {
+  if (a.placeId && !model.poolById.get(a.placeId)) throw new Error(`place ${a.placeId} is not in trip ${model.tripId}`);
+  if (a.create) {
+    if (a.placeId) throw new Error('create makes a new place: leave placeId out');
+    await createInput(ctx, model, a.create);
+  }
+  const walkIn = a.set && a.set.walk && typeof a.set.walk === 'object' && !Array.isArray(a.set.walk) ? a.set.walk : null;
+  if (walkIn && walkIn.parking != null) {
+    if (typeof walkIn.parking !== 'object' || Array.isArray(walkIn.parking)) throw new Error('walk.parking is a new car park: { name, lat, lng, price_amount, per, day_number }');
+    if ('parking_place_id' in walkIn) throw new Error('give walk.parking_place_id (a car park of the trip) or walk.parking (a new one), not both');
+    await createInput(ctx, model, { ...walkIn.parking, kind: 'parking' });
+  } else if (walkIn) checkParkId(model, a.placeId, walkIn.parking_place_id);
   for (const [f, v] of Object.entries(a.sheet_set && typeof a.sheet_set === 'object' ? a.sheet_set : {})) placeSheet.setField('', '', f, v == null ? null : Array.isArray(v) ? v.map(String) : String(v), settings.language);
   if (a.clear_fields && a.clear_fields.length) placeInfo.clearPatch(a.clear_fields.filter((f) => f !== 'all'));
   if (a.set && typeof a.set === 'object') {
@@ -173,7 +193,7 @@ async function precheck(ctx, a, settings) {
 async function placeTool(ctx, model, a, settings, opts = {}) {
   // fill is a call of its own: nothing else is written, no place is created (placeToolOn says so).
   if (a.fill) return placeToolOn(ctx, model, a, settings, opts);
-  await precheck(ctx, a, settings);
+  await precheck(ctx, model, a, settings);
   if (!a.placeId && a.filter === 'hikes') return hikesList(ctx, model, settings, opts);
   // A new place (create), and a hike's car park given inline (set.walk.parking): made first,
   // so a whole hike — car park, hike, dotted walk — goes on the map in one call.
@@ -201,7 +221,8 @@ async function placeTool(ctx, model, a, settings, opts = {}) {
 const CREATE_KEYS = ['name', 'lat', 'lng', 'kind', 'address', 'website', 'description', 'notes', 'price_amount', 'currency', 'per', 'day_number'];
 
 /** A new place of the trip, filed under the category of its kind, planned on a day if asked. */
-async function createPlace(ctx, model, c) {
+/** A create checked whole, nothing written: { input, day, per } for createPlace. */
+async function createInput(ctx, model, c) {
   if (!c || typeof c !== 'object' || Array.isArray(c)) throw new Error('create is an object: { name, lat, lng, kind, ... }');
   const unknown = Object.keys(c).filter((k) => !CREATE_KEYS.includes(k));
   if (unknown.length) throw new Error(`create takes ${CREATE_KEYS.join(', ')}, not ${unknown.join(', ')}`);
@@ -240,6 +261,12 @@ async function createPlace(ctx, model, c) {
     day = findDay(model, { dayNumber: c.day_number });
     if (!day) throw new Error(`day ${c.day_number} is not in trip ${model.tripId}`);
   }
+  if (c.per != null) placeInfo.merge(null, { per: c.per }); // refused here, before the place exists
+  return { input, day, name };
+}
+
+async function createPlace(ctx, model, c) {
+  const { input, day, name } = await createInput(ctx, model, c);
   const place = await ctx.places.create(Number(model.tripId), input);
   if (c.per != null) await placeInfo.set(ctx, model.tripId, place.id, { per: c.per }, { place });
   if (day) await ctx.itinerary.assign(Number(model.tripId), Number(day.id), Number(place.id));
@@ -320,13 +347,7 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
     }
   }
   const patch = placeInfo.expandParking(placeInfo.expandWalk({ ...(a.set || {}) }));
-  const parkId = patch.access_parking_place_id;
-  if (parkId != null && parkId !== '') {
-    if (Number(parkId) === place.id) throw new Error('walk.parking_place_id must be another place: the car park the hike starts from');
-    const park = model.poolById.get(Number(parkId));
-    if (!park) throw new Error(`place ${parkId} is not in trip ${model.tripId}`);
-    if (!isParkingPlace(park)) throw new Error(`place ${parkId} ("${park.name}") is not a car park (category "${park.categoryName || 'none'}"): file it as one first (vanlife_place kind "parking"), a walk starts at a car park "P"`);
-  }
+  checkParkId(model, place.id, patch.access_parking_place_id);
   if (placeInfo.WALK_FIELDS.some((k) => k in patch)) await checkWalk(ctx, model, place, patch);
   if (a.clear_fields && a.clear_fields.length) Object.assign(patch, placeInfo.clearPatch(a.clear_fields));
   if (a.log) patch.log = a.log;
