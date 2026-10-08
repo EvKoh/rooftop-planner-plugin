@@ -1857,3 +1857,34 @@ describe('the 0.6.43 audit: a rewritten bulleted field line keeps its bullet', (
     expect(m).toBe("Durée : 5 h\n- Niveau : moyen\n- Prévoir 2 L d'eau");
   });
 });
+
+describe('the 0.6.44 audit: sheet_set leaves every other line where the reader puts it', () => {
+  const s = require('../server/lib/place-sheet.js');
+  const read = (notes) => s.parse('', notes, { kind: 'night' }).fields;
+  it('a list written after a dashed field keeps that field\'s bullet', () => {
+    let n = 'Services : wifi\n- Chiens : acceptés\n- en laisse obligatoire';
+    n = s.setField('', n, 'services', 'wifi\ndouches', 'fr').notes;
+    expect(read(n).dog).toEqual(read('Services : wifi\n- Chiens : acceptés\n- en laisse obligatoire').dog);
+    n = s.setField('', n, 'services', 'wifi\ndouches\neau', 'fr').notes;
+    expect(n).toMatch(/en laisse obligatoire/);
+  });
+  it('removing a line between a header and another field\'s bullets keeps them apart', () => {
+    let m = 'Règlement :\n• Pas de feu\nPrix : 20 €\n- Chiens : acceptés\n- en laisse obligatoire';
+    m = s.setField('', m, 'price', null, 'fr').notes;
+    m = s.setField('', m, 'rules', 'Pas de feu\nSilence après 22 h', 'fr').notes;
+    expect(m).toMatch(/en laisse obligatoire/);
+  });
+  it('random layouts: no other field changes', () => {
+    const POOL = ['Prix : 12 €', 'Chiens : en laisse', 'Services : wifi', 'Règlement :', 'Durée : 3 h', '• Chiens : oui', '- Durée : 2 h', '• Prix : 5 €', '• Pas de feu', '- eau potable', 'Super endroit.', '', 'Services :'];
+    let seed = 7;
+    const rnd = (k) => { seed = (seed * 16807) % 2147483647; return seed % k; };
+    for (let i = 0; i < 3000; i++) {
+      const notes = Array.from({ length: 2 + rnd(5) }, () => POOL[rnd(POOL.length)]).join('\n');
+      const f = ['price', 'dog', 'services', 'rules', 'duration'][rnd(5)];
+      const v = [['X1'], ['A1', 'B1'], [null]][rnd(3)][0];
+      const before = read(notes);
+      const after = read(s.setField('', notes, f, v, 'fr').notes);
+      for (const g of Object.keys({ ...before, ...after })) if (g !== f) expect(JSON.stringify(after[g]), `${notes} | ${f}`).toBe(JSON.stringify(before[g]));
+    }
+  });
+});
