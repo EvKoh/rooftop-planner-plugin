@@ -29,7 +29,7 @@ const OPENING = /\b(ouvert|ouverture|horaires?|open|opening|hours|daily|geoffnet
  * The one test both duration readers apply (parseVisit here, the sheet's minutesOf). `s` is norm()ed.
  */
 const SPAN_JOIN = '(?:[-–]|a|à|to|bis|alle|al|et|and|und|e|y)';
-const CLOCK_WORD = /(?:jusqu.?a|a partir de|\bdes|\bvers|\bavant|\bapres|\bentre|\bfrom|\buntil|\btill|\bafter|\bbefore|\bbetween|\bby|\bat|\ba|\bum|\bab|\bbis|\bvor|\bnach|\bzwischen|\bdalle|\balle|\bdopo|\bentro|\bprima(?: delle)?|\btra|\bdesde(?: las)?|\bhasta(?: las)?|\bverso)\s*$/;
+const CLOCK_WORD = /(?:jusqu.?a|a partir de|\bdepart|\bretour|\brendez.?vous|\brdv|\ble matin|\bmatin|\bstarts?|\bstarting|\bmeet(?:ing)?|\bmorning|\breturn|\bdes|\bvers|\bavant|\bapres|\bentre|\bfrom|\buntil|\btill|\bafter|\bbefore|\bbetween|\bby|\bat|\ba|\bum|\bab|\bbis|\bvor|\bnach|\bzwischen|\bdalle|\balle|\bdopo|\bentro|\bprima(?: delle)?|\btra|\bdesde(?: las)?|\bhasta(?: las)?|\bverso)[\s,:;.]*$/;
 function isClockHour(s, index, len) {
   const after = s.slice(index + len);
   const before = s.slice(Math.max(0, index - 18), index);
@@ -76,7 +76,9 @@ function parseVisit(text) {
     if (!CUE.test(around)) continue;
     if (isClockHour(s, m.index, m[0].length)) continue;
     // "8h-21h" is opening hours, not a duration.
-    if (/^\d{1,2}\s*h\s*[-–]\s*\d{1,2}\s*h/.test(m[0]) && +m[3] > +m[1] + 4) continue;
+    // A range of hours that is a span of the day ("9h-12h", from 7 or wider than 3 h) is a
+    // clock span; a short early one ("1h30-2h") is a range of lengths — isClockHour's rule.
+    if (m[3] && !(+m[1] < 7 && (+m[3] * 60 + +(m[4] || 0)) - (+m[1] * 60 + +(m[2] || 0)) <= 180)) continue;
     let min;
     let max = null;
     if (m[5]) min = +m[5];

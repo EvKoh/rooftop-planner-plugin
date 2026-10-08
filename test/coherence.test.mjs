@@ -1099,3 +1099,24 @@ describe('the 0.6.16 audit: one clock-hour test for both duration readers', () =
     } finally { vi.unstubAllGlobals(); }
   });
 });
+
+describe('the 0.6.17 audit: two rules instead of guessing layouts', () => {
+  it('a web address from the notes is the host\'s only on a Site / Website / Contact line', () => {
+    const fillLib = require('../server/lib/amenity-fill.js');
+    for (const n of ['**Sources :** https://www.t.example.com/x', 'Sources\n• https://www.t.example.com/x', '## Sources\n- https://www.t.example.com/x', 'Accès : route D12\nSources :\n  https://www.t.example.com/x', '🔗 **Liens utiles :** https://www.t.example.com/x']) {
+      expect(fillLib.ownContacts({ notes: n }), n).toEqual([]);
+    }
+    expect(fillLib.ownContacts({ notes: 'Site : https://camp.example.com' })[0].values.website).toBe('https://camp.example.com');
+    expect(fillLib.ownContacts({ notes: 'Réservation : info@camp.example.com' })[0].values.email).toBe('info@camp.example.com');
+  });
+
+  it('a day span or a clock word never gives a time on site, in either reader', () => {
+    const { parseVisit } = require('../server/lib/visit.js');
+    const sheet = require('../server/lib/place-sheet.js');
+    for (const s of ['Durée : 9h-12h', 'Visit 9h-11h', 'Rando : départ 8h, retour 12h', 'Guided visit: starts 10h', 'Visite : rendez-vous 9h', 'Visite le matin, 9h.']) {
+      expect(parseVisit(s), s).toBeNull();
+    }
+    expect(sheet.minutesOf('9h-12h')).toBeNull();
+    expect(parseVisit('Visite 1h30-2h')).toMatchObject({ min: 90, max: 120 });
+  });
+});
