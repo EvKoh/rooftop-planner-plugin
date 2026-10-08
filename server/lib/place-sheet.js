@@ -292,6 +292,9 @@ function parse(description, notes, { kind = 'activity' } = {}) {
   };
   const seen = new Set();
   let afterSummary = false;
+  // An imported hike's summary line is the weakest source: a labelled line ("Durée : 3 h", the
+  // one sheet_set writes) wins over it wherever it stands; the summary only fills the gaps.
+  const summary = {};
   const read = (src, fromNotes) => {
     afterSummary = false;
     for (const e of lines(src)) {
@@ -305,9 +308,9 @@ function parse(description, notes, { kind = 'activity' } = {}) {
         const m = kind === 'hike' && e.text.match(SUMMARY);
         if (m) {
           afterSummary = true;
-          if (!fields.distance_km) add('distance_km', m[1], []);
-          if (!fields.ascent_m) add('ascent_m', m[2], []);
-          if (m[3] && !fields.duration) add('duration', m[3], []);
+          summary.distance_km = summary.distance_km || m[1];
+          summary.ascent_m = summary.ascent_m || m[2];
+          if (m[3]) summary.duration = summary.duration || m[3];
           continue;
         }
         if (!text.some((x) => sig(x.text) === s)) text.push({ text: e.text, from: fromNotes ? 'notes' : 'description' });
@@ -324,6 +327,7 @@ function parse(description, notes, { kind = 'activity' } = {}) {
   };
   read(notes, true);
   read(description, false);
+  for (const [f, v] of Object.entries(summary)) if (!fields[f]) add(f, v, []);
   const out = {};
   for (const [f, v] of Object.entries(fields)) out[f] = typed(f, v.value, v.items);
   // A free line that is the same as a field's items (a highlight repeated as prose) goes.
