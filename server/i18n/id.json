@@ -406,5 +406,6 @@
   "unit.durM": "{m} menit",
   "route.leg": "{km} km / {time}",
   "unit.km": "{n} km",
-  "unit.m": "{n} m"
+  "unit.m": "{n} m",
+  "checkin_notes": "“{name}”: catatan menyebut tiba {checkin}, rencana {arr}"
 }

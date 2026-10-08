@@ -51,6 +51,9 @@ function parseVisit(text) {
     if (!CUE.test(around)) continue;
     // The start of a span ("de 9h à 12h", "9h-12h") is a clock time, not a duration.
     if (/^\s*(?:[-–]|a|à|to|bis|alle|al)\s*\d{1,2}\s*[h:]/.test(s.slice(m.index + m[0].length))) continue;
+    // …nor an hour after a clock word ("jusqu'à 11h", "à partir de 9h", "dès 10h", "from 10h",
+    // "until 11h", "at 11h", "ab 9 Uhr", "dalle 9", "desde las 9").
+    if (/(?:jusqu.?a|a partir de|\bdes|\bvers|\bfrom|\buntil|\btill|\bafter|\bbefore|\bat|\ba|\bum|\bab|\bbis|\bdalle|\balle|\bdopo|\bentro|\bdesde(?: las)?|\bhasta(?: las)?|\bverso)\s*$/.test(s.slice(Math.max(0, m.index - 16), m.index))) continue;
     // …nor is its end ("de 9h à 12h": the 12h).
     if (/\d{1,2}\s*[h:]\s*\d{0,2}\s*(?:[-–]|a|à|to|bis|alle|al)\s*$/.test(s.slice(Math.max(0, m.index - 16), m.index))) continue;
     // "8h-21h" is opening hours, not a duration.

@@ -406,5 +406,6 @@
   "unit.durM": "{m} dk",
   "route.leg": "{km} km / {time}",
   "unit.km": "{n} km",
-  "unit.m": "{n} m"
+  "unit.m": "{n} m",
+  "checkin_notes": "“{name}”: notlarda varış {checkin}, planda {arr}"
 }

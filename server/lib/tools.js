@@ -4,6 +4,7 @@
 // cuts at 15 s), and shrink the answer under the 64 KiB result cap.
 const { TOOL_NAMES, withDefaults } = require('./tool-specs');
 const placeSheet = require('./place-sheet');
+const rules = require('./rules');
 const { readSettings } = require('./settings');
 const { loadTrip, findDay, stayOn, isNightPlace, candidateNights } = require('./trip');
 const { applyKind } = require('./place-kind');
@@ -56,7 +57,7 @@ function fit(result, max = MAX_BYTES) {
 function sunTable(model, settings) {
   const row = (date, lat, lng, name) => {
     const ss = sunset(lat, lng, date, settings.timezone);
-    return { date, place: name || `${lat},${lng}`, sunrise: hhmm(sunrise(lat, lng, date, settings.timezone)), sunset: hhmm(ss), latestArrival: hhmm(ss == null ? null : ss - settings.sunset_margin_min) };
+    return { date, place: name || `${lat},${lng}`, sunrise: hhmm(sunrise(lat, lng, date, settings.timezone)), sunset: hhmm(ss), latestArrival: hhmm(rules.latestArrival(ss, settings)) };
   };
   return model.days.filter((d) => d.date).map((d) => {
     const n = stayOn(model, d);
@@ -374,7 +375,7 @@ async function callTool({ name, args }, ctx, { now } = {}) {
       } else throw new Error('give tripId and dayNumber, or lat and lng');
       if (res.date && res.evening) {
         const ss = sunset(res.evening.lat, res.evening.lng, res.date, settings.timezone);
-        res.sun = { sunset: hhmm(ss), latestArrival: hhmm(ss == null ? null : ss - settings.sunset_margin_min) };
+        res.sun = { sunset: hhmm(ss), latestArrival: hhmm(rules.latestArrival(ss, settings)) };
       }
       break;
     case 'vanlife_day':

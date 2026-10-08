@@ -406,5 +406,6 @@
   "unit.durM": "{m} د",
   "route.leg": "{km} كم / {time}",
   "unit.km": "{n} كم",
-  "unit.m": "{n} م"
+  "unit.m": "{n} م",
+  "checkin_notes": "«{name}»: الملاحظات تقول الوصول {checkin}، والخطة {arr}"
 }

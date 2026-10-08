@@ -406,5 +406,6 @@
   "unit.durM": "{m} Min.",
   "route.leg": "{km} km / {time}",
   "unit.km": "{n} km",
-  "unit.m": "{n} m"
+  "unit.m": "{n} m",
+  "checkin_notes": "„{name}“: die Notizen sagen Ankunft {checkin}, der Plan sagt {arr}"
 }

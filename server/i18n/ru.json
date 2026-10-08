@@ -406,5 +406,6 @@
   "unit.durM": "{m} мин",
   "route.leg": "{km} км / {time}",
   "unit.km": "{n} км",
-  "unit.m": "{n} м"
+  "unit.m": "{n} м",
+  "checkin_notes": "«{name}»: в заметках прибытие {checkin}, в плане {arr}"
 }

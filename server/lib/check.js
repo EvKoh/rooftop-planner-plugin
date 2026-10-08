@@ -340,7 +340,8 @@ async function checkTrip(ctx, model, { settings, network = true, deadline, lang,
         add('fix', J, 'checkin_mismatch', { name: nuit.name, checkin: nuit.checkIn, arr: hhmm(arr) }, extra);
       }
       const written = rules.writtenArrival(nuit.notes);
-      if (arr != null && written != null && Math.abs(written - arr) > 5) add('fix', J, 'checkin_mismatch', { name: nuit.name, checkin: hhmm(written), arr: hhmm(arr) }, extra);
+      // Written in free notes: a point to verify, quoted as the notes' (not the stay's field).
+      if (arr != null && written != null && Math.abs(written - arr) > 5) add('verify', J, 'checkin_notes', { name: nuit.name, checkin: hhmm(written), arr: hhmm(arr) }, extra);
       else if (arr != null && cs != null && arr <= limit) add('info', J, 'night_margin', { name: nuit.name, arr: hhmm(arr), sunset: hhmm(cs), margin: fmtDur(cs - arr, L) }, extra);
 
       accessFindings({ model, info: nuit.info, name: nuit.name, arr, notes: a ? a.notes : '', placeId: nuit.placeId, add, J, extra, L });

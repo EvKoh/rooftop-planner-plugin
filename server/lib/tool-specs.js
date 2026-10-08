@@ -51,7 +51,7 @@ const TOOL_SPECS = [
   {
     name: 'vanlife_check_trip',
     title: 'Check a vanlife trip for problems',
-    description: `Read-only check of a trip, by day, for the user's vehicle. blocking: arrival after sunset minus margin or unknown, access closed, place closed, night the vehicle may not use (aire for a tent, record refusal, size). fix: impossible times, overlaps, route place, shopping detour, dry nights, overloaded day, hike walk not from one car park; bookings tied to no night, cancelled night still planned, booked price unlike the plan, "waiting" notes on a confirmed booking; stale budget lines or to-dos, lodging total unlike the nights'. verify: what free notes say (tent, dog, minimum stay, hours, check-in; quoted); booking required, none recorded; confirmed with no number; no way to reach the host or host silent over 3 days; private/wild/unknown ground; closure in the notes; after sunset; price over the ceiling or unknown; visit duration unknown; cheaper legal night; backtracking. info: margins, price over target, farm zone. Fix what is certain; ask about choices. Never book, pay or message.`,
+    description: `Read-only check of a trip, by day, for the user's vehicle. blocking: arrival after sunset minus margin or unknown, access closed, place closed, night the vehicle may not use (aire for a tent, record refusal, size). fix: impossible times, overlaps, road open only later, route place, shopping detour, dry nights, overloaded day, hike walk not from one car park; bookings tied to no night, cancelled night still planned, booked price unlike the plan, "waiting" notes on a confirmed booking; stale budget lines or to-dos, lodging total unlike the nights'. verify: what free notes say (tent, dog, minimum stay, hours, check-in; quoted); booking required, none recorded; confirmed with no number; no way to reach the host or host silent over 3 days; private/wild/unknown ground; closure in the notes; after sunset; price over the ceiling or unknown; visit duration unknown; cheaper legal night; backtracking. info: margins, price over target, farm zone. Fix what is certain; ask about choices. Never book, pay or message.`,
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -80,7 +80,7 @@ const TOOL_SPECS = [
         morning_lat: LAT,
         morning_lng: LNG,
         date: { type: 'string', format: 'date', description: 'Night date, for opening hours.' },
-        radius_km: { type: 'number', minimum: 2, maximum: 50, default: 15, description: 'Search radius around the midpoint (km).' },
+        radius_km: { type: 'number', minimum: 5, maximum: 50, default: 15, description: 'Search radius around the midpoint (km); at least 5, and wide enough to reach both the evening and the morning stop.' },
         sources: { type: 'array', uniqueItems: true, items: { type: 'string', enum: ['osm', 'park4night'] }, description: 'Default: osm, plus park4night when the instance enables it.' },
       },
     },

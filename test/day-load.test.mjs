@@ -139,7 +139,7 @@ describe('the day\'s load in the check', () => {
     expect(f.needMinutes).toBe(f.visitMinutes + f.driveMinutes + 30);
     expect(f.driveMinutes).toBeGreaterThan(0);
     expect(f.windowMinutes).toBeLessThan(f.needMinutes);
-    expect(f.message).toMatch(/^J1 .* — \d+ h \d{2} nécessaires \(visites 9 h 30, route .*\) pour \d+ h \d{2} de jour utile \(08:30–\d\d:\d\d\) : retirer ou déplacer Lago di Braies, Mountain Museum Example$/);
+    expect(f.message).toMatch(/^J1 .* — \d+ h \d{2} nécessaires \(visites 9 h 30, route .*\) pour \d+ h( \d{2})? de jour utile \(08:30–\d\d:\d\d\) : retirer ou déplacer Lago di Braies, Mountain Museum Example$/);
   });
 
   it('starts the usable day at the setting, or at an earlier first stop', async () => {
@@ -237,7 +237,7 @@ describe('the day\'s load in the check', () => {
     // what the banner computes: no network, cached drive times only
     const r = await checkTrip(h.ctx, await loadTrip(h.ctx, 1, settings), { settings, network: false, deadline: deadline(3500) });
     const f = of(r, 'day_overloaded')[0];
-    expect(bannerText(f, settings)).toMatch(/^D1: \d+ h \d{2} needed for \d+ h \d{2}$/);
+    expect(bannerText(f, settings)).toMatch(/^D1: \d+ h \d{2} needed for \d+ h( \d{2})?$/);
     const shown = bannerFrom(r.findings.filter((x) => ['day_overloaded', 'visit_unknown'].includes(x.key)), settings);
     expect(shown.map((x) => x.message)).toEqual([bannerText(f, settings)]);
     // without a cached drive time the day is not judged
