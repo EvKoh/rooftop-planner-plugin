@@ -224,7 +224,9 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
   if (a.fill) {
     const res = await amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, budgetMs: 6000 });
     // fill is a call of its own: say what it did not do rather than drop it silently.
-    const ignored = ['create', 'set', 'sheet_set', 'log', 'kind', 'clear', 'clear_fields'].filter((k) => a[k] != null && !(Array.isArray(a[k]) && !a[k].length));
+    // filter and scope come with their defaults (withDefaults): only a list other than the default counts.
+    const DEFAULT_LIST = { filter: 'nights', scope: 'planned' };
+    const ignored = ['create', 'set', 'sheet_set', 'log', 'kind', 'clear', 'clear_fields', 'filter', 'scope'].filter((k) => a[k] != null && a[k] !== DEFAULT_LIST[k] && !(Array.isArray(a[k]) && !a[k].length));
     if (ignored.length) res.ignored = `${ignored.join(', ')}: not applied with fill=true; call again without fill`;
     return res;
   }
@@ -265,7 +267,11 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
   // (and the map) shows its new pictogram.
   const kindRes = a.kind ? await applyKind(ctx, model, place, a.kind) : null;
   if (kindRes) { place.categoryId = kindRes.categoryId; place.categoryName = kindRes.category; place.raw = { ...place.raw, category_id: kindRes.categoryId }; }
-  if (a.clear || (a.clear_fields || []).includes('all')) { await placeInfo.clear(ctx, model.tripId, place.id); return { placeId: place.id, cleared: true }; }
+  if (a.clear || (a.clear_fields || []).includes('all')) {
+    await placeInfo.clear(ctx, model.tripId, place.id);
+    const ignored = ['set', 'sheet_set', 'log'].filter((k) => a[k] != null);
+    return { placeId: place.id, cleared: true, ...(ignored.length ? { ignored: `${ignored.join(', ')}: not applied with a full clear; call again` } : {}) };
+  }
   const sheetSet = a.sheet_set && typeof a.sheet_set === 'object' ? Object.entries(a.sheet_set) : [];
   if (sheetSet.length) {
     // Field by field into TREK's own description and notes: the only copy.

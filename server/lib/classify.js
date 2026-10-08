@@ -15,7 +15,9 @@ const RE = {
   hut: /refuge|rifugio|hutte|huette|\bhut\b|baita/,
   night: /nuitee|night|overnight|camping|campsite|aire|stellplatz|agritur|farm|ferme|sleep|accommodation|hebergement|lodging/,
   // The day's route place: TREK draws its stored geometry as the day's line.
-  trace: /trace du jour|route of the day|day route|route jour|route day|\btrack\b/,
+  // Never a bare "track": a user's "Hiking track" category is a hike, not the day's line
+  // (the day's trace is RECREATED on routes apply, and the old one deleted).
+  trace: /trace du jour|route of the day|day route|route jour|route day/,
   shop: /courses|supermarket|supermarche|grocer|epicerie|boulangerie|bakery|shop|alimentari|lebensmittel/,
   fuel: /carburant|fuel|petrol|gas station|station[- ]service|tankstelle|distributore|benzin/,
 };

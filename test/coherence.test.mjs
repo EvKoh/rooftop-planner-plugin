@@ -1389,3 +1389,35 @@ describe('the 0.6.28 audit', () => {
     } finally { vi.unstubAllGlobals(); }
   });
 });
+
+describe('the 0.6.29 audit', () => {
+  it('a user category named "… track" is never taken for the day\'s line', () => {
+    const { isTrace } = require('../server/lib/classify.js');
+    expect(isTrace('Hiking track', { id: 30 })).toBe(false);
+    expect(isTrace('Route – Day route', { id: 31 })).toBe(true);
+  });
+  it('a free length that beats the summary keeps the notes\' line as its text', () => {
+    const sheet = require('../server/lib/place-sheet.js');
+    const s = sheet.sheetOf({ categoryName: 'See – Hike', notes: '10.93 km · +770 m · 4 h 10\nThe round trip takes 5 h 30 with the breaks.' });
+    expect(s.fields.duration).toMatchObject({ minutes: 330, text: 'The round trip takes 5 h 30 with the breaks.' });
+    expect(sheet.factsOf({ categoryName: 'See – Hike', notes: '10.93 km · +770 m · 4 h 10\nStart from 8 h; the round trip takes 3 h.' }).visitMinutes).toBe(180);
+    // the minutes the free reader gave, not the line re-read as a duration line (which takes the 2 h)
+    expect(sheet.factsOf({ categoryName: 'See – Hike', notes: '10.93 km · +770 m · 4 h 10\nFree car park 2 h for vans, lots of space there; the round trip takes 3 h.' }).visitMinutes).toBe(180);
+  });
+  it('a full clear and a fill report what they did not apply', async () => {
+    const r = await call(makeHost(), 'vanlife_place', { tripId: 1, placeId: 11, clear_fields: ['all'], set: { water: 'yes' } });
+    expect(r.ignored).toMatch(/^set/);
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const f = await call(makeHost(), 'vanlife_place', { tripId: 1, fill: true, filter: 'missing_contacts', scope: 'candidates' });
+      expect(f.ignored).toMatch(/filter, scope/);
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it('night set refuses a date that is not its dayNumber, and warns about a reason or nights it cannot use', async () => {
+    const h = makeHost();
+    await expect(call(h, 'vanlife_night', { tripId: 1, action: 'set', placeId: 13, dayNumber: 1, date: '2026-10-14', status: 'contacted' })).rejects.toThrow(/date/);
+    const r = await call(h, 'vanlife_night', { tripId: 1, action: 'set', placeId: 13, dayNumber: 1, status: 'contacted', reason: 'full', nights: 3 });
+    expect(r.warnings.join(' ')).toMatch(/reason/);
+    expect(r.warnings.join(' ')).toMatch(/nights/);
+  });
+});

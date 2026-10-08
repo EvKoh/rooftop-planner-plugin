@@ -274,6 +274,7 @@ async function set(ctx, model, a) {
   const L = a.language || 'en';
   const day = findDay(model, { dayId: a.dayId, dayNumber: a.dayNumber, date: a.date });
   if (!day) throw new NightError('give dayNumber (or dayId) of the evening the night starts');
+  if (a.date && (a.dayNumber != null || a.dayId != null) && day.date !== a.date) throw new NightError(`date ${a.date} is not day ${day.n} (${day.date}): give one of them`);
   const place = model.poolById.get(a.placeId);
   if (!place) throw new NightError(`place ${a.placeId} is not in trip ${model.tripId}`);
   // "A farm we booked": the kind sets the place's category (its pictogram) with the status.
@@ -284,6 +285,8 @@ async function set(ctx, model, a) {
   const res = isNight ? reservationFor(night, resas) : candidateReservation(resas, place.id, day.id);
   const notes = notesText(a, res, L);
   const warnings = [];
+  if (a.reason && a.status !== 'dropped') warnings.push('reason: kept only with status "dropped"; give notes for anything else.');
+  if (a.nights != null && night) warnings.push(`nights: not used, day ${day.n} already has a stay ("${night.name}"); change its length in TREK.`);
 
   if (a.status === 'spotted') {
     if (res && a.clear) {
