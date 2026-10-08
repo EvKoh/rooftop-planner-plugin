@@ -140,7 +140,7 @@ function walkView(w, geo, L) {
 /** Every hike of the plan with its car park and walking route (computed and cached here). */
 /** The sheet's fields with the time on site the plan counts (the record's) as its duration, as on the panel's card. */
 function withRecordedDuration(fields, info, L) {
-  return placeSheet.withRecord(fields, L, { visitMinutes: recordedMinutes(info), walkShape: info && walks.SHAPES.includes(info.walk_shape) ? info.walk_shape : null });
+  return placeSheet.withRecord(fields, L, { visitMinutes: recordedMinutes(info), walkShape: walks.recordedShape(info) });
 }
 
 async function hikesList(ctx, model, settings, opts) {
@@ -568,7 +568,7 @@ function withUnused(name, args, a, res) {
   // routes: dayNumber is the day to route only when no dayNumbers are given.
   if (name === 'vanlife_day' && a.action === 'routes' && !(args.dayNumbers && args.dayNumbers.length)) unused = unused.filter((k) => k !== 'dayNumber');
   if (name === 'vanlife_plan_trip' && a.tripId && args && args.request != null) unused = ['request'];
-  if (name === 'vanlife_place' && a.placeId && !a.fill) unused = given.filter((k) => ['filter', 'scope'].includes(k));
+  if (name === 'vanlife_place' && (a.placeId || (args && args.create)) && !a.fill) unused = given.filter((k) => ['filter', 'scope'].includes(k));
   if (!unused.length) return res;
   const note = `${unused.join(', ')}: not used here`;
   return { ...res, ignored: res.ignored ? `${res.ignored}; ${note}` : note };
