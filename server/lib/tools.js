@@ -140,8 +140,7 @@ function walkView(w, geo, L) {
 /** Every hike of the plan with its car park and walking route (computed and cached here). */
 /** The sheet's fields with the time on site the plan counts (the record's) as its duration, as on the panel's card. */
 function withRecordedDuration(fields, info, L) {
-  const onSite = recordedMinutes(info);
-  return onSite != null ? { ...fields, duration: { minutes: onSite, text: durationText(onSite, L) } } : fields;
+  return placeSheet.withRecord(fields, L, { visitMinutes: recordedMinutes(info), walkShape: info && walks.SHAPES.includes(info.walk_shape) ? info.walk_shape : null });
 }
 
 async function hikesList(ctx, model, settings, opts) {
@@ -169,6 +168,11 @@ function checkParkId(model, placeId, parkId) {
 }
 
 async function precheck(ctx, model, a, settings) {
+  // sheet_set writes texts: an object would land in TREK's notes as "[object Object]".
+  for (const [f, v] of Object.entries(a.sheet_set && typeof a.sheet_set === 'object' ? a.sheet_set : {})) {
+    const text = (x) => typeof x === 'string' || typeof x === 'number';
+    if (!(v == null || text(v) || (Array.isArray(v) && v.every(text)))) throw new Error(`sheet_set.${f} must be a text, a list of texts or null`);
+  }
   if (a.placeId && !model.poolById.get(a.placeId)) throw new Error(`place ${a.placeId} is not in trip ${model.tripId}`);
   if (a.kind) await require('./place-kind').kindCategory(ctx, a.kind);
   if ((a.clear || (a.clear_fields || []).includes('all')) && (a.set || a.sheet_set || a.log || a.create || a.kind)) {

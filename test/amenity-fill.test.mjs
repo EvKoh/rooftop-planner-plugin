@@ -54,7 +54,9 @@ describe('amenities filled from open sources', () => {
     expect(fillLib.fromOsm({ power_supply: 'no', fee: 'yes' })).toMatchObject({ electricity: 'no', dog: null, water: null });
     expect(fillLib.fromP4n(['animaux', 'eau_usee', 'vtt'])).toEqual({ dog: 'yes', dump_station: 'yes' });
     expect(fillLib.p4nId({ website: 'https://park4night.com/fr/place/434199' })).toBe(434199);
-    expect(fillLib.p4nId({ notes: 'see park4night.com/lieu/12 for photos' })).toBe(12);
+    // a link in a free sentence is not the place's own page (0.6.42): only TREK's website or the Site line
+    expect(fillLib.p4nId({ notes: 'see park4night.com/lieu/12 for photos' })).toBeNull();
+    expect(fillLib.p4nId({ notes: 'Site : https://park4night.com/fr/lieu/12' })).toBe(12);
     expect(fillLib.p4nId({ website: 'https://www.campingcortina.it' })).toBeNull();
   });
 
