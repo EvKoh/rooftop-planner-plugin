@@ -1793,3 +1793,26 @@ describe('the 0.6.40 audit', () => {
     expect(shape).toBe('loop');
   });
 });
+
+describe('the 0.6.41 audit', () => {
+  it('a park4night link in a free sentence is never the place\'s own page', () => {
+    const fillLib = require('../server/lib/amenity-fill.js');
+    expect(fillLib.p4nId({ notes: 'Si complet : plan B https://park4night.com/fr/place/456 (parking à 20 km)' })).toBeNull();
+  });
+  it('sheet_set reads a dashed list of fields as the reader does', () => {
+    const s = require('../server/lib/place-sheet.js');
+    const notes = '- Durée : 3 h\n- Distance : 9 km';
+    expect(s.sheetOf({ notes, categoryName: 'See – Hike' }).fields.duration.minutes).toBe(180);
+    const out = s.setField('', notes, 'duration', '5 h', 'fr').notes;
+    expect(s.sheetOf({ notes: out, categoryName: 'See – Hike' }).fields.duration.minutes).toBe(300);
+    expect(s.setField('', notes, 'duration', null, 'fr').notes).toBe('- Distance : 9 km');
+  });
+  it('sheet_set refuses a value that is not a text', async () => {
+    await expect(call(makeHost(), 'vanlife_place', { tripId: 1, placeId: 13, sheet_set: { price: { amount: 30 } } })).rejects.toThrow(/must be a text/);
+  });
+  it('the recorded walk shape is the route type the sheet shows', () => {
+    const s = require('../server/lib/place-sheet.js');
+    const f = s.withRecord({ route_type: { text: 'boucle', kind: 'loop' } }, 'en', { walkShape: 'out_and_back' });
+    expect(f.route_type).toEqual({ text: 'Out and back', kind: 'out_and_back' });
+  });
+});

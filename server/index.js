@@ -173,6 +173,7 @@ module.exports = definePlugin({
             // A track page is a hike's reference page only (as the place tool's hike.url).
             trackUrl: read.kind === 'hike' ? walks.hikeUrl({ raw: place, description: place.description, notes: place.notes }, info) : null,
             visitMinutes: visit.recordedMinutes(info),
+            walkShape: info && walks.SHAPES.includes(info.walk_shape) ? info.walk_shape : null,
           });
           return json(200, {
             language: L,

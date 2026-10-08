@@ -139,17 +139,23 @@ function splitKey(line) {
 function lines(text) {
   const out = [];
   let open = null;
-  for (const rawLine of String(text || '').split(/\r?\n/)) {
-    const t = rawLine.trim();
+  const all = String(text || '').split(/\r?\n/);
+  for (let i = 0; i < all.length; i++) {
+    const t = all[i].trim();
     if (!t) { open = null; continue; }
     if (SEPARATOR.test(t) && /[-—–=_]{1,}/.test(t)) { open = null; continue; }
     const bullet = BULLET.test(t);
     const body = t.replace(BULLET, '');
-    if (bullet && open) { open.items.push(body); continue; }
+    // A bullet under an open line is one of its items — unless it is itself a sheet field's line
+    // ("- Durée : 3 h" in a list of "- Key : value"): then it opens its own entry.
+    if (bullet && open) {
+      const own = splitKey(body);
+      if (!(own && fieldOf(own[0]))) { open.items.push(body); open.idx.push(i); continue; }
+    }
     const kv = splitKey(body);
     if (kv) {
       const [key, value] = kv;
-      open = { key, field: fieldOf(key), value: '', items: [] };
+      open = { key, field: fieldOf(key), value: '', items: [], idx: [i] };
       // "Itinéraire : • A • B" on one line.
       const inline = value.split(/\s+•\s+|^•\s*/).map((x) => x.trim()).filter(Boolean);
       if (/^•/.test(value) || inline.length > 1) open.items.push(...inline); else open.value = value;
@@ -479,11 +485,22 @@ function row(field, v, L) {
  * field outside the kind's sections) and "other" (unclassified keys and free notes).
  * opts.trackUrl: the hike's track page (walks.hikeUrl), the reference link when known.
  */
-function view(sheet, L, { trackUrl = null, visitMinutes = null } = {}) {
-  const f = { ...sheet.fields };
+/**
+ * The sheet's fields with what the record holds over the notes, the one rule the panel's card
+ * and the place tool share: the time on site the plan counts, and the walk's recorded shape
+ * (the map draws it) over the notes' route type.
+ */
+function withRecord(fields, L, { visitMinutes = null, walkShape = null } = {}) {
+  const f = { ...fields };
+  if (visitMinutes != null && (!f.duration || f.duration.minutes !== visitMinutes)) f.duration = { minutes: visitMinutes, text: durationText(visitMinutes, L) };
+  if (walkShape && (!f.route_type || f.route_type.kind !== walkShape)) f.route_type = { text: t(L, `sh.v.${walkShape}`), kind: walkShape };
+  return f;
+}
+
+function view(sheet, L, { trackUrl = null, visitMinutes = null, walkShape = null } = {}) {
+  const f = withRecord(sheet.fields, L, { visitMinutes, walkShape });
   // The time on site the plan counts (visit.js: the recorded duration first) is the one the
   // card shows: the notes' figure would contradict the schedule and the day's load.
-  if (visitMinutes != null && (!f.duration || f.duration.minutes !== visitMinutes)) f.duration = { minutes: visitMinutes, text: durationText(visitMinutes, L) };
   if (trackUrl && (!f.website || f.website.fromTrek)) f.website = { url: trackUrl, text: trackUrl };
   const used = new Set();
   const sections = [];
@@ -513,27 +530,21 @@ function view(sheet, L, { trackUrl = null, visitMinutes = null } = {}) {
  */
 function setField(description, notes, field, value, L = 'en') {
   if (!FIELDS[field]) throw new Error(`unknown sheet field "${field}"; one of: ${Object.keys(FIELDS).join(', ')}`);
+  // The lines of the field are the reader's own entries for it (lines(): bullets, dashed lists
+  // of "- Key : value" and all), so what sheet_set replaces is what the card shows.
   const strip = (text) => {
+    const all = String(text || '').split(/\r?\n/);
+    const drop = new Set();
+    let first = -1;
+    let label = null;
+    for (const e of lines(text)) {
+      if (e.text !== undefined || lineField(e.key, e.value, e.items) !== field) continue;
+      if (first < 0) { first = e.idx[0]; label = e.key; }
+      e.idx.forEach((i) => drop.add(i));
+    }
     const out = [];
     let at = -1;
-    let label = null;
-    let inField = false;
-    const all = String(text || '').split(/\r?\n/);
-    for (let i = 0; i < all.length; i++) {
-      const line = all[i];
-      const tt = line.trim();
-      if (inField && tt && BULLET.test(tt)) continue;
-      inField = false;
-      const kv = tt && !BULLET.test(tt) ? splitKey(tt) : null;
-      const items = [];
-      for (let j = i + 1; j < all.length && BULLET.test(all[j].trim()); j++) items.push(all[j].trim().replace(BULLET, '').trim());
-      if (kv && lineField(kv[0], kv[1], items) === field) {
-        if (at < 0) { at = out.length; label = kv[0]; }
-        inField = true;
-        continue;
-      }
-      out.push(line);
-    }
+    all.forEach((line, i) => { if (i === first) at = out.length; if (!drop.has(i)) out.push(line); });
     return { lines: out, at, label };
   };
   const n = strip(notes);
@@ -545,19 +556,19 @@ function setField(description, notes, field, value, L = 'en') {
   const block = empty ? [] : Array.isArray(value)
     ? [`${label} :`, ...value.map((v) => `• ${String(v).trim()}`)]
     : [`${label} : ${String(value).trim()}`];
-  const lines = n.lines.slice();
+  const kept = n.lines.slice();
   if (block.length) {
-    if (n.at >= 0) lines.splice(n.at, 0, ...block);
-    else { while (lines.length && !lines[lines.length - 1].trim()) lines.pop(); lines.push(...block); }
+    if (n.at >= 0) kept.splice(n.at, 0, ...block);
+    else { while (kept.length && !kept[kept.length - 1].trim()) kept.pop(); kept.push(...block); }
   }
   return {
     description: d.at >= 0 ? d.lines.join('\n') : description ?? '',
-    notes: lines.join('\n'),
+    notes: kept.join('\n'),
   };
 }
 
 module.exports = {
-  FIELDS, SECTIONS, TAIL, FIELD_NAMES: Object.keys(FIELDS),
+  withRecord, FIELDS, SECTIONS, TAIL, FIELD_NAMES: Object.keys(FIELDS),
   typeOf, aliasesOf, keyForm, fieldOf, splitKey, lines, minutesOf, gradeOf, routeKindOf, dogOf, urlsIn,
   BULLET, parse, sheetOf, factsOf, kindOf, view, setField, FIGURE_FIELDS,
 };

@@ -75,9 +75,13 @@ function fromP4n(services) {
   return out;
 }
 
-/** The park4night id a place links to (its website or a note), or null. */
+/**
+ * The park4night id a place links to, or null: TREK's website field, or the sheet's own Site /
+ * Website line — never a link elsewhere in the notes ("if full: plan B park4night…/456").
+ */
 function p4nId(place) {
-  const m = `${place.website || ''} ${place.notes || ''}`.match(/park4night\.com\/(?:[a-z]{2}\/)?(?:place|lieu)\/(\d+)/i);
+  const site = placeSheet.sheetOf({ notes: place.notes || '', description: place.description || '' }).fields.website;
+  const m = `${place.website || ''} ${site && !site.fromTrek ? site.url : ''}`.match(/park4night\.com\/(?:[a-z]{2}\/)?(?:place|lieu)\/(\d+)/i);
   return m ? Number(m[1]) : null;
 }
 
