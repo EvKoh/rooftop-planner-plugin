@@ -203,8 +203,12 @@ async function precheck(ctx, model, a, settings) {
 async function placeTool(ctx, model, a, settings, opts = {}) {
   // fill is a call of its own: nothing else is written, no place is created (placeToolOn says so).
   if (a.fill) return placeToolOn(ctx, model, a, settings, opts);
+  if (!a.placeId && a.filter === 'hikes') {
+    const writes = ['create', 'set', 'sheet_set', 'log', 'kind', 'clear', 'clear_fields'].filter((k) => a[k] != null && !(Array.isArray(a[k]) && !a[k].length));
+    if (writes.length) throw new Error(`filter "hikes" is a list: call again without ${writes.join(', ')}`);
+    return hikesList(ctx, model, settings, opts);
+  }
   await precheck(ctx, model, a, settings);
-  if (!a.placeId && a.filter === 'hikes') return hikesList(ctx, model, settings, opts);
   // A new place (create), and a hike's car park given inline (set.walk.parking): made first,
   // so a whole hike — car park, hike, dotted walk — goes on the map in one call.
   const created = [];
@@ -228,13 +232,18 @@ async function placeTool(ctx, model, a, settings, opts = {}) {
   // new category): what this call wrote is undone — the places it made, the category and texts
   // it changed — so a refused call leaves the trip as it was.
   const was = a.placeId && !created.some((c) => c.placeId === a.placeId) ? model.poolById.get(a.placeId) : null;
-  const snapshot = was && was.raw ? { category_id: was.raw.category_id ?? null, notes: was.raw.notes ?? '', description: was.raw.description ?? '' } : null;
+  const snapshot = was && was.raw ? { category_id: was.raw.category_id ?? null, notes: was.raw.notes ?? '', description: was.raw.description ?? '', website: was.raw.website ?? null, phone: was.raw.phone ?? null } : null;
+  // The plugin's record too: sheet_set's resync may rewrite it before a later refusal.
+  const recordWas = was ? await ctx.meta.get('place', Number(was.id), placeInfo.META_KEY) : undefined;
   let out;
   try {
     out = await placeToolOn(ctx, model, a, settings, opts);
   } catch (e) {
     for (const c of created.slice().reverse()) await ctx.places.delete(model.tripId, c.placeId).catch(() => {});
     if (snapshot && (a.kind || a.sheet_set)) await ctx.places.update(model.tripId, was.id, snapshot).catch(() => {});
+    if (was && a.sheet_set) {
+      await placeInfo.restore(ctx, model.tripId, was.id, recordWas ?? null).catch(() => {});
+    }
     throw e;
   }
   return created.length && out && typeof out === 'object' ? { created, ...out } : out;

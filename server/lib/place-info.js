@@ -720,6 +720,14 @@ async function set(ctx, tripId, placeId, patch, { place } = {}) {
   return next;
 }
 
+/** Put a record back as it was read (null: none), with its index and copy: an undo. */
+async function restore(ctx, tripId, placeId, rec) {
+  if (rec == null) return clear(ctx, tripId, placeId);
+  await ctx.meta.set('place', Number(placeId), META_KEY, rec);
+  try { await ctx.db.exec('INSERT OR IGNORE INTO place_info_index (trip_id, place_id) VALUES (?, ?)', Number(tripId), Number(placeId)); } catch { /* optimisation */ }
+  await writeCopy(ctx, tripId, placeId, rec);
+}
+
 async function clear(ctx, tripId, placeId) {
   await ctx.meta.delete('place', Number(placeId), META_KEY);
   try { await ctx.db.exec('DELETE FROM place_info_index WHERE trip_id = ? AND place_id = ?', Number(tripId), Number(placeId)); } catch { /* ignore */ }
@@ -772,4 +780,4 @@ function localized(rec, L) {
   return { ...rec, source: sourceText(rec.source, L), visit_source: sourceText(rec.visit_source, L), contact_sources: cs };
 }
 
-module.exports = { refusedBy, refusalText, notesRefusalText, SRC, sourceText, localized, lacksText, nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
+module.exports = { restore, refusedBy, refusalText, notesRefusalText, SRC, sourceText, localized, lacksText, nightCost, currencyOf, comparableNightPrice, closedOn, shortDate, PARKING_FIELDS, expandParking, parkingText, WALK_SHAPES, expandWalk, WALK_FIELDS, WALK_VIA_MAX, ACCESS_FIELDS, BOOKING_NOTE_MAX, TOLL_MAX, accessVerdict, accessChips, accessText, tollCurrency, hmOf, VISIT, duration, visitText, PRICE_NOTE_MAX, noteHasAmount, clearPatch, nativeContacts, NUMBER_FIELDS, COPY_SQL, INDEX_SQL, COPY_MIGRATION, merge, nativePrice, nightTotal, priceText, amenitiesText, refuses, get, set, clear, getAll, migrate, blank, AMENITIES, PER, LIMITS, META_KEY, MIGRATION, InfoError };
