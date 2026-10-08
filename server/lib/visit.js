@@ -32,7 +32,8 @@ const CLOCK_WORD = /(?:jusqu.?a|a partir de|\bdepart|\bretour|\brendez.?vous|\br
 // line needs none (its label says so): the only difference between the two. The first amount that reads as a length is the answer.
 const H = 'h|hrs?|hours?|heures?|ore|std\\.?|stunden?|horas?';
 const M = 'min|mn|minutes?|minuten|minuti|minutos';
-const AMOUNT = new RegExp(`(\\d{1,2}(?:[.,]\\d)?)(?:\\s*(?:(${H})(?![a-z])(?:\\s*(\\d{2})(?!\\d)(?:\\s*(?:${M})(?![a-z]))?)?|(${M})(?![a-z])|:(\\d{2})(?!\\d)))?`, 'g');
+const AMOUNT = new RegExp(`(\\d{1,3}(?:[.,]\\d)?)(?:\\s*(?:(${H})(?![a-z])(?:\\s*(\\d{2})(?!\\d)(?:\\s*(?:${M})(?![a-z]))?)?|(${M})(?![a-z])|:(\\d{2})(?!\\d)))?`, 'g');
+const PAIR_OPEN = /(?:\bentre|\bbetween|\bzwischen|\btra|\bde|\bfrom|\bdalle|\bvon)\s*$/;
 const JOINT = /^(?:\s*[-–]\s*|\s+(?:a|au|to|bis|alle|al|et|and|und|e|y)\s+)$/;
 
 function amountsIn(s) {
@@ -59,6 +60,9 @@ function readLength(s, { labelled = false } = {}) {
       const lo = a.unit ? a.v : (unit === 'h' ? Math.round(a.n * 60) : a.n);
       const hi = b.v;
       if (hi <= lo || !cued(at, len)) continue;
+      // "départ 6h-7h": times of day; a word that opens the pair ("entre 2h et 3h") is its joint.
+      const lead = s.slice(Math.max(0, at - 18), at);
+      if (CLOCK_WORD.test(lead) && !PAIR_OPEN.test(lead)) continue;
       const lengths = unit === 'min' || (a.unit !== 'clock' && b.unit !== 'clock' && lo < 7 * 60 && hi - lo <= 3 * 60);
       if (lengths) { if (lo >= 5 && hi <= 1440) return { min: lo, max: hi, quote: quote(s, at, len) }; continue; }
       continue;
@@ -78,6 +82,14 @@ function parseVisit(text) {
 }
 
 /**
+ * The time on site the record holds: its minimum, else its maximum when only that was typed
+ * (the figure the panel, the planner, the place tool and the day's load all use); null when none.
+ */
+function recordedMinutes(info) {
+  return info ? (info.visit_min_minutes ?? info.visit_max_minutes ?? null) : null;
+}
+
+/**
  * Minutes on site of one stop of a day: the longer of the slot planned that day in TREK and
  * the minimum recorded on the place (a minimum never shortens a longer planned slot, and a
  * slot shorter than the minimum counts as the minimum); else the duration its sheet states
@@ -86,8 +98,7 @@ function parseVisit(text) {
  */
 function stopMinutes(place, info) {
   const slot = place.time != null && place.end != null && place.end > place.time ? place.end - place.time : null;
-  // A record with only a maximum counts that maximum, the figure the panel and the planner show.
-  const min = info ? (info.visit_min_minutes ?? info.visit_max_minutes ?? null) : null;
+  const min = recordedMinutes(info);
   if (slot != null || min != null) return Math.max(slot ?? 0, min ?? 0);
   const stated = require('./place-sheet').factsOf(place).visitMinutes;
   if (stated != null) return stated;
@@ -105,4 +116,4 @@ function dayStopMinutes(stop, info, stops) {
   return stopMinutes(stop.place, info);
 }
 
-module.exports = { OPENING, readLength, parseVisit, stopMinutes, dayStopMinutes, CUE };
+module.exports = { OPENING, readLength, parseVisit, recordedMinutes, stopMinutes, dayStopMinutes, CUE };
