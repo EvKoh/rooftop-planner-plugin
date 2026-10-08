@@ -1633,3 +1633,27 @@ describe('the 0.6.35 audit', () => {
     } finally { vi.unstubAllGlobals(); }
   });
 });
+
+describe('the 0.6.36 audit', () => {
+  it('a line is an activity by its category only, never by a name word', () => {
+    const { isTrace } = require('../server/lib/classify.js');
+    expect(isTrace('', { name: 'Route day 3 — Aire Example → Agriturismo Al Sentiero (108 km)', route_geometry: '[[1,2],[3,4]]' })).toBe(true);
+    expect(isTrace('See – Hike', { name: 'Loop', route_geometry: '[[1,2],[3,4]]' })).toBe(false);
+  });
+  it('filter "hikes" refuses writes rather than drop them', async () => {
+    await expect(call(makeHost(), 'vanlife_place', { tripId: 1, filter: 'hikes', create: { name: 'Lago di Sorapis', lat: 46.5, lng: 12.2 } })).rejects.toThrow(/hikes/);
+  });
+  it('a refused call puts the record and TREK\'s website back after sheet_set\'s resync', async () => {
+    const trip = build();
+    const p17 = trip.places.find((p) => p.id === 17);
+    p17.notes = 'Duration : 1 h\nWebsite : https://lake-a.example';
+    const h = makeHost({ trip });
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      await call(h, 'vanlife_place', { tripId: 1, placeIds: [17], placeId: 17, fill: true });
+      const before = JSON.stringify([p17.notes, p17.website, await pi.get(h.ctx, 17)]);
+      await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 17, sheet_set: { duration: '2 h', website: 'https://lake-b.example' }, set: { visit_max_minutes: 90 } })).rejects.toThrow(/visit_max/);
+      expect(JSON.stringify([p17.notes, p17.website, await pi.get(h.ctx, 17)])).toBe(before);
+    } finally { vi.unstubAllGlobals(); }
+  });
+});
