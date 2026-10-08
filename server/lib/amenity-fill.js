@@ -20,7 +20,7 @@ const park4night = require('./park4night');
 const placeInfo = require('./place-info');
 const placeSheet = require('./place-sheet');
 const contacts = require('./contacts');
-const { distKm } = require('./util');
+const { distKm, urlsIn } = require('./util');
 const { parseVisit } = require('./visit');
 
 const OSM_RADIUS_M = 150;
@@ -160,7 +160,13 @@ function ownContacts(place) {
   // reviews, a map or a photo (a tourist-office page is not the host's site).
   const notHost = new Set(['sources', 'links', 'reviews', 'photo', 'map_url', 'gpx_url', 'checked', 'doubts']);
   const x = contacts.extract(hostText(`${place.notes || ''}\n${place.description || ''}`, notHost));
-  const fromText = { email: x.emails[0] || null, phone: x.phones[0] || null, website: x.urls[0] || null };
+  // A web address is the host's only when the sheet names it so (its "Site" / "Website" or
+  // "Contact" line): any other address in the notes may be a source, a review or a map,
+  // whatever its layout (bold, heading, indent). E-mails and phones are read anywhere else.
+  const sh = placeSheet.sheetOf({ notes: place.notes || '', description: place.description || '' }).fields;
+  const named = [sh.website && !sh.website.fromTrek ? sh.website.url : null, ...urlsIn(sh.contact ? sh.contact.text : '')]
+    .find((u) => { if (!u || contacts.notOwnSite(u)) return false; try { contacts.website(u); return true; } catch { return false; } }) || null;
+  const fromText = { email: x.emails[0] || null, phone: x.phones[0] || null, website: named };
   if (fromText.email || fromText.phone || fromText.website) out.push({ values: fromText, source: placeInfo.SRC.notes });
   return out;
 }
