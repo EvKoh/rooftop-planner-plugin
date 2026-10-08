@@ -348,6 +348,11 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
     const ignored = ['set', 'sheet_set', 'log'].filter((k) => a[k] != null);
     return { placeId: place.id, cleared: true, ...(ignored.length ? { ignored: `${ignored.join(', ')}: not applied with a full clear; call again` } : {}) };
   }
+  // The walk's rules are checked before the first text or record write of the call (sheet_set
+  // and its resync write the notes, the record and TREK's website): a refusal writes nothing more.
+  const patch = placeInfo.expandParking(placeInfo.expandWalk({ ...(a.set || {}) }));
+  checkParkId(model, place.id, patch.access_parking_place_id);
+  if (placeInfo.WALK_FIELDS.some((k) => k in patch)) await checkWalk(ctx, model, place, patch);
   const sheetSet = a.sheet_set && typeof a.sheet_set === 'object' ? Object.entries(a.sheet_set) : [];
   if (sheetSet.length) {
     // Field by field into TREK's own description and notes: the only copy.
@@ -369,9 +374,6 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
       return { saved: true, placeId: place.id, sheetFields: sheetSet.map(([f]) => f), sheet: { kind: sh.kind, fields: withRecordedDuration(sh.fields, await placeInfo.get(ctx, place.id), settings.language), otherNotes: sh.other } };
     }
   }
-  const patch = placeInfo.expandParking(placeInfo.expandWalk({ ...(a.set || {}) }));
-  checkParkId(model, place.id, patch.access_parking_place_id);
-  if (placeInfo.WALK_FIELDS.some((k) => k in patch)) await checkWalk(ctx, model, place, patch);
   if (a.clear_fields && a.clear_fields.length) Object.assign(patch, placeInfo.clearPatch(a.clear_fields));
   if (a.log) patch.log = a.log;
   if (Object.keys(patch).length) {

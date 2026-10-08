@@ -1593,3 +1593,43 @@ describe('the 0.6.34 audit', () => {
     expect(JSON.stringify(r.price)).toMatch(/CHF/);
   });
 });
+
+describe('the 0.6.35 audit', () => {
+  it('routes apply keeps a user\'s uncategorised line when the trip has a day-route category', async () => {
+    const trip = build();
+    const line = { id: 30, trip_id: 1, name: 'Sella pass scenic drive (GPX)', lat: 46.41, lng: 11.58, category_id: null, notes: '', description: '', route_geometry: JSON.stringify([[46.41, 11.58], [46.64, 11.72]]) };
+    trip.places.push(line);
+    trip.days[2].assignments.unshift({ id: 3000, day_id: 103, order_index: -1, notes: null, accommodation_id: null, place: { ...line, place_time: null, end_time: null } });
+    const h = makeHost({ trip });
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const r = await call(h, 'vanlife_day', { tripId: 1, action: 'routes', dayNumber: 3, apply: true });
+      expect(r.writes[0].deletedPlaceId).toBeNull();
+      expect(r.writes[0].kept).toMatch(/no category/);
+      expect(trip.places.some((p) => p.id === 30)).toBe(true);
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it('a walk refused after a kind writes neither the notes nor the record nor TREK\'s website', async () => {
+    const cats = [{ id: 1, name: 'Night – Campsite' }, { id: 4, name: 'See – Lake' }, { id: 6, name: 'Route – Day route' }, { id: 8, name: 'Parking' }, { id: 9, name: 'Hike' }];
+    const trip = build();
+    const p17 = trip.places.find((p) => p.id === 17);
+    p17.notes = 'Duration : 2 h\nWebsite : https://lake-a.example';
+    trip.places.push({ id: 31, trip_id: 1, name: 'Carezza car park A', lat: 46.42, lng: 11.58, category_id: 8, notes: '', description: '' });
+    trip.places.push({ id: 33, trip_id: 1, name: 'Carezza car park C', lat: 46.4098, lng: 11.5754, category_id: 8, notes: '', description: '' });
+    const h = makeHost({ trip, categories: cats });
+    const u = h.ctx.places.update;
+    // TREK shows a new category in the days too
+    h.ctx.places.update = async (tripId, id, patch) => {
+      const r = await u(tripId, id, patch);
+      if ('category_id' in patch) for (const d of trip.days) for (const x of d.assignments) if (x.place.id === id) { x.place.category_id = patch.category_id; x.place.category = cats.find((c) => c.id === patch.category_id); }
+      return r;
+    };
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      await call(h, 'vanlife_place', { tripId: 1, placeIds: [17], placeId: 17, fill: true });
+      const before = JSON.stringify([p17.category_id, p17.notes, p17.website, await pi.get(h.ctx, 17)]);
+      await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 17, kind: 'hike', sheet_set: { duration: '4 h', website: 'https://lake-b.example' }, set: { walk: { parking_place_id: 31, shape: 'out_and_back' } } })).rejects.toThrow(/another car park/);
+      expect(JSON.stringify([p17.category_id, p17.notes, p17.website, await pi.get(h.ctx, 17)])).toBe(before);
+    } finally { vi.unstubAllGlobals(); }
+  });
+});
