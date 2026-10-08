@@ -1657,3 +1657,19 @@ describe('the 0.6.36 audit', () => {
     } finally { vi.unstubAllGlobals(); }
   });
 });
+
+describe('the 0.6.37 audit', () => {
+  it('routes apply keeps a kept line in the reorder call, after the new trace', async () => {
+    const trip = build();
+    const line = { id: 30, trip_id: 1, name: 'My drive, imported GPX', lat: 46.41, lng: 11.58, category_id: null, notes: '', description: '', route_geometry: JSON.stringify([[46.41, 11.58], [46.64, 11.72]]) };
+    trip.places.push(line);
+    trip.days[2].assignments.unshift({ id: 3000, day_id: 103, order_index: -1, notes: null, accommodation_id: null, place: { ...line, place_time: null, end_time: null } });
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const r = await call(makeHost({ trip }), 'vanlife_day', { tripId: 1, action: 'routes', dayNumber: 3, apply: true });
+      const order = r.coreCalls[0].args.orderedIds || r.coreCalls[0].args.assignmentIds || Object.values(r.coreCalls[0].args).find(Array.isArray);
+      expect(order[0]).toBe(r.writes[0].assignmentId);
+      expect(order).toContain(3000);
+    } finally { vi.unstubAllGlobals(); }
+  });
+});

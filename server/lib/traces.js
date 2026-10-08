@@ -96,7 +96,8 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
       const ownLine = old && (require('./classify').RE.trace.test(norm(old.categoryName || '')) || (!old.categoryId && routeCategoryId(model) == null));
       if (ownLine) await ctx.places.delete(model.tripId, old.id);
       writes.push({ day: day.n, createdPlaceId: place.id, assignmentId: asg.id, deletedPlaceId: ownLine ? old.id : null, ...(old && !ownLine ? { kept: `place ${old.id} ("${old.name}") is filed as "${old.categoryName || 'no category'}": kept; remove it in TREK if it was an old route` } : {}) });
-      const rest = day.assignments.filter((a) => a !== trace).map((a) => a.id);
+      // Only the deleted line leaves the order: a kept line (a user's) stays, after the new trace.
+      const rest = day.assignments.filter((a) => !(ownLine && a === trace)).map((a) => a.id);
       coreCalls.push({ tool: 'reorder_day_assignments', args: { tripId: model.tripId, dayId: day.id, assignmentIds: [asg.id, ...rest] }, why: 'put the route first, or TREK draws a straight line to the morning start' });
     }
   }
