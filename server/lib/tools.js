@@ -269,7 +269,10 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
     Object.assign(raw, patchTexts);
     place.raw = raw;
     // What the fill copied from the notes follows the new notes (time on site, contacts).
-    await amenityFill.resync(ctx, model.tripId, { ...raw, id: place.id, categoryName: place.categoryName }, await placeInfo.get(ctx, place.id));
+    const row = { ...raw, id: place.id, categoryName: place.categoryName };
+    await amenityFill.resync(ctx, model.tripId, row, await placeInfo.get(ctx, place.id));
+    // TREK's website and phone fields it emptied or replaced: the answer reads them from raw.
+    for (const k of ['website', 'phone']) if (row[k] !== raw[k]) raw[k] = row[k];
     if (!a.set && !a.log && !(a.clear_fields && a.clear_fields.length)) {
       const sh = placeSheet.sheetOf(place, { night: isNightPlace(model, place) });
       return { saved: true, placeId: place.id, sheetFields: sheetSet.map(([f]) => f), sheet: { kind: sh.kind, fields: withRecordedDuration(sh.fields, await placeInfo.get(ctx, place.id), settings.language), otherNotes: sh.other } };

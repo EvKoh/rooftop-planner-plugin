@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.6.25",
+  "version": "0.6.26",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -1235,7 +1235,7 @@
             "fill": {
               "type": "boolean",
               "default": false,
-              "description": "Fill empty amenities and contacts: the place given by placeId, or the next 20 places of the trip; call again while \"remaining\" is above 0. Never overwrites a recorded value."
+              "description": "Fill empty amenities and contacts: placeId, or the next 20 places; call again while \"remaining\" > 0. Never overwrites a typed value; copies from the notes follow them."
             }
           }
         },

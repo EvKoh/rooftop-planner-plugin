@@ -262,8 +262,11 @@ async function fill(ctx, tripId, opts = {}) {
   for (const p of todo) {
     if (batch.length >= BATCH || Date.now() > until) break;
     read++;
-    const r = await placeInfo.get(ctx, p.id);
-    if (!incomplete(r, p)) { if (await resync(ctx, tripId, p, r)) res0.resynced++; complete.push(p.id); continue; }
+    let r = await placeInfo.get(ctx, p.id);
+    // What was copied from the notes follows them first: a copy dropped here makes the record
+    // incomplete, and this same call looks for a replacement.
+    if (await resync(ctx, tripId, p, r)) { r = await placeInfo.get(ctx, p.id); res0.resynced++; }
+    if (!incomplete(r, p)) { complete.push(p.id); continue; }
     records.set(p.id, r);
     batch.push(p);
   }
@@ -293,9 +296,8 @@ async function fill(ctx, tripId, opts = {}) {
     done++;
     const found = {};
     const sources = [];
-    // What was copied from the notes follows them first, so no stale copy feeds the contacts.
-    let current = records.get(place.id) || null;
-    if (await resync(ctx, tripId, place, current)) { current = await placeInfo.get(ctx, place.id); res.resynced++; }
+    // Already resynced when it was read (above): no stale copy feeds the contacts.
+    const current = records.get(place.id) || null;
     // Contact candidates, best first: the place itself, OSM, park4night.
     const contactFrom = ownContacts(place);
     const camp = nearest(place, osm, OSM_RADIUS_M);

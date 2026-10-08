@@ -1279,3 +1279,34 @@ describe('the 0.6.24 audit: copied contacts and TREK\'s fields follow the notes'
     expect(p.phone).toBe('+390471222222');
   });
 });
+
+describe('the 0.6.25 audit', () => {
+  it('a fill that drops a copied phone on a complete record finds its replacement in the same call', async () => {
+    const trip = build();
+    const p = trip.places.find((x) => x.id === 11);
+    Object.assign(p, { notes: 'Contact : +39 0471 111111', website: null, phone: null });
+    const h = makeHost({ trip });
+    const { AMENITIES } = require('../server/lib/place-info.js');
+    await call(h, 'vanlife_place', { tripId: 1, placeId: 11, set: Object.fromEntries(Object.keys(AMENITIES).map((k) => [k, 'no'])) });
+    const osm = { elements: [{ type: 'node', id: 5, lat: 46.74, lon: 11.96, tags: { tourism: 'camp_site', phone: '+39 0471 999999' } }] };
+    const base = stubFetch();
+    vi.stubGlobal('fetch', (url, init) => (String(url).includes('overpass') ? Promise.resolve({ ok: true, status: 200, json: async () => osm }) : base(url, init)));
+    try {
+      await call(h, 'vanlife_place', { tripId: 1, placeIds: [11], placeId: 11, fill: true });
+      expect(p.phone).toBe('+390471111111');
+      p.notes = 'Musée de la montagne.';
+      await call(h, 'vanlife_place', { tripId: 1, placeIds: [11], placeId: 11, fill: true });
+      expect(p.phone).toBe('+390471999999');
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it('the sheet_set answer shows TREK\'s fields as resync left them, even when the kind changes in the same call', async () => {
+    const trip = build();
+    const p = trip.places.find((x) => x.id === 11);
+    Object.assign(p, { notes: 'Site : https://old-host.example.com', website: null, phone: null });
+    const h = makeHost({ trip });
+    vi.stubGlobal('fetch', stubFetch());
+    try { await call(h, 'vanlife_place', { tripId: 1, placeIds: [11], placeId: 11, fill: true }); } finally { vi.unstubAllGlobals(); }
+    const ans = await call(h, 'vanlife_place', { tripId: 1, placeId: 11, kind: 'village', sheet_set: { website: null } });
+    expect(JSON.stringify(ans)).not.toContain('old-host');
+  });
+});
