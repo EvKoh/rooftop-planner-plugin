@@ -1839,3 +1839,21 @@ describe('the 0.6.42 audit', () => {
     expect(r.ignored).toMatch(/scope/);
   });
 });
+
+describe('the 0.6.43 audit: a rewritten bulleted field line keeps its bullet', () => {
+  const s = require('../server/lib/place-sheet.js');
+  it('a rule in a list survives two sheet_set of its neighbour', () => {
+    let n = 'Check-in 8h–21h.\nRèglement :\n• Chiens : en laisse\n• Pas de feu de camp\n• Silence après 22 h';
+    n = s.setField('', n, 'dog', 'admis, 3 €/nuit', 'fr').notes;
+    expect(s.sheetOf({ notes: n }).fields.dog.text).toBe('admis, 3 €/nuit');
+    n = s.setField('', n, 'dog', 'admis', 'fr').notes;
+    expect(n).toMatch(/Pas de feu de camp/);
+    expect(n).toMatch(/Silence après 22 h/);
+  });
+  it('a note bullet under a dashed field stays with that field across two sheet_set of another', () => {
+    let m = "Durée : 3 h\n- Niveau : moyen\n- Prévoir 2 L d'eau";
+    m = s.setField('', m, 'duration', '4 h', 'fr').notes;
+    m = s.setField('', m, 'duration', '5 h', 'fr').notes;
+    expect(m).toBe("Durée : 5 h\n- Niveau : moyen\n- Prévoir 2 L d'eau");
+  });
+});

@@ -160,7 +160,8 @@ function lines(text) {
     if (kv) {
       const [key, value] = kv;
       open = { key, field: fieldOf(key), value: '', items: [], idx: [i] };
-      if (!bullet) list = open; else if (!list) list = null;
+      // A list header is a plain "Key :" line with no value of its own ("Règlement :").
+      if (!bullet) list = value.trim() ? null : open;
       // "Itinéraire : • A • B" on one line.
       const inline = value.split(/\s+•\s+|^•\s*/).map((x) => x.trim()).filter(Boolean);
       if (/^•/.test(value) || inline.length > 1) open.items.push(...inline); else open.value = value;
@@ -551,7 +552,10 @@ function setField(description, notes, field, value, L = 'en') {
     const out = [];
     let at = -1;
     all.forEach((line, i) => { if (i === first) at = out.length; if (!drop.has(i)) out.push(line); });
-    return { lines: out, at, label };
+    // The field's line kept its bullet ("• Chiens : …" in a list, "- Niveau : …"): the rewritten
+    // line keeps it too, or it would open a list of its own and take the bullets after it.
+    const head = first >= 0 ? all[first].match(/^\s*/)[0] + (all[first].trim().match(BULLET) || [''])[0] : '';
+    return { lines: out, at, label, bullet: first >= 0 && BULLET.test(all[first].trim()) ? head : null };
   };
   const n = strip(notes);
   const d = strip(description);
@@ -559,9 +563,13 @@ function setField(description, notes, field, value, L = 'en') {
   if (typeof value === 'string' && value.includes('\n')) value = value.split(/\r?\n/).map((x) => x.replace(BULLET, '').trim()).filter(Boolean);
   const empty = value == null || value === '' || (Array.isArray(value) && !value.length);
   const label = n.label || d.label || t(L, `sh.f.${field}`);
-  const block = empty ? [] : Array.isArray(value)
-    ? [`${label} :`, ...value.map((v) => `• ${String(v).trim()}`)]
-    : [`${label} : ${String(value).trim()}`];
+  const bullet = n.at >= 0 ? n.bullet : null;
+  const block = empty ? [] : bullet
+    // On a bulleted line, a list stays on that line ("• Services : wifi • eau"), as the reader splits it.
+    ? [`${bullet}${label} : ${Array.isArray(value) ? value.map((v) => String(v).trim()).join(' • ') : String(value).trim()}`]
+    : Array.isArray(value)
+      ? [`${label} :`, ...value.map((v) => `• ${String(v).trim()}`)]
+      : [`${label} : ${String(value).trim()}`];
   const kept = n.lines.slice();
   if (block.length) {
     if (n.at >= 0) kept.splice(n.at, 0, ...block);
