@@ -178,6 +178,15 @@ function minutesOf(s) {
   const H = 'h|hr|hrs|hours?|heures?|std|stunden?|ore|horas?';
   const M = 'min|mn|minutes?|minuten|minuti|minutos';
   const m = t.match(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:[-–]\\s*\\d+(?:[.,]\\d+)?\\s*)?(?:(${H})(?![a-z])\\s*(?:(\\d{1,2})(?!\\d)\\s*(?:${M}|m\\b)?)?|(?:${M})\\b)`));
+  // A span under a duration label ("Durée : de 9h à 11h") is its length, as parseVisit reads it;
+  // any other clock time ("jusqu'à 11h") is no duration: the same test as parseVisit's.
+  const visit = require('./visit');
+  const span = t.match(visit.SPAN);
+  if (span) {
+    const len = (+span[3] * 60 + +(span[4] || 0)) - (+span[1] * 60 + +(span[2] || 0));
+    return len >= 5 && len <= 1440 ? len : null;
+  }
+  if (m && require('./visit').isClockHour(t, m.index, m[0].length)) return null;
   if (!m) return null;
   const n = Number(m[1].replace(',', '.'));
   const minutes = m[2] ? Math.round(n * 60 + (m[3] ? Number(m[3]) : 0)) : Math.round(n);

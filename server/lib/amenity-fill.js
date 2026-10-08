@@ -142,11 +142,12 @@ function hostText(text, notHost) {
   let current = null;
   return String(text || '').split('\n').filter((line) => {
     const bullet = placeSheet.BULLET.test(line); // the sheet's own bullets (•, –, 1., ●...)
-    const kv = bullet ? null : placeSheet.splitKey(line);
+    // A label may itself be bulleted ("- Sources : …") or start with a pictogram ("📎 Sources :").
+    const kv = placeSheet.splitKey(line.replace(placeSheet.BULLET, '').replace(/^[^\p{L}\p{N}]+/u, ''));
     // The sheet's field, else a label that opens with a source / link / review / photo / map word
     // ("Liens utiles", "Avis Google", "Source officielle", "Photos du lieu", "Carte IGN").
     if (kv) current = placeSheet.fieldOf(kv[0]) || (NOT_HOST_LABEL.test(placeSheet.keyForm(kv[0])) ? 'sources' : null);
-    else if (!bullet) current = null;
+    else if (!bullet) current = null; // a plain line ends the list; a bullet stays under its label
     return !(current && notHost.has(current));
   }).join('\n');
 }

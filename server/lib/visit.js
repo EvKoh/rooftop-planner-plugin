@@ -21,6 +21,31 @@ const quote = (s, i, len) => s.slice(Math.max(0, i - 30), i + len + 20).replace(
 const OPENING = /\b(ouvert|ouverture|horaires?|open|opening|hours|daily|geoffnet|offnungszeiten|aperto|orari|apertura|abierto|horario|arrivee|arrival|check-?in|accueil|reception|anreise|ankunft|empfang|arrivo|accoglienza|llegada|recepcion|7\s*j\s*\/\s*7|7\s*\/\s*7|24\s*h)\b/;
 
 /** { min, max, quote } in minutes from a free text, or null. */
+/**
+ * Is the hour written at s[index, index+len) a clock time rather than a duration? The start or
+ * the end of a span ("de 9h à 12h", "9h-12h", "entre 9h et 11h", "from 9h to 11h"), or an hour
+ * after a clock word ("jusqu'à", "à partir de", "dès", "avant", "après", "from", "until", "at",
+ * "before", "after", "by", "vor", "nach", "ab", "bis", "prima delle", "dopo", "desde", "hasta"...).
+ * The one test both duration readers apply (parseVisit here, the sheet's minutesOf). `s` is norm()ed.
+ */
+const SPAN_JOIN = '(?:[-–]|a|à|to|bis|alle|al|et|and|und|e|y)';
+const CLOCK_WORD = /(?:jusqu.?a|a partir de|\bdes|\bvers|\bavant|\bapres|\bentre|\bfrom|\buntil|\btill|\bafter|\bbefore|\bbetween|\bby|\bat|\ba|\bum|\bab|\bbis|\bvor|\bnach|\bzwischen|\bdalle|\balle|\bdopo|\bentro|\bprima(?: delle)?|\btra|\bdesde(?: las)?|\bhasta(?: las)?|\bverso)\s*$/;
+function isClockHour(s, index, len) {
+  const after = s.slice(index + len);
+  const before = s.slice(Math.max(0, index - 18), index);
+  // Minutes are always a length ("45 min – 1 h"); only an hour can be a clock time.
+  if (/min/.test(s.slice(index, index + len))) return false;
+  // "1h30-2h" or "2-3 h" is a range of lengths, "9h-12h" a span of the day: a short range that
+  // starts before 7 is a length.
+  const hours = (txt) => { const m = String(txt).match(/(\d{1,2})\s*[h:]\s*(\d{2})?/); return m ? +m[1] * 60 + +(m[2] || 0) : null; };
+  const isLengths = (a, b) => a != null && b != null && a < 7 * 60 && b > a && b - a <= 3 * 60;
+  const next = after.match(new RegExp(`^\\s*${SPAN_JOIN}\\s*(\\d{1,2}\\s*[h:]\\s*\\d{0,2})`));
+  if (next && !isLengths(hours(s.slice(index, index + len)), hours(next[1]))) return true;
+  if (CLOCK_WORD.test(before)) return true;
+  const prev = before.match(new RegExp(`(\\d{1,2}\\s*[h:]\\s*\\d{0,2})\\s*${SPAN_JOIN}\\s*$`));
+  return !!prev && !isLengths(hours(prev[1]), hours(s.slice(index, index + len)));
+}
+
 function parseVisit(text) {
   const s = norm(text);
   const span = s.match(SPAN);
@@ -49,13 +74,7 @@ function parseVisit(text) {
   for (const m of s.matchAll(DUR)) {
     const around = s.slice(Math.max(0, m.index - 40), m.index + m[0].length + 30);
     if (!CUE.test(around)) continue;
-    // The start of a span ("de 9h à 12h", "9h-12h") is a clock time, not a duration.
-    if (/^\s*(?:[-–]|a|à|to|bis|alle|al)\s*\d{1,2}\s*[h:]/.test(s.slice(m.index + m[0].length))) continue;
-    // …nor an hour after a clock word ("jusqu'à 11h", "à partir de 9h", "dès 10h", "from 10h",
-    // "until 11h", "at 11h", "ab 9 Uhr", "dalle 9", "desde las 9").
-    if (/(?:jusqu.?a|a partir de|\bdes|\bvers|\bfrom|\buntil|\btill|\bafter|\bbefore|\bat|\ba|\bum|\bab|\bbis|\bdalle|\balle|\bdopo|\bentro|\bdesde(?: las)?|\bhasta(?: las)?|\bverso)\s*$/.test(s.slice(Math.max(0, m.index - 16), m.index))) continue;
-    // …nor is its end ("de 9h à 12h": the 12h).
-    if (/\d{1,2}\s*[h:]\s*\d{0,2}\s*(?:[-–]|a|à|to|bis|alle|al)\s*$/.test(s.slice(Math.max(0, m.index - 16), m.index))) continue;
+    if (isClockHour(s, m.index, m[0].length)) continue;
     // "8h-21h" is opening hours, not a duration.
     if (/^\d{1,2}\s*h\s*[-–]\s*\d{1,2}\s*h/.test(m[0]) && +m[3] > +m[1] + 4) continue;
     let min;
@@ -99,4 +118,4 @@ function dayStopMinutes(stop, info, stops) {
   return stopMinutes(stop.place, info);
 }
 
-module.exports = { parseVisit, stopMinutes, dayStopMinutes, CUE };
+module.exports = { SPAN, OPENING, isClockHour, parseVisit, stopMinutes, dayStopMinutes, CUE };

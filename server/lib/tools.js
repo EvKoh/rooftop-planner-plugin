@@ -374,7 +374,10 @@ async function callTool({ name, args }, ctx, { now } = {}) {
         }, opts);
       } else throw new Error('give tripId and dayNumber, or lat and lng');
       if (res.date && res.evening) {
-        const ss = sunset(res.evening.lat, res.evening.lng, res.date, settings.timezone);
+        // At tonight's planned stay when there is one (the check's and the schedule's point), else at
+        // the evening point.
+        const at = res.currentNight && res.currentNight.lat != null ? res.currentNight : res.evening;
+        const ss = sunset(at.lat, at.lng, res.date, settings.timezone);
         res.sun = { sunset: hhmm(ss), latestArrival: hhmm(rules.latestArrival(ss, settings)) };
       }
       break;
