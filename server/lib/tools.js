@@ -114,10 +114,7 @@ function placeView(model, p, info, settings, { full = false } = {}) {
     // card shows; edit a field with sheet_set, which rewrites its line in the notes.
     const sh = placeSheet.sheetOf(p, { night });
     // The time on site the plan counts wins over the notes' figure, as on the panel's card.
-    const fields = withRecordedDuration(sh.fields, info, L);
-    // A hike's track page is its reference page, as on the panel's card (place-sheet.view).
-    const track = sh.kind === 'hike' ? walks.hikeUrl({ raw: p.raw || p, description: p.description, notes: p.notes }, info) : null;
-    if (track && (!fields.website || fields.website.fromTrek)) fields.website = { url: track, text: track };
+    const fields = shownFields(p, sh, info, L);
     out.sheet = { kind: sh.kind, fields, otherNotes: sh.other, about: sh.about, freeNotes: sh.text };
   }
   return out;
@@ -139,6 +136,14 @@ function walkView(w, geo, L) {
 
 /** Every hike of the plan with its car park and walking route (computed and cached here). */
 /** The sheet's fields with the time on site the plan counts (the record's) as its duration, as on the panel's card. */
+/** The sheet's fields as the panel's card shows them: the record's time and shape, a hike's track page. */
+function shownFields(p, sh, info, L) {
+  const fields = withRecordedDuration(sh.fields, info, L);
+  const track = sh.kind === 'hike' ? walks.hikeUrl({ raw: p.raw || p, description: p.description, notes: p.notes }, info) : null;
+  if (track && (!fields.website || fields.website.fromTrek)) fields.website = { url: track, text: track };
+  return fields;
+}
+
 function withRecordedDuration(fields, info, L) {
   return placeSheet.withRecord(fields, L, { visitMinutes: recordedMinutes(info), walkShape: walks.recordedShape(info) });
 }
@@ -404,7 +409,7 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
     place = model.poolById.get(a.placeId);
     if (!a.set && !a.log && !(a.clear_fields && a.clear_fields.length)) {
       const sh = placeSheet.sheetOf(place, { night: isNightPlace(model, place) });
-      return { saved: true, placeId: place.id, sheetFields: sheetSet.map(([f]) => f), sheet: { kind: sh.kind, fields: withRecordedDuration(sh.fields, await placeInfo.get(ctx, place.id), settings.language), otherNotes: sh.other } };
+      return { saved: true, placeId: place.id, sheetFields: sheetSet.map(([f]) => f), sheet: { kind: sh.kind, fields: shownFields(place, sh, await placeInfo.get(ctx, place.id), settings.language), otherNotes: sh.other } };
     }
   }
   if (a.clear_fields && a.clear_fields.length) {

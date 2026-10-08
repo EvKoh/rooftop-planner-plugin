@@ -1904,3 +1904,20 @@ describe('the 0.6.45 audit: every place of the field, notes and description', ()
     expect(read.rules.text).not.toMatch(/en laisse/);
   });
 });
+
+describe('the cross-surface audit of 0.6.46', () => {
+  it('a hike stated one way is walked once: its shape and distance match the card', () => {
+    const walks = require('../server/lib/walks.js');
+    const hike = { lat: 46.6, lng: 11.7, notes: 'Type : aller simple', categoryName: 'See – Hike' };
+    expect(walks.shapeOf(hike, { point: { lat: 46.59, lng: 11.69 } }, null)).toBe('one_way');
+    expect(walks.walked({ km: 1, minutes: 15, up: 10, down: 0 }, 'one_way').km).toBe(1);
+  });
+  it('the sheet_set answer shows a hike\'s track page, as the read and the panel', async () => {
+    const trip = build();
+    const hike = { id: 41, trip_id: 1, name: 'Seceda ridge', lat: 46.6, lng: 11.7, category_id: 9, notes: 'Track: https://www.komoot.com/tour/123', description: '', website: 'https://www.valgardena.it/seceda' };
+    trip.places.push(hike);
+    const h = makeHost({ trip, categories: [{ id: 1, name: 'Night – Campsite' }, { id: 6, name: 'Route – Day route' }, { id: 9, name: 'See – Hike' }] });
+    const ans = await call(h, 'vanlife_place', { tripId: 1, placeId: 41, sheet_set: { duration: '3 h' } });
+    expect(ans.sheet.fields.website.url).toMatch(/komoot/);
+  });
+});
