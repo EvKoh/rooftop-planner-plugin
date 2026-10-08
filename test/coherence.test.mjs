@@ -1727,3 +1727,39 @@ describe('the 0.6.38 audit: plan_trip apply', () => {
     } finally { vi.unstubAllGlobals(); }
   });
 });
+
+describe('the 0.6.39 audit', () => {
+  it('sheet_set route_type leaves a "Parcours" line with no route shape, a free note for the reader', () => {
+    const sheet = require('../server/lib/place-sheet.js');
+    const notes = 'Parcours : par le sentier des crêtes, via le refuge Firenze\nDurée : 4 h';
+    expect(sheet.sheetOf({ notes, categoryName: 'See – Hike' }).fields.route_type).toBeUndefined();
+    expect(sheet.setField('', notes, 'route_type', 'boucle', 'fr').notes).toMatch(/sentier des crêtes/);
+  });
+  it('contacts set and another contact cleared are both kept; a contact or the amenities set and cleared is refused', async () => {
+    const h = makeHost();
+    await call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: { contacts: { email: 'a@example.com', phone: '+39 0471 111111' } }, clear_fields: ['whatsapp'] });
+    const rec = await pi.get(h.ctx, 13);
+    expect([rec.contacts.email, rec.contacts.phone]).toEqual(['a@example.com', '+390471111111']);
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: { contacts: { email: 'b@example.com' } }, clear_fields: ['email'] })).rejects.toThrow(/both set and cleared/);
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: { dog: 'yes' }, clear_fields: ['amenities'] })).rejects.toThrow(/both set and cleared/);
+  });
+  it('without a day-route category, routes apply deletes only a line carrying the plugin\'s own note', () => {
+    const { isOwnRouteNote } = require('../server/lib/traces.js');
+    expect(isOwnRouteNote('Computed by the vanlife plugin (Valhalla, no tolls, height 2.1 m). Legs: …')).toBe(true);
+    expect(isOwnRouteNote(`${require('../server/i18n/fr.json')['route.notes'].split('{')[0]}sans péage…`)).toBe(true); // any language
+    expect(isOwnRouteNote('My GPX drive')).toBe(false);
+    expect(isOwnRouteNote('')).toBe(false);
+  });
+  it('a GPX hike in a hike category has its planner columns', async () => {
+    const { placeColumns } = require('../server/lib/contributions.js');
+    const trip = build();
+    trip.places.push({ id: 45, trip_id: 1, name: 'Seceda ridge', lat: 46.6, lng: 11.7, category_id: 9, notes: '', description: '', route_geometry: JSON.stringify([[46.6, 11.7], [46.61, 11.72]]) });
+    const h = makeHost({ trip, categories: [{ id: 1, name: 'Night – Campsite' }, { id: 6, name: 'Route – Day route' }, { id: 9, name: 'See – Hike' }], queryResults: { [pi.INDEX_SQL]: [{ place_id: 45 }] } });
+    await pi.set(h.ctx, 1, 45, { visit_min_minutes: 180 });
+    const cols = await placeColumns(h.ctx, 1, await readSettings(h.ctx));
+    expect(JSON.stringify(cols)).toMatch(/3 h/);
+  });
+  it('routes refuses a day that is not in the trip, as schedule does', async () => {
+    await expect(call(makeHost(), 'vanlife_day', { tripId: 1, action: 'routes', dayNumbers: [1, 9] })).rejects.toThrow(/day 9/);
+  });
+});

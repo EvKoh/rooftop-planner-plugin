@@ -34,6 +34,13 @@ function waypoints(model, day) {
   return { pts: pts.slice(0, 30), names: names.slice(0, 30) };
 }
 
+// The note the plugin writes on its route places, in any language: the text before its first
+// parameter ("Computed by the vanlife plugin (Valhalla, "). A line with no category is the
+// plugin's only when it carries that note: a GPX import with no category is the user's.
+const { MESSAGES } = require('./i18n');
+const ROUTE_NOTE_HEADS = Object.values(MESSAGES).map((m) => String(m['route.notes'] || '').split('{')[0].trim()).filter((h) => h.length >= 10);
+const isOwnRouteNote = (notes) => ROUTE_NOTE_HEADS.some((h) => String(notes || '').trim().startsWith(h));
+
 function routeCategoryId(model) {
   // Always the day-route category: the old line may have been a place of another category.  // The day-route category as classify recognises it (classify.RE.trace), never a bare "route":
   // a user's "Hiking route" is a hike category, and the plugin would read its own line as a hike.
@@ -93,7 +100,7 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
       // none): a drawn line filed in a user's category (a bike ride from a GPX) is theirs, kept.
       // A line with no category is the plugin's only when the trip has no day-route category (the
       // plugin files its lines there when there is one): otherwise it is a user's import, kept.
-      const ownLine = old && (require('./classify').RE.trace.test(norm(old.categoryName || '')) || (!old.categoryId && routeCategoryId(model) == null));
+      const ownLine = old && (require('./classify').RE.trace.test(norm(old.categoryName || '')) || (!old.categoryId && routeCategoryId(model) == null && isOwnRouteNote(old.raw && old.raw.notes)));
       if (ownLine) await ctx.places.delete(model.tripId, old.id);
       writes.push({ day: day.n, createdPlaceId: place.id, assignmentId: asg.id, deletedPlaceId: ownLine ? old.id : null, ...(old && !ownLine ? { kept: `place ${old.id} ("${old.name}") is filed as "${old.categoryName || 'no category'}": kept; remove it in TREK if it was an old route` } : {}) });
       // Only the deleted line leaves the order: a kept line (a user's) stays, after the new trace.
@@ -113,4 +120,4 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
   };
 }
 
-module.exports = { routeCategoryId, computeRoutes, waypoints };
+module.exports = { isOwnRouteNote, routeCategoryId, computeRoutes, waypoints };
