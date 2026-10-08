@@ -1310,3 +1310,25 @@ describe('the 0.6.25 audit', () => {
     expect(JSON.stringify(ans)).not.toContain('old-host');
   });
 });
+
+describe('the 0.6.26 audit', () => {
+  it('a free sentence that states a time on site beats a hike\'s summary line', () => {
+    const sheet = require('../server/lib/place-sheet.js');
+    expect(sheet.factsOf({ categoryName: 'See – Hike', notes: '10.93 km · +770 m · 4 h 10\nThe round trip takes 5 h 30 with the breaks.' }).visitMinutes).toBe(330);
+    expect(sheet.factsOf({ categoryName: 'See – Hike', notes: '10.93 km · +770 m · 4 h 10\nNice views.' }).visitMinutes).toBe(250);
+  });
+  it('the sheet_set answer reads the trip as TREK holds it after the write, on a host that returns copies', async () => {
+    const trip = build();
+    const p = trip.places.find((x) => x.id === 11);
+    Object.assign(p, { notes: 'Site : https://old-host.example.com', website: null, phone: null });
+    const h = makeHost({ trip });
+    for (const k of ['getPlaces', 'getDays', 'getById', 'getAccommodations', 'getReservations']) {
+      const f = h.ctx.trips[k];
+      if (f) h.ctx.trips[k] = async (...x) => structuredClone(await f(...x));
+    }
+    const ans = await call(h, 'vanlife_place', { tripId: 1, placeId: 11, sheet_set: { website: null }, set: { visit_min_minutes: 60 } });
+    const read = await call(h, 'vanlife_place', { tripId: 1, placeId: 11 });
+    expect(JSON.stringify(ans)).not.toContain('old-host');
+    expect(ans.sheet.fields.website || null).toEqual(read.sheet.fields.website || null);
+  });
+});
