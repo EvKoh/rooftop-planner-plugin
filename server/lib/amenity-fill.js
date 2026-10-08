@@ -189,7 +189,11 @@ async function fill(ctx, tripId, opts = {}) {
   const ms = {};
   const lap = (k, since) => { ms[k] = (ms[k] || 0) + Date.now() - since; };
   let t = Date.now();
-  const all = candidates(await ctx.trips.getPlaces(Number(tripId)));
+  // The category's name, as the trip model, the panel and the columns read it: the sheet of a
+  // hike filed only by its category reads its summary line ("10.93 km · +770 m · 4 h 10").
+  const [rows, cats] = await Promise.all([ctx.trips.getPlaces(Number(tripId)), ctx.categories.list().catch(() => [])]);
+  const catName = new Map((cats || []).map((c) => [c.id, c.name]));
+  const all = candidates(rows).map((p) => ({ ...p, categoryName: p.category_name || catName.get(p.category_id) || '' }));
   lap('places', t);
   const only = opts.placeIds ? new Set(opts.placeIds.map(Number)) : null;
   const pool = only ? all.filter((p) => only.has(p.id)) : all;

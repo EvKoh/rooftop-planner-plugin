@@ -1186,3 +1186,25 @@ describe('the 0.6.20 audit', () => {
     expect(parseVisit('Randonnée très prisée, 2 h 30 à pied.').quote).toBe('Randonnée très prisée, 2 h 30 à pied.');
   });
 });
+
+describe('the 0.6.21 audit: an imported hike\'s summary line', () => {
+  const sheet = require('../server/lib/place-sheet.js');
+  it('a labelled line wins over the summary line, wherever it stands', () => {
+    const f = sheet.factsOf({ categoryName: 'See – Hike', notes: '10.93 km · +770 m · 4 h 10\nDurée : 3 h' });
+    expect(f.visitMinutes).toBe(180);
+    const s = sheet.sheetOf({ categoryName: 'See – Hike', notes: '10.93 km · +770 m · 4 h 10\nDistance : 12' }).fields;
+    expect(JSON.stringify(s.distance_km)).toMatch(/\b12\b/);
+    expect(JSON.stringify(s.distance_km)).not.toMatch(/10[.,]93/);
+    expect(sheet.factsOf({ categoryName: 'See – Hike', notes: '10.93 km · +770 m · 4 h 10' }).visitMinutes).toBe(250);
+  });
+  it('the fill reads the summary of a hike filed only by its category', async () => {
+    const trip = build();
+    const p = trip.places.find((x) => x.id === 10);
+    Object.assign(p, { category_id: 9, notes: '10.93 km · +770 m · 4 h 10' });
+    delete p.category_name; delete p.category;
+    const h = makeHost({ trip, categories: [{ id: 4, name: 'See – Lake' }, { id: 9, name: 'See – Hike' }] });
+    vi.stubGlobal('fetch', stubFetch());
+    try { await call(h, 'vanlife_place', { tripId: 1, placeIds: [10], fill: true }); } finally { vi.unstubAllGlobals(); }
+    expect(JSON.stringify(await call(h, 'vanlife_place', { tripId: 1, placeId: 10 }))).toContain('"visit_min_minutes":250');
+  });
+});
