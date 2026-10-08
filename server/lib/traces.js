@@ -36,7 +36,9 @@ function waypoints(model, day) {
 
 function routeCategoryId(model, trace) {
   if (trace) return model.poolById.get(trace.place.id)?.categoryId ?? null;
-  const c = (model.categories || []).find((x) => /trace du jour|day route|route of the day|\broute\b|itinerar/.test(norm(x.name)));
+  // The day-route category as classify recognises it (classify.RE.trace), never a bare "route":
+  // a user's "Hiking route" is a hike category, and the plugin would read its own line as a hike.
+  const c = (model.categories || []).find((x) => require('./classify').RE.trace.test(norm(x.name)));
   return c ? c.id : null;
 }
 
@@ -106,4 +108,4 @@ async function computeRoutes(ctx, model, o, { settings, deadline, network = true
   };
 }
 
-module.exports = { computeRoutes, waypoints };
+module.exports = { routeCategoryId, computeRoutes, waypoints };
