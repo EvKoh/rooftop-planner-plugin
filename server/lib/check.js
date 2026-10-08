@@ -7,7 +7,7 @@ const { hhmm, hm, distKm, norm, durationText } = require('./util');
 const { t, dayName, money, num, clock } = require('./i18n');
 const placeInfo = require('./place-info');
 const { sunset } = require('./sun');
-const { isShopping, isTrace, parkingFromNotes } = require('./classify');
+const { isShopping, isTrace, parkingFromNotes, RE } = require('./classify');
 const rules = require('./rules');
 const placeSheet = require('./place-sheet');
 const { isHikePlace, isParkingPlace } = require('./design');
@@ -45,8 +45,11 @@ function dayPlan(model, day) {
   // on the later days of a stay over several nights, so those days start and end at camp.
   const veille = stayBefore(model, day);
   const nuit = stayOn(model, day);
-  const trace = day.assignments.find((a) => isTrace(a.place.categoryName, a.place));
-  const stops = day.assignments.filter((a) => a !== trace && !(veille && a.accommodationId === veille.id && (!nuit || veille.id !== nuit.id)));
+  // Every drawn line of the day is a line, never a stop (as walks.plannedStops reads it); the
+  // day's trace is the one in the day-route category first, else the first line.
+  const lines = day.assignments.filter((a) => isTrace(a.place.categoryName, a.place));
+  const trace = lines.find((a) => RE.trace.test(norm(a.place.categoryName || ''))) || lines[0];
+  const stops = day.assignments.filter((a) => !lines.includes(a) && !(veille && a.accommodationId === veille.id && (!nuit || veille.id !== nuit.id)));
   return { veille, nuit, trace, stops };
 }
 

@@ -164,6 +164,8 @@ function checkParkId(model, placeId, parkId) {
 
 async function precheck(ctx, model, a, settings) {
   if (a.placeId && !model.poolById.get(a.placeId)) throw new Error(`place ${a.placeId} is not in trip ${model.tripId}`);
+  if (a.kind) await require('./place-kind').kindCategory(ctx, a.kind);
+  if (a.log) contacts.logEntry(a.log);
   if (a.create) {
     if (a.placeId) throw new Error('create makes a new place: leave placeId out');
     await createInput(ctx, model, a.create);
@@ -173,7 +175,12 @@ async function precheck(ctx, model, a, settings) {
     if (typeof walkIn.parking !== 'object' || Array.isArray(walkIn.parking)) throw new Error('walk.parking is a new car park: { name, lat, lng, price_amount, per, day_number }');
     if ('parking_place_id' in walkIn) throw new Error('give walk.parking_place_id (a car park of the trip) or walk.parking (a new one), not both');
     await createInput(ctx, model, { ...walkIn.parking, kind: 'parking' });
-  } else if (walkIn) checkParkId(model, a.placeId, walkIn.parking_place_id);
+  } else if (walkIn) {
+    checkParkId(model, a.placeId, walkIn.parking_place_id);
+    // The walk's own rule (from a car park P, back to the same P), on the place as it stands.
+    const place = a.placeId ? model.poolById.get(a.placeId) : null;
+    if (place) await checkWalk(ctx, model, place, placeInfo.expandWalk({ walk: walkIn }));
+  }
   for (const [f, v] of Object.entries(a.sheet_set && typeof a.sheet_set === 'object' ? a.sheet_set : {})) placeSheet.setField('', '', f, v == null ? null : Array.isArray(v) ? v.map(String) : String(v), settings.language);
   if (a.clear_fields && a.clear_fields.length) placeInfo.clearPatch(a.clear_fields.filter((f) => f !== 'all'));
   if (a.set && typeof a.set === 'object') {
