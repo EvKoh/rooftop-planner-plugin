@@ -1069,3 +1069,33 @@ describe('the 0.6.15 audit', () => {
     expect(m.text).toMatch(/\d м × \d/);
   });
 });
+
+describe('the 0.6.16 audit: one clock-hour test for both duration readers', () => {
+  const sheet = require('../server/lib/place-sheet.js');
+  const { parseVisit } = require('../server/lib/visit.js');
+  it('the sheet never reads a clock time as a length, and reads spans and ranges as parseVisit does', () => {
+    expect(sheet.minutesOf("jusqu'à 11h")).toBeNull();
+    expect(sheet.minutesOf('9h-12h')).toBeNull();
+    expect(sheet.minutesOf('de 10h à 12h30')).toBe(150);
+    expect(sheet.minutesOf('1h30-2h')).toBe(90);
+    expect(sheet.minutesOf('45 min – 1 h')).toBe(45);
+  });
+  it('more clock words: avant, après, entre, between, vor, prima delle, by', () => {
+    for (const s of ['Visite libre avant 11h.', 'Visite possible après 10h.', 'Visite entre 9h et 11h.', 'Visit between 9h and 11h.', 'Besuch vor 11h.', 'Visita prima delle 11h.', 'Visit by 11h.']) expect(parseVisit(s), s).toBeNull();
+  });
+  it('a bulleted or pictogram-led source label never gives the host\'s contact', () => {
+    const fillLib = require('../server/lib/amenity-fill.js');
+    for (const n of ['- Sources : https://www.t.example.com/x', '• Liens utiles : https://www.t.example.com/x', '1. Avis Google : https://www.t.example.com/x', '📎 Sources :\n• https://www.t.example.com/x']) {
+      expect(fillLib.ownContacts({ notes: n }), n).toEqual([]);
+    }
+  });
+  it('find_nights in trip mode gives the latest arrival at tonight\'s stay, as the check', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const h = makeHost();
+      const n = await call(h, 'vanlife_find_nights', { tripId: 1, dayNumber: 2 });
+      const c = await call(h, 'vanlife_check_trip', { tripId: 1, sun: true, levels: ['info'] });
+      expect(n.sun.latestArrival).toBe(c.sun.days.find((d) => d.day === 2).latestArrival);
+    } finally { vi.unstubAllGlobals(); }
+  });
+});
