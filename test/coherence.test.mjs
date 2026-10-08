@@ -1332,3 +1332,25 @@ describe('the 0.6.26 audit', () => {
     expect(ans.sheet.fields.website || null).toEqual(read.sheet.fields.website || null);
   });
 });
+
+describe('the 0.6.27 audit', () => {
+  it('a free sentence beats the summary with the minutes the one reader gave, never a re-read quote', () => {
+    const sheet = require('../server/lib/place-sheet.js');
+    expect(sheet.factsOf({ categoryName: 'See – Hike', notes: '10.93 km · +770 m · 4 h 10\nStart from 8 h; the round trip takes 3 h.' }).visitMinutes).toBe(180);
+  });
+  it('fill=true says which other changes it did not apply', async () => {
+    const h = makeHost();
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const r = await call(h, 'vanlife_place', { tripId: 1, placeId: 13, fill: true, set: { water: 'yes' } });
+      expect(r.ignored).toMatch(/^set:/);
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it('the panel shows a track page as the reference page of a hike only', async () => {
+    const trip = build();
+    trip.places.find((x) => x.id === 11).notes = 'Sources : https://www.komoot.com/tour/123';
+    const h = makeHost({ trip });
+    const w = JSON.parse((await h.run(plugin).route({ method: 'POST', path: '/amenities' }, { body: { tripId: 1, placeId: 11 } })).body);
+    expect(JSON.stringify(w.sheet)).not.toContain('"field":"website"');
+  });
+});

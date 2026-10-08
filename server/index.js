@@ -168,8 +168,10 @@ module.exports = definePlugin({
           const night = isNightOf(new Set((accs || []).map((a) => a.place_id)), at.placeId, place.category_name || (catName && catName.name), place.route_geometry);
           // The structured card: description and notes read into the fixed sections of its kind.
           const categoryName = place.category_name || (catName && catName.name) || '';
-          const sheet = placeSheet.view(placeSheet.sheetOf({ ...place, categoryName, raw: place }, { night }), L, {
-            trackUrl: walks.hikeUrl({ raw: place, description: place.description, notes: place.notes }, info),
+          const read = placeSheet.sheetOf({ ...place, categoryName, raw: place }, { night });
+          const sheet = placeSheet.view(read, L, {
+            // A track page is a hike's reference page only (as the place tool's hike.url).
+            trackUrl: read.kind === 'hike' ? walks.hikeUrl({ raw: place, description: place.description, notes: place.notes }, info) : null,
             visitMinutes: visit.recordedMinutes(info),
           });
           return json(200, {
