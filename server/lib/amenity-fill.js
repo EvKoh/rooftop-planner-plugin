@@ -209,9 +209,15 @@ async function resync(ctx, tripId, place, current) {
   if (Object.keys(cpatch).length) { patch.contacts = cpatch; patch.contact_sources = csources; }
   if (!Object.keys(patch).length) return false;
   await placeInfo.set(ctx, tripId, place.id, patch, { place });
-  // TREK's website field held the copied site: it follows.
-  if ('website' in cpatch && cpatch.website && place.website && place.website === current.contacts.website) {
-    await ctx.places.update(Number(tripId), Number(place.id), { website: cpatch.website });
+  // TREK's website and phone fields that held the copy follow it, replaced or emptied; `place`
+  // (the row the caller goes on reading) follows too, so the copy never comes back from it.
+  const trek = {};
+  for (const k of ['website', 'phone']) {
+    if (k in cpatch && place[k] && place[k] === (current.contacts || {})[k]) trek[k] = cpatch[k];
+  }
+  if (Object.keys(trek).length) {
+    await ctx.places.update(Number(tripId), Number(place.id), trek);
+    Object.assign(place, trek);
   }
   return true;
 }
@@ -287,6 +293,9 @@ async function fill(ctx, tripId, opts = {}) {
     done++;
     const found = {};
     const sources = [];
+    // What was copied from the notes follows them first, so no stale copy feeds the contacts.
+    let current = records.get(place.id) || null;
+    if (await resync(ctx, tripId, place, current)) { current = await placeInfo.get(ctx, place.id); res.resynced++; }
     // Contact candidates, best first: the place itself, OSM, park4night.
     const contactFrom = ownContacts(place);
     const camp = nearest(place, osm, OSM_RADIUS_M);
@@ -318,8 +327,6 @@ async function fill(ctx, tripId, opts = {}) {
     }
     // A linked place whose park4night lookup was cut short by the rate limit is retried later.
     if (!(res.park4nightLimited && id && !sources.some((x) => x.startsWith('park4night')))) looked.push(place.id);
-    let current = records.get(place.id) || null;
-    if (await resync(ctx, tripId, place, current)) { current = await placeInfo.get(ctx, place.id); res.resynced++; }
     const patch = {};
     // The place's own sheet already answers the dog and the rooftop tent: an open source
     // never fills over what the host's text says (a "Chiens : non" stays a no).
