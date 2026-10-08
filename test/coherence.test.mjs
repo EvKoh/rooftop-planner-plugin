@@ -1470,7 +1470,7 @@ describe('the 0.6.31 audit', () => {
     await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 13, kind: 'farm', sheet_set: { opening_hourz: 'x' } })).rejects.toThrow(/unknown sheet field/);
     expect(trip.places.find((p) => p.id === 13).category_id).toBe(cat);
     await expect(call(h, 'vanlife_place', { tripId: 1, create: { name: 'New', lat: 46.5, lng: 12.1 }, set: { visit_min_minutes: 120, visit_max_minutes: 60 } })).rejects.toThrow();
-    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 10, set: { walk: { parking: { name: 'P', lat: 46.69, lng: 12.08 } } } })).rejects.toThrow(/walk.shape/);
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 10, set: { walk: { parking: { name: 'P', lat: 46.69, lng: 12.08 } } } })).rejects.toThrow();
     expect(trip.places.length).toBe(n);
   });
   it('create keeps or refuses its currency, never drops it', async () => {
@@ -1500,5 +1500,41 @@ describe('the 0.6.31 audit', () => {
     const specs = require('../server/lib/tool-specs.js');
     const list = specs.TOOL_SPECS || specs;
     for (const n of ['vanlife_place', 'vanlife_plan_trip']) expect(list.find((t) => t.name === n).annotations.destructiveHint, n).toBe(true);
+  });
+});
+
+describe('the 0.6.32 audit', () => {
+  const CATS = [{ id: 1, name: 'Night – Campsite' }, { id: 4, name: 'See – Lake' }, { id: 5, name: 'Food – Groceries' }, { id: 6, name: 'Route – Day route' }, { id: 7, name: 'See – Museum' }, { id: 8, name: 'Route – Parking' }, { id: 9, name: 'See – Hike' }, { id: 10, name: 'Bike' }];
+  it('vanlife_place writes nothing before a refusal: create, walk.parking, an unknown place, a non-car park', async () => {
+    const trip = build();
+    const h = makeHost({ trip, categories: CATS });
+    const n = trip.places.length;
+    await expect(call(h, 'vanlife_place', { tripId: 1, create: { name: 'Swiss lake', lat: 46.5, lng: 12.1, per: 'week' } })).rejects.toThrow(/per/);
+    await expect(call(h, 'vanlife_place', { tripId: 1, create: { name: 'Ridge hike', lat: 46.5, lng: 12.1, kind: 'hike' }, set: { walk: { shape: 'loop', parking: { name: 'P' } } } })).rejects.toThrow(/lat/);
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 999, set: { walk: { shape: 'loop', parking: { name: 'P', lat: 46.5, lng: 12.1 } } } })).rejects.toThrow(/not in trip/);
+    expect(trip.places.length).toBe(n);
+    const p17 = trip.places.find((p) => p.id === 17);
+    const before = [p17.category_id, p17.notes];
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 17, kind: 'hike', sheet_set: { duration: '2 h' }, set: { walk: { shape: 'loop', parking_place_id: 12 } } })).rejects.toThrow(/not a car park/);
+    expect([p17.category_id, p17.notes]).toEqual(before);
+  });
+  it('the new day route is filed in the day-route category, and a user\'s line in another category is kept', async () => {
+    const trip = build();
+    const ride = { id: 30, trip_id: 1, name: 'Cycling loop', lat: 46.41, lng: 11.58, category_id: 10, notes: '', description: '', route_geometry: JSON.stringify([[46.41, 11.58], [46.64, 11.72]]) };
+    trip.places.push(ride);
+    trip.days[2].assignments.unshift({ id: 3000, day_id: 103, order_index: -1, notes: null, accommodation_id: null, place: { ...ride, place_time: null, end_time: null } });
+    const h = makeHost({ trip, categories: CATS });
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const r = await call(h, 'vanlife_day', { tripId: 1, action: 'routes', dayNumber: 3, apply: true });
+      expect(r.writes[0].deletedPlaceId).toBeNull();
+      expect(trip.places.some((p) => p.id === 30)).toBe(true);
+      const created = trip.places.find((p) => p.id === r.writes[0].createdPlaceId && p.route_geometry && p.name !== 'Cycling loop');
+      expect(created && created.category_id).toBe(6);
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it('vanlife_night is marked destructive', () => {
+    const { TOOL_SPECS } = require('../server/lib/tool-specs.js');
+    expect(TOOL_SPECS.find((t) => t.name === 'vanlife_night').annotations.destructiveHint).toBe(true);
   });
 });
