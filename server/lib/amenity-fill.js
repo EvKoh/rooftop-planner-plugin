@@ -250,7 +250,11 @@ async function fill(ctx, tripId, opts = {}) {
   let t = Date.now();
   // The category's name, as the trip model, the panel and the columns read it: the sheet of a
   // hike filed only by its category reads its summary line ("10.93 km · +770 m · 4 h 10").
-  const [rows, cats] = await Promise.all([ctx.trips.getPlaces(Number(tripId)), ctx.categories.list().catch(() => [])]);
+  const [rows, cats, accs] = await Promise.all([ctx.trips.getPlaces(Number(tripId)), ctx.categories.list().catch(() => []), ctx.trips.getAccommodations(Number(tripId)).catch(() => [])]);
+  // A campsite or a park4night spot nearby describes a NIGHT place only (a lodging of the trip or
+  // a night category): a museum 90 m from a campsite is not that campsite.
+  const lodged = new Set((accs || []).map((x) => x.place_id));
+  const isNight = (p) => lodged.has(p.id) || require('./classify').isNightCategory(p.categoryName || '');
   const catName = new Map((cats || []).map((c) => [c.id, c.name]));
   const all = candidates(rows.map((p) => ({ ...p, categoryName: p.category_name || catName.get(p.category_id) || '' })));
   lap('places', t);
@@ -315,7 +319,7 @@ async function fill(ctx, tripId, opts = {}) {
     const current = records.get(place.id) || null;
     // Contact candidates, best first: the place itself, OSM, park4night.
     const contactFrom = ownContacts(place);
-    const camp = nearest(place, osm, OSM_RADIUS_M);
+    const camp = isNight(place) ? nearest(place, osm, OSM_RADIUS_M) : null;
     if (camp) {
       for (const [k, v] of Object.entries(fromOsm(camp.tags))) if (v) found[k] = v;
       sources.push(`OpenStreetMap ${overpass.osmUrl(camp.id)}`);
@@ -331,7 +335,7 @@ async function fill(ctx, tripId, opts = {}) {
           lap('park4night', tp);
           p4nAreas.push(list);
         }
-        const hit = (id && list.places.find((x) => x.id === id)) || nearest(place, list.places, P4N_RADIUS_M);
+        const hit = (id && list.places.find((x) => x.id === id)) || (isNight(place) ? nearest(place, list.places, P4N_RADIUS_M) : null);
         if (hit) {
           for (const [k, v] of Object.entries(fromP4n([...(hit.services || []), ...(hit.activities || [])]))) if (!found[k]) found[k] = v;
           sources.push(`park4night #${hit.id}`);

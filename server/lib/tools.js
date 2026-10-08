@@ -196,9 +196,12 @@ async function precheck(ctx, model, a, settings) {
     // One field both set and cleared (or a log added and cleared): which one wins is the user's call.
     const set = a.set && typeof a.set === 'object' ? a.set : {};
     const setContacts = set.contacts && typeof set.contacts === 'object' ? set.contacts : {};
+    // set.walk / set.parking as the record keys they write (walk_via, hike_url, parking_hours...).
+    let flat = {};
+    try { flat = placeInfo.expandParking(placeInfo.expandWalk({ ...set, ...(set.walk && set.walk.parking != null ? { walk: { ...set.walk, parking: undefined, parking_place_id: 1 } } : {}) })); } catch { flat = {}; }
     const both = a.clear_fields.filter((f) => {
       const k = String(f).replace(/^contacts\./, '');
-      return k in set || k in setContacts || (k === 'log' && a.log) || (k === 'contacts' && set.contacts)
+      return k in set || k in setContacts || k in flat || (k === 'log' && a.log) || (k === 'contacts' && set.contacts)
         || (k === 'amenities' && Object.keys(set).some((x) => x in placeInfo.AMENITIES));
     });
     if (both.length) throw new Error(`${both.join(', ')}: both set and cleared in one call; give one of them`);

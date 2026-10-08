@@ -82,6 +82,9 @@ function accessFor(model, stop, info, parkings) {
 function shapeOf(hike, access, info) {
   if (info && SHAPES.includes(info.walk_shape)) return info.walk_shape;
   if (info && info.walk_loop) return 'loop';
+  // The route type the hike's own sheet states ("Type : boucle"), as its card shows it.
+  const stated = require('./place-sheet').sheetOf(hike).fields.route_type;
+  if (stated && SHAPES.includes(stated.kind)) return stated.kind;
   return access && distKm(access.point, pt(hike)) <= SAME_POINT_KM ? 'loop' : 'out_and_back';
 }
 

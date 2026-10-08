@@ -194,10 +194,12 @@ const routeKindOf = (s) => { const t = norm(s); const r = ROUTE_KINDS.find(([, r
 // The field a "Key : value" line fills, as the reader and the writer both decide it: a "Type"
 // line whose value is a route shape ("Type : boucle") is the route type.
 // …and a "Parcours" / "Route" line without a route shape is a free note, not the route type.
-const lineField = (key, value) => {
+// The bullets under the line count with its value, as the reader reads them ("Parcours :" then
+// "• boucle par le lac").
+const lineField = (key, value, items = []) => {
   const f = fieldOf(key);
   if (f === 'type' && routeKindOf(value)) return 'route_type';
-  return f === 'route_type' && !routeKindOf(value) ? null : f;
+  return f === 'route_type' && !routeKindOf([value, ...items].join(' ')) ? null : f;
 };
 
 const DOG_NO = /\b(non admis|interdit|pas admis|refuse|not allowed|no dogs|forbidden|prohibited|verboten|nicht erlaubt|vietato|non ammess\w*|prohibido|no se admiten|no permitido)\b/;
@@ -516,12 +518,16 @@ function setField(description, notes, field, value, L = 'en') {
     let at = -1;
     let label = null;
     let inField = false;
-    for (const line of String(text || '').split(/\r?\n/)) {
+    const all = String(text || '').split(/\r?\n/);
+    for (let i = 0; i < all.length; i++) {
+      const line = all[i];
       const tt = line.trim();
       if (inField && tt && BULLET.test(tt)) continue;
       inField = false;
       const kv = tt && !BULLET.test(tt) ? splitKey(tt) : null;
-      if (kv && lineField(kv[0], kv[1]) === field) {
+      const items = [];
+      for (let j = i + 1; j < all.length && BULLET.test(all[j].trim()); j++) items.push(all[j].trim().replace(BULLET, '').trim());
+      if (kv && lineField(kv[0], kv[1], items) === field) {
         if (at < 0) { at = out.length; label = kv[0]; }
         inField = true;
         continue;

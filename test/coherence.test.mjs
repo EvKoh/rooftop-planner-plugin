@@ -1282,20 +1282,21 @@ describe('the 0.6.24 audit: copied contacts and TREK\'s fields follow the notes'
 
 describe('the 0.6.25 audit', () => {
   it('a fill that drops a copied phone on a complete record finds its replacement in the same call', async () => {
+    // a night place (0.6.41: only a night is matched to a campsite nearby)
     const trip = build();
-    const p = trip.places.find((x) => x.id === 11);
+    const p = trip.places.find((x) => x.id === 13);
     Object.assign(p, { notes: 'Contact : +39 0471 111111', website: null, phone: null });
     const h = makeHost({ trip });
     const { AMENITIES } = require('../server/lib/place-info.js');
-    await call(h, 'vanlife_place', { tripId: 1, placeId: 11, set: Object.fromEntries(Object.keys(AMENITIES).map((k) => [k, 'no'])) });
-    const osm = { elements: [{ type: 'node', id: 5, lat: 46.74, lon: 11.96, tags: { tourism: 'camp_site', phone: '+39 0471 999999' } }] };
+    await call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: Object.fromEntries(Object.keys(AMENITIES).map((k) => [k, 'no'])) });
+    const osm = { elements: [{ type: 'node', id: 5, lat: 46.53, lon: 12.13, tags: { tourism: 'camp_site', phone: '+39 0471 999999' } }] };
     const base = stubFetch();
     vi.stubGlobal('fetch', (url, init) => (String(url).includes('overpass') ? Promise.resolve({ ok: true, status: 200, json: async () => osm }) : base(url, init)));
     try {
-      await call(h, 'vanlife_place', { tripId: 1, placeIds: [11], placeId: 11, fill: true });
+      await call(h, 'vanlife_place', { tripId: 1, placeIds: [13], placeId: 13, fill: true });
       expect(p.phone).toBe('+390471111111');
       p.notes = 'Musée de la montagne.';
-      await call(h, 'vanlife_place', { tripId: 1, placeIds: [11], placeId: 11, fill: true });
+      await call(h, 'vanlife_place', { tripId: 1, placeIds: [13], placeId: 13, fill: true });
       expect(p.phone).toBe('+390471999999');
     } finally { vi.unstubAllGlobals(); }
   });
@@ -1761,5 +1762,34 @@ describe('the 0.6.39 audit', () => {
   });
   it('routes refuses a day that is not in the trip, as schedule does', async () => {
     await expect(call(makeHost(), 'vanlife_day', { tripId: 1, action: 'routes', dayNumbers: [1, 9] })).rejects.toThrow(/day 9/);
+  });
+});
+
+describe('the 0.6.40 audit', () => {
+  it('the fill never copies a campsite nearby onto a place that is not a night', async () => {
+    const trip = build();
+    const museum = trip.places.find((p) => p.id === 11);
+    Object.assign(museum, { website: null, phone: null });
+    const h = makeHost({ trip });
+    const osm = { elements: [{ type: 'node', id: 77, lat: museum.lat + 0.0005, lon: museum.lng, tags: { tourism: 'camp_site', phone: '+39 0471 555111', website: 'https://camping-nextdoor.example', dog: 'no' } }] };
+    const base = stubFetch();
+    vi.stubGlobal('fetch', (url, init) => (String(url).includes('overpass') ? Promise.resolve({ ok: true, status: 200, json: async () => osm }) : base(url, init)));
+    try { await call(h, 'vanlife_place', { tripId: 1, placeIds: [11], placeId: 11, fill: true }); } finally { vi.unstubAllGlobals(); }
+    expect([museum.website, museum.phone]).toEqual([null, null]);
+    const rec = await pi.get(h.ctx, 11);
+    expect(rec ? rec.amenities.dog : 'unknown').not.toBe('no');
+  });
+  it('a nested walk or parking field set and cleared in one call is refused', async () => {
+    const h = makeHost();
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: { parking: { hours: '8-20' } }, clear_fields: ['parking_hours'] })).rejects.toThrow(/both set and cleared/);
+  });
+  it('sheet_set route_type replaces a "Parcours" line whose shape is in its bullets', () => {
+    const s = require('../server/lib/place-sheet.js');
+    expect(s.setField('', 'Parcours :\n• boucle par le lac\n• retour par la forêt\nDurée : 4 h', 'route_type', 'aller-retour', 'fr').notes).toBe('Parcours : aller-retour\nDurée : 4 h');
+  });
+  it('the walk shape follows the sheet\'s route type when none is recorded', () => {
+    const walks = require('../server/lib/walks.js');
+    const shape = walks.shapeOf({ lat: 46.6, lng: 11.7, notes: 'Type : boucle', categoryName: 'See – Hike' }, { point: { lat: 46.0, lng: 11.0 } }, null);
+    expect(shape).toBe('loop');
   });
 });
