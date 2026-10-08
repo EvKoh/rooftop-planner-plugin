@@ -168,41 +168,15 @@ const num = (s) => {
 };
 
 /**
- * "4 h 10", "0 h 51 (…)", "2h30", "90 min", "1.5 h" → minutes; a range ("2-3 h", "45 min –
- * 1 h") gives its lower end, the first amount written; a clock time alone ("10:30") is no
- * duration. Between 5 min and 24 h, else null: what the time on site may be.
+ * The time on site a duration line states, in minutes: visit.js readLength, the one reader of
+ * a length for the plugin (a range gives its lower end here and its upper end in maxMinutesOf;
+ * a span of the day or a clock time is no duration).
  */
-function minutesOf(s) {
-  const t = norm(s);
-  if (/^\s*\d{1,2}:\d{2}\s*$/.test(t)) return null;
-  const H = 'h|hr|hrs|hours?|heures?|std|stunden?|ore|horas?';
-  const M = 'min|mn|minutes?|minuten|minuti|minutos';
-  const m = t.match(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:[-–]\\s*\\d+(?:[.,]\\d+)?\\s*)?(?:(${H})(?![a-z])\\s*(?:(\\d{1,2})(?!\\d)\\s*(?:${M}|m\\b)?)?|(?:${M})\\b)`));
-  // A span under a duration label ("Durée : de 9h à 11h") is its length, as parseVisit reads it;
-  // any other clock time ("jusqu'à 11h") is no duration: the same test as parseVisit's.
-  const visit = require('./visit');
-  const span = t.match(visit.SPAN);
-  if (span) {
-    const len = (+span[3] * 60 + +(span[4] || 0)) - (+span[1] * 60 + +(span[2] || 0));
-    return len >= 5 && len <= 1440 ? len : null;
-  }
-  if (m && require('./visit').isClockHour(t, m.index, m[0].length)) return null;
-  if (!m) return null;
-  const n = Number(m[1].replace(',', '.'));
-  const minutes = m[2] ? Math.round(n * 60 + (m[3] ? Number(m[3]) : 0)) : Math.round(n);
-  return minutes >= 5 && minutes <= 1440 ? minutes : null;
-}
+const lengthOf = (s) => require('./visit').readLength(norm(s), { labelled: true });
+function minutesOf(s) { const r = lengthOf(s); return r ? r.min : null; }
 
 /** The upper end of a duration range ("1h30-2h" → 120, "30-45 min" → 45), or null. */
-function maxMinutesOf(s) {
-  const t = norm(s);
-  const m = t.match(/[-–]\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|hours?|heures?|std|stunden?|ore|horas?|min|mn|minutes?|minuten|minuti|minutos)(?![a-z])\s*(\d{1,2})?/);
-  if (!m) return null;
-  const n = Number(m[1].replace(',', '.'));
-  const v = /^m/.test(m[2]) ? Math.round(n) : Math.round(n * 60 + (m[3] ? Number(m[3]) : 0));
-  const low = minutesOf(s);
-  return v >= 5 && v <= 1440 && (low == null || v > low) ? v : null;
-}
+function maxMinutesOf(s) { const r = lengthOf(s); return r ? r.max : null; }
 
 const GRADES = [
   ['hard', /\b(difficile|tres difficile|difficult|hard|demanding|strenuous|schwer|schwierig|anspruchsvoll|impegnativ\w*|dificil|exigente|expert)\b/],

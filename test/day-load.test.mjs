@@ -27,8 +27,6 @@ describe('visit duration read from a text', () => {
   it('reads the durations the notes state', () => {
     expect(parseVisit('Randonnée du lac, 4 h aller-retour')).toMatchObject({ min: 240, max: null });
     expect(parseVisit('Sentier panoramique : 2h30 aller-retour.')).toMatchObject({ min: 150 });
-    expect(parseVisit('Visite guidée de 11 h 45 à 15 h 05')).toMatchObject({ min: 200 });
-    expect(parseVisit('from 9:30 to 11:00, then lunch')).toMatchObject({ min: 90 });
     expect(parseVisit('Compter 1 h 30 sur place')).toMatchObject({ min: 90 });
     expect(parseVisit('Loop hike, 2-3 h')).toMatchObject({ min: 120, max: 180 });
     expect(parseVisit('Allow 45 min for the visit')).toMatchObject({ min: 45 });
@@ -46,7 +44,9 @@ describe('visit duration read from a text', () => {
     expect(parseVisit('Open daily from 9:00 to 17:00')).toBeNull();
     expect(parseVisit('Geöffnet von 10:00 bis 16:00')).toBeNull();
     expect(parseVisit('de 7 h à 19 h')).toBeNull(); // 12 h on site: opening hours
-    expect(parseVisit('Visite guidée de 11 h 45 à 15 h 05')).toMatchObject({ min: 200 });
+    // A span of the day is a time of day, never a length (one reader since 0.6.19).
+    expect(parseVisit('Visite guidée de 11 h 45 à 15 h 05')).toBeNull();
+    expect(parseVisit('from 9:30 to 11:00, then lunch')).toBeNull();
   });
 
   it('takes the recorded duration first, then the stop\'s times that day, then TREK\'s field', () => {

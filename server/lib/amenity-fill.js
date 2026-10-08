@@ -285,9 +285,10 @@ async function fill(ctx, tripId, opts = {}) {
       const hit = contactFrom.find((c) => c.values && c.values[k] && !(k === 'website' && contacts.notOwnSite(c.values[k])));
       if (hit) { cpatch[k] = hit.values[k]; csources[k] = hit.source; }
     }
-    // Time on site, from what the place's own notes or description say; never over a typed one.
+    // Time on site, from what the place's own notes or description say; never over a typed one
+    // (a typed maximum alone is a recorded time on site too: the fill leaves it whole).
     const stated = placeSheet.factsOf(place);
-    const visit = (!current || current.visit_min_minutes == null)
+    const visit = (!current || (current.visit_min_minutes == null && current.visit_max_minutes == null))
       ? (stated.visitMinutes != null ? { min: stated.visitMinutes, max: stated.visitMax, quote: stated.visitQuote } : parseVisit(`${place.notes || ''}\n${place.description || ''}`))
       : null;
     if (visit) {
