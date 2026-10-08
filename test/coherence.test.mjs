@@ -1538,3 +1538,29 @@ describe('the 0.6.32 audit', () => {
     expect(TOOL_SPECS.find((t) => t.name === 'vanlife_night').annotations.destructiveHint).toBe(true);
   });
 });
+
+describe('the 0.6.33 audit', () => {
+  const CATS = [{ id: 1, name: 'Night – Campsite' }, { id: 4, name: 'See – Lake' }, { id: 5, name: 'Food – Groceries' }, { id: 6, name: 'Route – Day route' }, { id: 7, name: 'See – Museum' }, { id: 8, name: 'Route – Parking' }, { id: 9, name: 'See – Hike' }, { id: 10, name: 'Bike – Cycling tour' }];
+  it('every drawn line of a day is a line, never a stop; the day-route one is the trace', () => {
+    const { dayPlan } = require('../server/lib/check.js');
+    const ride = { id: 30, name: 'Braies bike ride', categoryName: 'Bike – Cycling tour', route_geometry: '[[1,2],[3,4]]' };
+    const own = { id: 20, name: 'Route day 1', categoryName: 'Route – Day route', route_geometry: '[[1,2],[3,4]]' };
+    const lake = { id: 10, name: 'Lake', categoryName: 'See – Lake' };
+    const day = { assignments: [{ id: 1, place: ride }, { id: 2, place: own }, { id: 3, place: lake }] };
+    const plan = dayPlan({ days: [day], nights: [], accommodations: [] }, { ...day, index: 0, n: 1 });
+    expect(plan.trace.place.id).toBe(20);
+    expect(plan.stops.map((s) => s.place.id)).toEqual([10]);
+  });
+  it('vanlife_place refuses a bad kind, an empty log or a walk to another car park before any write', async () => {
+    const trip = build();
+    const h = makeHost({ trip, categories: CATS });
+    const n = trip.places.length;
+    await expect(call(h, 'vanlife_place', { tripId: 1, create: { name: 'Swiss lake', lat: 46.5, lng: 12.1 }, kind: 'spaceship' })).rejects.toThrow(/kind/);
+    await expect(call(h, 'vanlife_place', { tripId: 1, create: { name: 'Swiss lake', lat: 46.5, lng: 12.1 }, log: { date: '2026-10-01', channel: 'email', direction: 'sent', summary: '   ' } })).rejects.toThrow(/summary/);
+    expect(trip.places.length).toBe(n);
+    const p17 = trip.places.find((p) => p.id === 17);
+    const before = [p17.category_id, p17.notes];
+    await expect(call(h, 'vanlife_place', { tripId: 1, placeId: 17, kind: 'hike', sheet_set: { duration: '2 h' }, log: { date: '2026-10-01', channel: 'email', direction: 'sent', summary: ' ' } })).rejects.toThrow(/summary/);
+    expect([p17.category_id, p17.notes]).toEqual(before);
+  });
+});
