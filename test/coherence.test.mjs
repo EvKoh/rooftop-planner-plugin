@@ -1249,3 +1249,33 @@ describe('the 0.6.22 audit: what the fill copied from the notes follows the note
     expect(p.website).toBe('https://new-host.example.com');
   });
 });
+
+describe('the 0.6.24 audit: copied contacts and TREK\'s fields follow the notes', () => {
+  const fillIt = async (h, placeId) => {
+    vi.stubGlobal('fetch', stubFetch());
+    try { return await call(h, 'vanlife_place', { tripId: 1, placeIds: [placeId], placeId, fill: true }); } finally { vi.unstubAllGlobals(); }
+  };
+  it('a contact removed from the notes stays removed, at the next fill too', async () => {
+    const trip = build();
+    const p = trip.places.find((x) => x.id === 11);
+    Object.assign(p, { notes: 'Site : https://old-host.example.com\nContact : +39 0471 111111', website: null, phone: null });
+    const h = makeHost({ trip });
+    await fillIt(h, 11);
+    expect([p.website, p.phone]).toEqual(['https://old-host.example.com', '+390471111111']);
+    p.notes = 'Camping au bord du lac.';
+    await fillIt(h, 11);
+    const r = JSON.stringify(await call(h, 'vanlife_place', { tripId: 1, placeId: 11 }));
+    expect(r).not.toContain('old-host');
+    expect(r).not.toContain('111111');
+    expect([p.website, p.phone]).toEqual([null, null]);
+  });
+  it('TREK\'s phone field follows a corrected Contact line', async () => {
+    const trip = build();
+    const p = trip.places.find((x) => x.id === 11);
+    Object.assign(p, { notes: 'Contact : +39 0471 111111', website: null, phone: null });
+    const h = makeHost({ trip });
+    await fillIt(h, 11);
+    await call(h, 'vanlife_place', { tripId: 1, placeId: 11, sheet_set: { contact: '+39 0471 222222' } });
+    expect(p.phone).toBe('+390471222222');
+  });
+});
