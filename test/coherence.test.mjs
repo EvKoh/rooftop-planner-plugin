@@ -1888,3 +1888,19 @@ describe('the 0.6.44 audit: sheet_set leaves every other line where the reader p
     }
   });
 });
+
+describe('the 0.6.45 audit: every place of the field, notes and description', () => {
+  const s = require('../server/lib/place-sheet.js');
+  it('a field written twice: its second line\'s removal keeps the next bullets apart', () => {
+    let a = "Prix : 20 €\nRèglement :\n• Pas de feu\nPrix : 5 € l'électricité\n- Chiens : acceptés\n- en laisse obligatoire";
+    a = s.setField('', a, 'price', '22 €', 'fr').notes;
+    a = s.setField('', a, 'rules', 'Pas de feu\nSilence après 22 h', 'fr').notes;
+    expect(a).toMatch(/en laisse obligatoire/);
+  });
+  it('a field moved out of the description leaves the description\'s other lines in place', () => {
+    const r = s.setField('Règlement :\n• Pas de feu\nPrix : 20 €\n- Chiens : acceptés\n- en laisse obligatoire', '', 'price', '22 €', 'fr');
+    const read = s.parse(r.description, r.notes, { kind: 'night' }).fields;
+    expect(read.dog.text).toMatch(/en laisse obligatoire/);
+    expect(read.rules.text).not.toMatch(/en laisse/);
+  });
+});

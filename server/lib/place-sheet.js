@@ -549,13 +549,11 @@ function setField(description, notes, field, value, L = 'en') {
       if (first < 0) { first = e.idx[0]; label = e.key; }
       e.idx.forEach((i) => drop.add(i));
     }
-    const out = [];
-    let at = -1;
-    all.forEach((line, i) => { if (i === first) at = out.length; if (!drop.has(i)) out.push(line); });
     // The field's line kept its bullet ("• Chiens : …" in a list, "- Niveau : …"): the rewritten
     // line keeps it too, or it would open a list of its own and take the bullets after it.
     const head = first >= 0 ? all[first].match(/^\s*/)[0] + (all[first].trim().match(BULLET) || [''])[0] : '';
-    return { lines: out, at, label, bullet: first >= 0 && BULLET.test(all[first].trim()) ? head : null };
+    const runs = [...drop].filter((i) => !drop.has(i + 1)).length; // stretches of removed lines
+    return { text: String(text || ''), all, drop, first, runs, label, bullet: first >= 0 && BULLET.test(all[first].trim()) ? head : null };
   };
   const n = strip(notes);
   const d = strip(description);
@@ -563,34 +561,49 @@ function setField(description, notes, field, value, L = 'en') {
   if (typeof value === 'string' && value.includes('\n')) value = value.split(/\r?\n/).map((x) => x.replace(BULLET, '').trim()).filter(Boolean);
   const empty = value == null || value === '' || (Array.isArray(value) && !value.length);
   const label = n.label || d.label || t(L, `sh.f.${field}`);
-  const bullet = n.at >= 0 ? n.bullet : null;
+  const bullet = n.first >= 0 ? n.bullet : null;
   const block = empty ? [] : bullet
     // On a bulleted line, a list stays on that line ("• Services : wifi • eau"), as the reader splits it.
     ? [`${bullet}${label} : ${Array.isArray(value) ? value.map((v) => String(v).trim()).join(' • ') : String(value).trim()}`]
     : Array.isArray(value)
       ? [`${label} :`, ...value.map((v) => `• ${String(v).trim()}`)]
       : [`${label} : ${String(value).trim()}`];
-  // Every other line must stay where the reader puts it (same field, same list): a list written
-  // under a header, or a line removed between a header and bullets, could hand those bullets to
-  // another entry, which a later sheet_set would then remove. The first layout that keeps the
-  // rest of the sheet as it was is written: as is, then on one line, then closed by a blank line.
-  const others = (text) => JSON.stringify(lines(text).filter((e) => e.text !== undefined || lineField(e.key, e.value, e.items) !== field)
-    .map((e) => (e.text !== undefined ? ['t', e.text] : [e.key, e.value, e.items])));
-  const want = others(notes);
   const oneLine = Array.isArray(value) ? [`${bullet || ''}${label} : ${value.map((v) => String(v).trim()).join(' • ')}`] : block;
-  const layout = (b, close) => {
-    const kept = n.lines.slice();
-    if (n.at >= 0) {
-      const next = kept[n.at];
-      kept.splice(n.at, 0, ...b, ...(close && next !== undefined && next.trim() ? [''] : []));
-    } else if (b.length) { while (kept.length && !kept[kept.length - 1].trim()) kept.pop(); kept.push(...b); }
-    return kept.join('\n');
+  // Every other line must stay where the reader puts it (same field, same list), in the notes and
+  // in the description: a list written under a header, or a line removed between a header and
+  // bullets (at any of the field's places), could hand those bullets to another entry, which a
+  // later sheet_set would then remove. The first layout that keeps the rest as it was is written
+  // — the block as is or on one line, each removed stretch closed by a blank line or not — and
+  // when none does, nothing is written: the field is edited in TREK by hand.
+  // (The line written under the field's own label is the edit itself, however the reader files it:
+  // "Parcours : X" with no route shape, "Type : boucle".)
+  const others = (text) => JSON.stringify(lines(text).filter((e) => e.text !== undefined || (lineField(e.key, e.value, e.items) !== field && e.key !== label))
+    .map((e) => (e.text !== undefined ? ['t', e.text] : [e.key, e.value, e.items])));
+  const rebuild = (src, b, mask) => {
+    const out = [];
+    let run = 0;
+    src.all.forEach((line, i) => {
+      if (i === src.first) out.push(...b);
+      if (!src.drop.has(i)) { out.push(line); return; }
+      if (src.drop.has(i + 1)) return;
+      const next = src.all.slice(i + 1).find((x, k) => !src.drop.has(i + 1 + k));
+      if ((mask >> run++) & 1 && next !== undefined && next.trim() && out.length && out[out.length - 1].trim()) out.push('');
+    });
+    if (src.first < 0 && b.length) { while (out.length && !out[out.length - 1].trim()) out.pop(); out.push(...b); }
+    return out.join('\n');
   };
-  const tries = [layout(block, false), layout(oneLine, false), layout(block, true), layout(oneLine, true)];
-  const out = tries.find((x) => others(x) === want) ?? tries[2];
+  const pick = (src, blocks) => {
+    if (src.first < 0 && !blocks[0].length) return src.text;
+    const want = others(src.text);
+    for (const b of blocks) for (let mask = 0; mask < 2 ** Math.min(src.runs, 6); mask++) {
+      const x = rebuild(src, b, mask);
+      if (others(x) === want) return x;
+    }
+    throw new Error(`sheet_set.${field}: its lines are mixed with other fields' lines in a way that cannot be rewritten without moving them; edit it in TREK`);
+  };
   return {
-    description: d.at >= 0 ? d.lines.join('\n') : description ?? '',
-    notes: out,
+    description: d.first >= 0 ? pick(d, [[]]) : description ?? '',
+    notes: pick(n, [block, oneLine]),
   };
 }
 
