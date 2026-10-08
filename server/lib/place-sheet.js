@@ -327,6 +327,12 @@ function parse(description, notes, { kind = 'activity' } = {}) {
   };
   read(notes, true);
   read(description, false);
+  // …and the weakest even against a free sentence that states a time on site ("the round trip
+  // takes 5 h 30"): that sentence is the duration, read by the one length reader.
+  if (summary.duration && !fields.duration) {
+    const free = require('./visit').parseVisit(text.map((x) => x.text).join('\n'));
+    if (free) summary.duration = free.quote;
+  }
   for (const [f, v] of Object.entries(summary)) if (!fields[f]) add(f, v, []);
   const out = {};
   for (const [f, v] of Object.entries(fields)) out[f] = typed(f, v.value, v.items);

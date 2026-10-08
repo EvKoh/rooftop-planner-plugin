@@ -251,7 +251,7 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
       note: 'Fill from cited sources only; unknown stays unknown. fill=true looks the empty ones up. scope: planned = nights with a lodging in the trip (default); candidates = night-category places with no lodging; all_nights = both.',
     };
   }
-  const place = model.poolById.get(a.placeId);
+  let place = model.poolById.get(a.placeId);
   if (!place) throw new Error(`place ${a.placeId} is not in trip ${model.tripId}`);
   // The kind first: it moves the place to the matching category, so the rest of the answer
   // (and the map) shows its new pictogram.
@@ -269,10 +269,11 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
     Object.assign(raw, patchTexts);
     place.raw = raw;
     // What the fill copied from the notes follows the new notes (time on site, contacts).
-    const row = { ...raw, id: place.id, categoryName: place.categoryName };
-    await amenityFill.resync(ctx, model.tripId, row, await placeInfo.get(ctx, place.id));
-    // TREK's website and phone fields it emptied or replaced: the answer reads them from raw.
-    for (const k of ['website', 'phone']) if (row[k] !== raw[k]) raw[k] = row[k];
+    await amenityFill.resync(ctx, model.tripId, { ...raw, id: place.id, categoryName: place.categoryName }, await placeInfo.get(ctx, place.id));
+    // The rest of the call and its answer read the trip as TREK now holds it (notes, website,
+    // phone, the day's copies of the place), never a copy patched by hand.
+    model = await loadTrip(ctx, model.tripId, settings);
+    place = model.poolById.get(a.placeId);
     if (!a.set && !a.log && !(a.clear_fields && a.clear_fields.length)) {
       const sh = placeSheet.sheetOf(place, { night: isNightPlace(model, place) });
       return { saved: true, placeId: place.id, sheetFields: sheetSet.map(([f]) => f), sheet: { kind: sh.kind, fields: withRecordedDuration(sh.fields, await placeInfo.get(ctx, place.id), settings.language), otherNotes: sh.other } };
