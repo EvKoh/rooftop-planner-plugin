@@ -1,6 +1,6 @@
 {
   "name": "vanlife",
-  "version": "0.6.45",
+  "version": "0.6.46",
   "private": true,
   "description": "TREK plugin: road trips with a rooftop tent, a campervan or a motorhome (MCP tools, warnings, route profiles, amenities widget).",
   "license": "MIT",
