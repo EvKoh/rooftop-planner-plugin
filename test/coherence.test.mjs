@@ -1175,3 +1175,14 @@ describe('the 0.6.19 audit', () => {
     expect(JSON.stringify(out)).toContain('"duration":{"minutes":180');
   });
 });
+
+describe('the 0.6.20 audit', () => {
+  const { parseVisit } = require('../server/lib/visit.js');
+  it('a clock word, then an opener: the hours are still times of day', () => {
+    for (const s of ['Randonnée : départ de 9h.', 'Randonnée : départ entre 6h et 7h.', 'Randonnée : rendez-vous de 6h à 7h.', 'Hike: meeting point between 5h and 6h.']) expect(parseVisit(s), s).toBeNull();
+    expect(parseVisit('Durée : entre 2h et 3h')).toMatchObject({ min: 120, max: 180 });
+  });
+  it('the quote keeps the notes as written', () => {
+    expect(parseVisit('Randonnée très prisée, 2 h 30 à pied.').quote).toBe('Randonnée très prisée, 2 h 30 à pied.');
+  });
+});

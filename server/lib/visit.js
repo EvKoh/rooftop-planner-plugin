@@ -9,14 +9,14 @@ const { isHikePlace, isParkingPlace } = require('./design');
 // Words that make a number of hours a time on site (French, English, Italian, German).
 const CUE = /randonn|rando\b|balade|marche|promenade|boucle|aller.?retour|\ba\/r\b|sur place|visite|duree|compter|prevoir|hike|hiking|walk|trail|loop|round.?trip|return trip|on site|visit|duration|allow|takes|escursion|giro|passeggiata|andata e ritorno|durata|wanderung|rundweg|dauer|gehzeit|besuch/;
 
-const quote = (s, i, len) => s.slice(Math.max(0, i - 30), i + len + 20).replace(/\s+/g, ' ').trim();
+const quoteOf = (s, i, len) => s.slice(Math.max(0, i - 30), i + len + 20).replace(/\s+/g, ' ').trim();
 
 // Words that introduce opening hours, in the languages the notes come in (accents removed by norm).
 // …and the check-in or reception hours of a night ("Arrivée de 15h à 20h", "Accueil de 8h à 12h").
 const OPENING = /\b(ouvert|ouverture|horaires?|open|opening|hours|daily|geoffnet|offnungszeiten|aperto|orari|apertura|abierto|horario|arrivee|arrival|check-?in|accueil|reception|anreise|ankunft|empfang|arrivo|accoglienza|llegada|recepcion|7\s*j\s*\/\s*7|7\s*\/\s*7|24\s*h)\b/;
 
 // Words after which an hour is a time of day (accents removed by norm).
-const CLOCK_WORD = /(?:jusqu.?a|a partir de|\bdepart|\bretour|\brendez.?vous|\brdv|\ble matin|\bmatin|\bstarts?|\bstarting|\bmeet(?:ing)?|\bmorning|\breturn|\bdes|\bvers|\bavant|\bapres|\bentre|\bfrom|\buntil|\btill|\bafter|\bbefore|\bbetween|\bby|\bat|\ba|\bum|\bab|\bbis|\bvor|\bnach|\bzwischen|\bdalle|\balle|\bdopo|\bentro|\bprima(?: delle)?|\btra|\bdesde(?: las)?|\bhasta(?: las)?|\bverso)[\s,:;.]*$/;
+const CLOCK_WORD = /(?:jusqu.?a|a partir de|\bdepart|\bretour|\brendez.?vous|\brdv|\ble matin|\bmatin|\bstarts?|\bstarting|\bmeet(?:ing)?(?: point)?|\btreffpunkt|\bmorning|\breturn|\bdes|\bvers|\bavant|\bapres|\bentre|\bfrom|\buntil|\btill|\bafter|\bbefore|\bbetween|\bby|\bat|\ba|\bum|\bab|\bbis|\bvor|\bnach|\bzwischen|\bdalle|\balle|\bdopo|\bentro|\bprima(?: delle)?|\btra|\bdesde(?: las)?|\bhasta(?: las)?|\bverso)[\s,:;.]*$/;
 
 // One reader of a length of time for the whole plugin: the free notes (parseVisit) and the
 // sheet's duration line (place-sheet minutesOf / maxMinutesOf) both read through readLength,
@@ -45,8 +45,20 @@ function amountsIn(s) {
   });
 }
 
-/** { min, max, quote } in minutes from a norm()ed text, or null; `labelled`: a duration line. */
-function readLength(s, { labelled = false } = {}) {
+// A clock word, then words that open an hour or a pair ("départ de 9h", "départ entre 6h et
+// 7h", "meeting point between 5h and 6h"): the hours are still times of day.
+const OPENERS = /(?:\s*\b(?:de|d|du|entre|between|from|zwischen|von|tra|dalle|da|a|at|um)\b)+\s*$/;
+function clockBeforeOpener(lead) {
+  const bare = lead.replace(OPENERS, '');
+  return bare !== lead && CLOCK_WORD.test(bare);
+}
+
+/**
+ * { min, max, quote } in minutes from a norm()ed text, or null; `labelled`: a duration line.
+ * `orig`: the text as written, same length as `s`, for a quote that keeps its accents.
+ */
+function readLength(s, { labelled = false, orig = null } = {}) {
+  const quote = (i, len) => quoteOf(orig && orig.length === s.length ? orig : s, i, len);
   const as = amountsIn(s);
   const cued = (i, len) => labelled || CUE.test(s.slice(Math.max(0, i - 40), i + len + 30));
   for (let k = 0; k < as.length; k++) {
@@ -61,24 +73,26 @@ function readLength(s, { labelled = false } = {}) {
       const hi = b.v;
       if (hi <= lo || !cued(at, len)) continue;
       // "départ 6h-7h": times of day; a word that opens the pair ("entre 2h et 3h") is its joint.
-      const lead = s.slice(Math.max(0, at - 18), at);
-      if (CLOCK_WORD.test(lead) && !PAIR_OPEN.test(lead)) continue;
+      const lead = s.slice(Math.max(0, at - 30), at);
+      if ((CLOCK_WORD.test(lead) && !PAIR_OPEN.test(lead)) || clockBeforeOpener(lead)) continue;
       const lengths = unit === 'min' || (a.unit !== 'clock' && b.unit !== 'clock' && lo < 7 * 60 && hi - lo <= 3 * 60);
-      if (lengths) { if (lo >= 5 && hi <= 1440) return { min: lo, max: hi, quote: quote(s, at, len) }; continue; }
+      if (lengths) { if (lo >= 5 && hi <= 1440) return { min: lo, max: hi, quote: quote(at, len) }; continue; }
       continue;
     }
     if (!a.unit || a.unit === 'clock') continue;
-    if (CLOCK_WORD.test(s.slice(Math.max(0, a.index - 18), a.index))) continue;
+    const lead = s.slice(Math.max(0, a.index - 30), a.index);
+    if (CLOCK_WORD.test(lead) || clockBeforeOpener(lead)) continue;
     if (a.unit === 'h' && a.n > 12) continue; // "14h" is a clock time, not a time on site
     if (a.v < 5 || a.v > 1440 || !cued(a.index, a.len)) continue;
-    return { min: a.v, max: null, quote: quote(s, a.index, a.len) };
+    return { min: a.v, max: null, quote: quote(a.index, a.len) };
   }
   return null;
 }
 
 /** { min, max, quote } in minutes from a free text, or null. */
 function parseVisit(text) {
-  return readLength(norm(text));
+  const orig = String(text || '').normalize('NFC');
+  return readLength(norm(orig), { orig });
 }
 
 /**
