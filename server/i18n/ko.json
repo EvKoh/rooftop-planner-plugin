@@ -406,5 +406,6 @@
   "unit.durM": "{m}분",
   "route.leg": "{km} km / {time}",
   "unit.km": "{n} km",
-  "unit.m": "{n} m"
+  "unit.m": "{n} m",
+  "checkin_notes": "“{name}”: 메모에는 도착 {checkin}, 계획에는 {arr}"
 }

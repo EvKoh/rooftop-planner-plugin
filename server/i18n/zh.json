@@ -406,5 +406,6 @@
   "unit.durM": "{m} 分钟",
   "route.leg": "{km} 公里 / {time}",
   "unit.km": "{n} 公里",
-  "unit.m": "{n} 米"
+  "unit.m": "{n} 米",
+  "checkin_notes": "“{name}”：备注写到达 {checkin}，计划为 {arr}"
 }

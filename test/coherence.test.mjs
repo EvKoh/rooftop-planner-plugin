@@ -1016,3 +1016,56 @@ describe('the 0.6.14 audit', () => {
     expect(pi.refusalText(pi.merge(null, { max_height_m: 2.1 }), { vehicle_height_m: 2.5, vehicle_length_m: 5, vehicle_weight_t: 2 }, 'ru')).toBe('↕ 2,1 м');
   });
 });
+
+describe('the 0.6.15 audit', () => {
+  it('an hour after a clock word is not a time on site', () => {
+    const { parseVisit } = require('../server/lib/visit.js');
+    for (const s of ["Accueil jusqu'à 11h, visite de la ferme possible.", 'Accueil à partir de 9h, visite de la ferme.', 'Visite dès 10h.', 'Open until 11h, guided visit.', 'Visits from 10h.', 'Guided visit at 11h.']) {
+      expect(parseVisit(s), s).toBeNull();
+    }
+    expect(parseVisit('Visite guidée, 1 h 30.')).toMatchObject({ min: 90 });
+  });
+
+  it('the check and the schedule share the latest arrival to the minute', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      trip.days[0].assignments.find((a) => a.id === 1005).place.place_time = '17:31';
+      const h = makeHost({ trip, userSettings: { language: 'en', timezone: 'Europe/Rome' } });
+      const r = await check(h);
+      expect(keys(r, 'night_late').some((f) => f.dayNumber === 1)).toBe(false); // 17:31 is the shown limit
+      const s = await call(h, 'vanlife_day', { tripId: 1, action: 'schedule', dayNumber: 1 });
+      expect(s.night.latestArrival).toBe('17:31');
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('a link, review or photo label is never the host\'s contact', () => {
+    const fillLib = require('../server/lib/amenity-fill.js');
+    for (const l of ['Liens utiles', 'Avis Google', 'Source officielle', 'Photos du lieu', 'Carte IGN']) {
+      expect(fillLib.ownContacts({ notes: `${l} :\n• https://www.tourism.example.com/list` }), l).toEqual([]);
+    }
+  });
+
+  it('an arrival written in the notes is a point to verify, said as the notes\'', async () => {
+    vi.stubGlobal('fetch', stubFetch());
+    try {
+      const trip = build();
+      trip.accommodations[0].notes = 'Arrivée prévue 16h00';
+      const r = await check(makeHost({ trip }));
+      expect(keys(r, 'checkin_notes').find((f) => f.dayNumber === 1)).toMatchObject({ level: 'verify' });
+      expect(keys(r, 'checkin_mismatch').some((f) => f.dayNumber === 1)).toBe(false);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('the host message writes sizes in the language\'s unit; the radius spec says its floor', () => {
+    const hm = require('../server/lib/host-message.js');
+    const { TOOL_SPECS } = require('../server/lib/tool-specs.js');
+    expect(TOOL_SPECS.find((t) => t.name === 'vanlife_find_nights').inputSchema.properties.radius_km.minimum).toBe(5);
+    expect(Object.keys(hm.TEXT)).toContain('ru');
+  });
+
+  it('the host message\'s vehicle size is in the user\'s unit', async () => {
+    const m = await call(makeHost({ userSettings: { language: 'ru', timezone: 'Europe/Rome' } }), 'vanlife_host_message', { tripId: 1, placeId: 13, dayNumber: 1 });
+    expect(m.text).toMatch(/\d м × \d/);
+  });
+});

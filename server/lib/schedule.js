@@ -149,7 +149,7 @@ async function scheduleDay(ctx, model, ref, { settings, departure, stays = {}, d
   if (nuit) {
     const arrival = plan.arrival;
     const cs = located(nuit) && day.date ? sunset(nuit.lat, nuit.lng, day.date, settings.timezone) : null;
-    const latest = cs == null ? null : Math.floor(rules.latestArrival(cs, settings));
+    const latest = rules.latestArrival(cs, settings);
     const lateBy = arrival != null && latest != null ? Math.max(0, Math.ceil(arrival - latest)) : null;
     night = {
       name: nuit.name, assignmentId: day.assignments.find((a) => a.accommodationId === nuit.id)?.id ?? null,

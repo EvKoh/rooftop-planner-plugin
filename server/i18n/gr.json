@@ -406,5 +406,6 @@
   "unit.durM": "{m} λεπ.",
   "route.leg": "{km} km / {time}",
   "unit.km": "{n} km",
-  "unit.m": "{n} μ"
+  "unit.m": "{n} μ",
+  "checkin_notes": "«{name}»: οι σημειώσεις λένε άφιξη {checkin}, το σχέδιο {arr}"
 }

@@ -10,7 +10,7 @@ const { findDay, stayOn } = require('./trip');
 const placeInfo = require('./place-info');
 const nightStatus = require('./night-status');
 const { hhmm } = require('./util');
-const { money } = require('./i18n');
+const { money, t } = require('./i18n');
 
 const SEPARATOR = '————————————';
 // Every language with a message template; English is always the first part.
@@ -880,7 +880,7 @@ function params(lg, base) {
   const dates = base.end ? fill(T.fromTo, { from: dateText(base.start, lg), to: dateText(base.end, lg) }) : fill(T.on, { date: dateText(base.start, lg) });
   const people = fill(T.person[base.travellers > 1 ? 1 : 0], { k: dec(base.travellers) });
   return {
-    ...base, n, dates, people, size: `${dec(base.length)} m × ${dec(base.height)} m`, dog: base.dog ? T.withDog : '',
+    ...base, n, dates, people, size: `${t(lg, 'unit.m', { n: dec(base.length) })} × ${t(lg, 'unit.m', { n: dec(base.height) })}`, dog: base.dog ? T.withDog : '',
     vehicle: T[base.vehicle === 'rooftop_tent' ? 'rooftop' : base.vehicle],
     vehicleShort: T[`${base.vehicle}Short`],
     price: base.price == null ? null : money(base.price, base.currency, lg),

@@ -406,5 +406,6 @@
   "unit.durM": "{m} นาที",
   "route.leg": "{km} กม. / {time}",
   "unit.km": "{n} กม.",
-  "unit.m": "{n} ม."
+  "unit.m": "{n} ม.",
+  "checkin_notes": "“{name}”: บันทึกระบุถึง {checkin} แผนระบุ {arr}"
 }

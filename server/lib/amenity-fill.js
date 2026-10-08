@@ -136,12 +136,16 @@ function incomplete(r, place) {
  * The text of the notes without the lines that cite a source, a link list, reviews, a map or
  * a photo: a "Sources : …" line and the bullets listed under it.
  */
+const NOT_HOST_LABEL = /^(sources?|liens?|links?|avis|reviews?|rating|photos?|images?|cartes?|maps?|plan|gpx|traces?|quellen?|bewertung\w*|fonti|fonte|recension\w*|fuentes?|resenas|webcams?)\b/;
+
 function hostText(text, notHost) {
   let current = null;
   return String(text || '').split('\n').filter((line) => {
     const bullet = placeSheet.BULLET.test(line); // the sheet's own bullets (•, –, 1., ●...)
     const kv = bullet ? null : placeSheet.splitKey(line);
-    if (kv) current = placeSheet.fieldOf(kv[0]);
+    // The sheet's field, else a label that opens with a source / link / review / photo / map word
+    // ("Liens utiles", "Avis Google", "Source officielle", "Photos du lieu", "Carte IGN").
+    if (kv) current = placeSheet.fieldOf(kv[0]) || (NOT_HOST_LABEL.test(placeSheet.keyForm(kv[0])) ? 'sources' : null);
     else if (!bullet) current = null;
     return !(current && notHost.has(current));
   }).join('\n');

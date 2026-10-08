@@ -207,7 +207,9 @@ function priceVerdict(price, settings) {
 }
 
 /** Latest acceptable arrival (minutes) given the sunset. */
-const latestArrival = (sunsetMin, settings) => (sunsetMin == null ? null : sunsetMin - settings.sunset_margin_min);
+/** The latest arrival: sunset, rounded to the minute as it is shown, minus the margin. The one
+ * value the check, the schedule, the sun table and the night search all show and judge with. */
+const latestArrival = (sunsetMin, settings) => (sunsetMin == null ? null : Math.round(sunsetMin) - settings.sunset_margin_min);
 
 /** "Arrival planned 18h40" written in the notes, or null. */
 function writtenArrival(text) {

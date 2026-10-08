@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.6.15",
+  "version": "0.6.16",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -539,7 +539,7 @@
       {
         "name": "vanlife_check_trip",
         "title": "Check a vanlife trip for problems",
-        "description": "Read-only check of a trip, by day, for the user's vehicle. blocking: arrival after sunset minus margin or unknown, access closed, place closed, night the vehicle may not use (aire for a tent, record refusal, size). fix: impossible times, overlaps, route place, shopping detour, dry nights, overloaded day, hike walk not from one car park; bookings tied to no night, cancelled night still planned, booked price unlike the plan, \"waiting\" notes on a confirmed booking; stale budget lines or to-dos, lodging total unlike the nights'. verify: what free notes say (tent, dog, minimum stay, hours, check-in; quoted); booking required, none recorded; confirmed with no number; no way to reach the host or host silent over 3 days; private/wild/unknown ground; closure in the notes; after sunset; price over the ceiling or unknown; visit duration unknown; cheaper legal night; backtracking. info: margins, price over target, farm zone. Fix what is certain; ask about choices. Never book, pay or message.",
+        "description": "Read-only check of a trip, by day, for the user's vehicle. blocking: arrival after sunset minus margin or unknown, access closed, place closed, night the vehicle may not use (aire for a tent, record refusal, size). fix: impossible times, overlaps, road open only later, route place, shopping detour, dry nights, overloaded day, hike walk not from one car park; bookings tied to no night, cancelled night still planned, booked price unlike the plan, \"waiting\" notes on a confirmed booking; stale budget lines or to-dos, lodging total unlike the nights'. verify: what free notes say (tent, dog, minimum stay, hours, check-in; quoted); booking required, none recorded; confirmed with no number; no way to reach the host or host silent over 3 days; private/wild/unknown ground; closure in the notes; after sunset; price over the ceiling or unknown; visit duration unknown; cheaper legal night; backtracking. info: margins, price over target, farm zone. Fix what is certain; ask about choices. Never book, pay or message.",
         "inputSchema": {
           "type": "object",
           "additionalProperties": false,
@@ -659,10 +659,10 @@
             },
             "radius_km": {
               "type": "number",
-              "minimum": 2,
+              "minimum": 5,
               "maximum": 50,
               "default": 15,
-              "description": "Search radius around the midpoint (km)."
+              "description": "Search radius around the midpoint (km); at least 5, and wide enough to reach both the evening and the morning stop."
             },
             "sources": {
               "type": "array",
