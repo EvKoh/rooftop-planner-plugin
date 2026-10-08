@@ -1,18 +1,13 @@
 'use strict';
 // Time on site of a visit, as the place's own notes or description state it: "hike … 4 h",
-// "2h30 round trip", "from 11:45 to 15:05", "1 h 30 on site". A bare hour ("open 9h") is
-// not a duration: a duration needs a word saying so next to it, or a "from … to …" span.
+// "2h30 round trip", "1 h 30 on site", "1h30-2h". A bare hour ("open 9h") is not a duration:
+// a duration needs a word saying so next to it; a span of the day ("de 9h à 12h") is none.
 // Nothing is guessed: no match, no duration.
 const { norm } = require('./util');
 const { isHikePlace, isParkingPlace } = require('./design');
 
 // Words that make a number of hours a time on site (French, English, Italian, German).
 const CUE = /randonn|rando\b|balade|marche|promenade|boucle|aller.?retour|\ba\/r\b|sur place|visite|duree|compter|prevoir|hike|hiking|walk|trail|loop|round.?trip|return trip|on site|visit|duration|allow|takes|escursion|giro|passeggiata|andata e ritorno|durata|wanderung|rundweg|dauer|gehzeit|besuch/;
-const DUR = /(\d{1,2})\s*(?:h|hrs?|hours?|heures?|ore|std\.?|stunden?)\s*(\d{2})?(?:\s*min)?(?:\s*[-–à]\s*(\d{1,2})\s*(?:h|hrs?|hours?|heures?|ore|std\.?|stunden?)\s*(\d{2})?)?|(\d{2,3})\s*(?:min|minutes?|minuti|minuten)\b/g;
-// "2-3 h": a range of hours with one unit.
-const RANGE = /\b(\d{1,2})\s*[-–]\s*(\d{1,2})\s*(?:h|hrs?|hours?|heures?|ore|std)\b/g;
-const MIN_RANGE = /\b(\d{1,3})\s*[-–]\s*(\d{1,3})\s*(?:min|minutes?|minuti|minuten)\b/g;
-const SPAN = /\b(?:de|from|dalle|von)\s+(\d{1,2})\s*[h:]\s*(\d{2})?\s*(?:a|to|alle|bis|-|–)\s+(\d{1,2})\s*[h:]\s*(\d{2})?/;
 
 const quote = (s, i, len) => s.slice(Math.max(0, i - 30), i + len + 20).replace(/\s+/g, ' ').trim();
 
@@ -20,77 +15,66 @@ const quote = (s, i, len) => s.slice(Math.max(0, i - 30), i + len + 20).replace(
 // …and the check-in or reception hours of a night ("Arrivée de 15h à 20h", "Accueil de 8h à 12h").
 const OPENING = /\b(ouvert|ouverture|horaires?|open|opening|hours|daily|geoffnet|offnungszeiten|aperto|orari|apertura|abierto|horario|arrivee|arrival|check-?in|accueil|reception|anreise|ankunft|empfang|arrivo|accoglienza|llegada|recepcion|7\s*j\s*\/\s*7|7\s*\/\s*7|24\s*h)\b/;
 
-/** { min, max, quote } in minutes from a free text, or null. */
-/**
- * Is the hour written at s[index, index+len) a clock time rather than a duration? The start or
- * the end of a span ("de 9h à 12h", "9h-12h", "entre 9h et 11h", "from 9h to 11h"), or an hour
- * after a clock word ("jusqu'à", "à partir de", "dès", "avant", "après", "from", "until", "at",
- * "before", "after", "by", "vor", "nach", "ab", "bis", "prima delle", "dopo", "desde", "hasta"...).
- * The one test both duration readers apply (parseVisit here, the sheet's minutesOf). `s` is norm()ed.
- */
-const SPAN_JOIN = '(?:[-–]|a|à|to|bis|alle|al|et|and|und|e|y)';
+// Words after which an hour is a time of day (accents removed by norm).
 const CLOCK_WORD = /(?:jusqu.?a|a partir de|\bdepart|\bretour|\brendez.?vous|\brdv|\ble matin|\bmatin|\bstarts?|\bstarting|\bmeet(?:ing)?|\bmorning|\breturn|\bdes|\bvers|\bavant|\bapres|\bentre|\bfrom|\buntil|\btill|\bafter|\bbefore|\bbetween|\bby|\bat|\ba|\bum|\bab|\bbis|\bvor|\bnach|\bzwischen|\bdalle|\balle|\bdopo|\bentro|\bprima(?: delle)?|\btra|\bdesde(?: las)?|\bhasta(?: las)?|\bverso)[\s,:;.]*$/;
-function isClockHour(s, index, len) {
-  const after = s.slice(index + len);
-  const before = s.slice(Math.max(0, index - 18), index);
-  // Minutes are always a length ("45 min – 1 h"); only an hour can be a clock time.
-  if (/min/.test(s.slice(index, index + len))) return false;
-  // "1h30-2h" or "2-3 h" is a range of lengths, "9h-12h" a span of the day: a short range that
-  // starts before 7 is a length.
-  const hours = (txt) => { const m = String(txt).match(/(\d{1,2})\s*[h:]\s*(\d{2})?/); return m ? +m[1] * 60 + +(m[2] || 0) : null; };
-  const isLengths = (a, b) => a != null && b != null && a < 7 * 60 && b > a && b - a <= 3 * 60;
-  const next = after.match(new RegExp(`^\\s*${SPAN_JOIN}\\s*(\\d{1,2}\\s*[h:]\\s*\\d{0,2})`));
-  if (next && !isLengths(hours(s.slice(index, index + len)), hours(next[1]))) return true;
-  if (CLOCK_WORD.test(before)) return true;
-  const prev = before.match(new RegExp(`(\\d{1,2}\\s*[h:]\\s*\\d{0,2})\\s*${SPAN_JOIN}\\s*$`));
-  return !!prev && !isLengths(hours(prev[1]), hours(s.slice(index, index + len)));
+
+// One reader of a length of time for the whole plugin: the free notes (parseVisit) and the
+// sheet's duration line (place-sheet minutesOf / maxMinutesOf) both read through readLength,
+// so a phrase means the same everywhere.
+//   - an amount: "2 h", "2h30", "4 h 10", "1.5 h", "90 min";
+//   - a pair, whatever its joint ("2-3 h", "1h30-2h", "de 2h à 3h", "entre 2h et 3h",
+//     "30-45 min"): a range of lengths when it is minutes, or hours that start before 7 and
+//     span at most 3 h; any other pair of hours ("9h-12h", "de 9h à 12h", "from 11:45 to
+//     15:05") is a span of the day, never a length, even under a duration label;
+//   - an hour after a clock word ("jusqu'à 11h", "avant 11h", "départ 8h", "starts 10h"), an
+//     hour past 12 and a "10:30" time are clock times, never lengths.
+// Free text also needs a word saying it is a time on site (CUE) near the amount; a duration
+// line needs none (its label says so): the only difference between the two. The first amount that reads as a length is the answer.
+const H = 'h|hrs?|hours?|heures?|ore|std\\.?|stunden?|horas?';
+const M = 'min|mn|minutes?|minuten|minuti|minutos';
+const AMOUNT = new RegExp(`(\\d{1,2}(?:[.,]\\d)?)(?:\\s*(?:(${H})(?![a-z])(?:\\s*(\\d{2})(?!\\d)(?:\\s*(?:${M})(?![a-z]))?)?|(${M})(?![a-z])|:(\\d{2})(?!\\d)))?`, 'g');
+const JOINT = /^(?:\s*[-–]\s*|\s+(?:a|au|to|bis|alle|al|et|and|und|e|y)\s+)$/;
+
+function amountsIn(s) {
+  return [...s.matchAll(AMOUNT)].filter((m) => !(m.index > 0 && /[\d.,:]/.test(s[m.index - 1]))).map((m) => {
+    const n = Number(m[1].replace(',', '.'));
+    const unit = m[2] ? 'h' : m[4] ? 'min' : m[5] ? 'clock' : null;
+    const v = unit === 'h' ? Math.round(n * 60 + +(m[3] || 0)) : unit === 'clock' ? n * 60 + +m[5] : n;
+    return { index: m.index, len: m[0].length, unit, n, v };
+  });
 }
 
-function parseVisit(text) {
-  const s = norm(text);
-  const span = s.match(SPAN);
-  if (span) {
-    const a = +span[1] * 60 + +(span[2] || 0);
-    const b = +span[3] * 60 + +(span[4] || 0);
-    // "open 7/7 from 8:30 to 20:30" is opening hours, not a time on site.
-    const before = s.slice(Math.max(0, span.index - 40), span.index);
-    if (b > a && b - a <= 8 * 60 && !OPENING.test(before)) return { min: b - a, max: null, quote: quote(s, span.index, span[0].length) };
-  }
-  // "30-45 min": a range of minutes, its lower end as the minimum (as the sheet reads it).
-  for (const m of s.matchAll(MIN_RANGE)) {
-    const a = +m[1];
-    const b = +m[2];
-    if (b <= a || a < 5) continue;
-    if (!CUE.test(s.slice(Math.max(0, m.index - 40), m.index + m[0].length + 30))) continue;
-    return { min: a, max: b, quote: quote(s, m.index, m[0].length) };
-  }
-  for (const m of s.matchAll(RANGE)) {
-    const a = +m[1];
-    const b = +m[2];
-    if (b <= a || b - a > 3 || b > 12) continue;
-    if (!CUE.test(s.slice(Math.max(0, m.index - 40), m.index + m[0].length + 30))) continue;
-    return { min: a * 60, max: b * 60, quote: quote(s, m.index, m[0].length) };
-  }
-  for (const m of s.matchAll(DUR)) {
-    const around = s.slice(Math.max(0, m.index - 40), m.index + m[0].length + 30);
-    if (!CUE.test(around)) continue;
-    if (isClockHour(s, m.index, m[0].length)) continue;
-    // "8h-21h" is opening hours, not a duration.
-    // A range of hours that is a span of the day ("9h-12h", from 7 or wider than 3 h) is a
-    // clock span; a short early one ("1h30-2h") is a range of lengths — isClockHour's rule.
-    if (m[3] && !(+m[1] < 7 && (+m[3] * 60 + +(m[4] || 0)) - (+m[1] * 60 + +(m[2] || 0)) <= 180)) continue;
-    let min;
-    let max = null;
-    if (m[5]) min = +m[5];
-    else {
-      if (+m[1] > 12) continue; // "14h" is a clock time, not a time on site
-      min = +m[1] * 60 + +(m[2] || 0);
-      if (m[3]) max = +m[3] * 60 + +(m[4] || 0);
+/** { min, max, quote } in minutes from a norm()ed text, or null; `labelled`: a duration line. */
+function readLength(s, { labelled = false } = {}) {
+  const as = amountsIn(s);
+  const cued = (i, len) => labelled || CUE.test(s.slice(Math.max(0, i - 40), i + len + 30));
+  for (let k = 0; k < as.length; k++) {
+    const a = as[k];
+    const b = as[k + 1];
+    if (b && b.unit && JOINT.test(s.slice(a.index + a.len, b.index))) {
+      k++;
+      const at = a.index;
+      const len = b.index + b.len - a.index;
+      const unit = a.unit || b.unit;
+      const lo = a.unit ? a.v : (unit === 'h' ? Math.round(a.n * 60) : a.n);
+      const hi = b.v;
+      if (hi <= lo || !cued(at, len)) continue;
+      const lengths = unit === 'min' || (a.unit !== 'clock' && b.unit !== 'clock' && lo < 7 * 60 && hi - lo <= 3 * 60);
+      if (lengths) { if (lo >= 5 && hi <= 1440) return { min: lo, max: hi, quote: quote(s, at, len) }; continue; }
+      continue;
     }
-    if (min < 5 || min > 1440 || (max != null && max < min)) continue;
-    return { min, max, quote: quote(s, m.index, m[0].length) };
+    if (!a.unit || a.unit === 'clock') continue;
+    if (CLOCK_WORD.test(s.slice(Math.max(0, a.index - 18), a.index))) continue;
+    if (a.unit === 'h' && a.n > 12) continue; // "14h" is a clock time, not a time on site
+    if (a.v < 5 || a.v > 1440 || !cued(a.index, a.len)) continue;
+    return { min: a.v, max: null, quote: quote(s, a.index, a.len) };
   }
   return null;
+}
+
+/** { min, max, quote } in minutes from a free text, or null. */
+function parseVisit(text) {
+  return readLength(norm(text));
 }
 
 /**
@@ -102,7 +86,8 @@ function parseVisit(text) {
  */
 function stopMinutes(place, info) {
   const slot = place.time != null && place.end != null && place.end > place.time ? place.end - place.time : null;
-  const min = info && info.visit_min_minutes != null ? info.visit_min_minutes : null;
+  // A record with only a maximum counts that maximum, the figure the panel and the planner show.
+  const min = info ? (info.visit_min_minutes ?? info.visit_max_minutes ?? null) : null;
   if (slot != null || min != null) return Math.max(slot ?? 0, min ?? 0);
   const stated = require('./place-sheet').factsOf(place).visitMinutes;
   if (stated != null) return stated;
@@ -120,4 +105,4 @@ function dayStopMinutes(stop, info, stops) {
   return stopMinutes(stop.place, info);
 }
 
-module.exports = { SPAN, OPENING, isClockHour, parseVisit, stopMinutes, dayStopMinutes, CUE };
+module.exports = { OPENING, readLength, parseVisit, stopMinutes, dayStopMinutes, CUE };

@@ -953,7 +953,7 @@ describe('the 0.6.13 audit', () => {
     const { parseVisit } = require('../server/lib/visit.js');
     expect(parseVisit('Arrivée de 15h à 20h.')).toBeNull();
     expect(parseVisit('Accueil de 9h à 17h. Fermé le lundi.')).toBeNull();
-    expect(parseVisit('Visite guidée de 10h à 12h.')).toMatchObject({ min: 120 });
+    expect(parseVisit('Visite guidée de 10h à 12h.')).toBeNull(); // a span of the day is a time of day (0.6.19)
   });
 
   it('a free-text tent ban shows on the chip even when a sheet line says yes', async () => {
@@ -1076,7 +1076,7 @@ describe('the 0.6.16 audit: one clock-hour test for both duration readers', () =
   it('the sheet never reads a clock time as a length, and reads spans and ranges as parseVisit does', () => {
     expect(sheet.minutesOf("jusqu'à 11h")).toBeNull();
     expect(sheet.minutesOf('9h-12h')).toBeNull();
-    expect(sheet.minutesOf('de 10h à 12h30')).toBe(150);
+    expect(sheet.minutesOf('de 10h à 12h30')).toBeNull(); // a span of the day, even under the label (0.6.19)
     expect(sheet.minutesOf('1h30-2h')).toBe(90);
     expect(sheet.minutesOf('45 min – 1 h')).toBe(45);
   });
@@ -1118,5 +1118,36 @@ describe('the 0.6.17 audit: two rules instead of guessing layouts', () => {
     }
     expect(sheet.minutesOf('9h-12h')).toBeNull();
     expect(parseVisit('Visite 1h30-2h')).toMatchObject({ min: 90, max: 120 });
+  });
+});
+
+describe('the 0.6.18 audit: one reader of a length for the whole plugin', () => {
+  const { parseVisit } = require('../server/lib/visit.js');
+  const sheet = require('../server/lib/place-sheet.js');
+  const pair = (s) => { const r = parseVisit(`Durée : ${s}`); return [sheet.minutesOf(s), sheet.factsOf({ notes: `Durée : ${s}` }).visitMax, r && r.min, r && r.max]; };
+  it('both readers read every phrase the same, a range whatever its joint', () => {
+    expect(pair('entre 2h et 3h')).toEqual([120, 180, 120, 180]);
+    expect(pair('de 2h à 3h')).toEqual([120, 180, 120, 180]);
+    expect(pair('de 1h30 à 2h')).toEqual([90, 120, 90, 120]);
+    expect(pair('2-3 h')).toEqual([120, 180, 120, 180]);
+    expect(pair('2 h (ouvert 9h-18h)')).toEqual([120, null, 120, null]);
+    expect(pair('9h-12h')).toEqual([null, null, null, null]);
+    expect(pair('de 9h à 12h')).toEqual([null, null, null, null]);
+  });
+  it('a span of the day is never a time on site in free text', () => {
+    expect(parseVisit('Visite guidée de 9h à 12h.')).toBeNull();
+  });
+  it('the fill never overwrites a typed maximum, and a lone maximum is what the day counts', async () => {
+    const { stopMinutes } = require('../server/lib/visit.js');
+    expect(stopMinutes({ notes: 'Durée : 1 h' }, { visit_min_minutes: null, visit_max_minutes: 180 })).toBe(180);
+    const trip = build();
+    trip.places.find((p) => p.id === 13).notes = 'Durée : 1 h';
+    const h = makeHost({ trip });
+    await call(h, 'vanlife_place', { tripId: 1, placeId: 13, set: { visit_max_minutes: 180 } });
+    vi.stubGlobal('fetch', stubFetch());
+    try { await call(h, 'vanlife_place', { tripId: 1, fill: true }); } finally { vi.unstubAllGlobals(); }
+    const rec = JSON.stringify(await call(h, 'vanlife_place', { tripId: 1, placeId: 13 }));
+    expect(rec).toContain('"visit_max_minutes":180');
+    expect(rec).toContain('"visit_min_minutes":null');
   });
 });
