@@ -173,7 +173,7 @@ const TOOL_SPECS = [
           },
         },
         clear_fields: { type: 'array', maxItems: 40, uniqueItems: true, items: { type: 'string', maxLength: 40 }, description: 'Clear only these: a key of set (an amenity, dog_fee, per, walk...; the price: set.price_amount null), a contact field, amenities / contacts / log, or all.' },
-        sheet_set: { type: 'object', description: 'Write "sheet" fields into the notes: { field: "text" }, null removes, a list 1 item per line.' },
+        sheet_set: { type: 'object', description: 'Write "sheet" fields into the notes: { field: "text" }, null removes, a list 1 item per line. Values the fill copied from the notes follow them.' },
         fill: { type: 'boolean', default: false, description: 'Fill empty amenities and contacts: the place given by placeId, or the next 20 places of the trip; call again while "remaining" is above 0. Never overwrites a recorded value.' },
       },
     },

@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.6.22",
+  "version": "0.6.23",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -1230,7 +1230,7 @@
             },
             "sheet_set": {
               "type": "object",
-              "description": "Write \"sheet\" fields into the notes: { field: \"text\" }, null removes, a list 1 item per line."
+              "description": "Write \"sheet\" fields into the notes: { field: \"text\" }, null removes, a list 1 item per line. Values the fill copied from the notes follow them."
             },
             "fill": {
               "type": "boolean",

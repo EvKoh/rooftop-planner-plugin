@@ -1208,3 +1208,44 @@ describe('the 0.6.21 audit: an imported hike\'s summary line', () => {
     expect(JSON.stringify(await call(h, 'vanlife_place', { tripId: 1, placeId: 10 }))).toContain('"visit_min_minutes":250');
   });
 });
+
+describe('the 0.6.22 audit: what the fill copied from the notes follows the notes', () => {
+  const fillIt = async (h, placeId) => {
+    vi.stubGlobal('fetch', stubFetch());
+    try { await call(h, 'vanlife_place', { tripId: 1, placeIds: [placeId], placeId, fill: true }); } finally { vi.unstubAllGlobals(); }
+  };
+  const read = async (h, placeId) => JSON.stringify(await call(h, 'vanlife_place', { tripId: 1, placeId }));
+  it('a copied time on site follows a sheet_set, and the answer matches the read', async () => {
+    const trip = build();
+    trip.places.find((x) => x.id === 10).notes = 'Lake walk, 4 h.';
+    const h = makeHost({ trip });
+    await fillIt(h, 10);
+    expect(await read(h, 10)).toContain('"visit_min_minutes":240');
+    const ans = await call(h, 'vanlife_place', { tripId: 1, placeId: 10, sheet_set: { duration: '3 h' } });
+    expect(ans.sheet.fields.duration.minutes).toBe(180);
+    const r = await read(h, 10);
+    expect(r).toContain('"visit_min_minutes":180');
+    expect(r).toContain('"duration":{"minutes":180');
+  });
+  it('a typed time on site never moves', async () => {
+    const trip = build();
+    const h = makeHost({ trip });
+    await call(h, 'vanlife_place', { tripId: 1, placeId: 10, set: { visit_min_minutes: 90 } });
+    const ans = await call(h, 'vanlife_place', { tripId: 1, placeId: 10, sheet_set: { duration: '3 h' } });
+    expect(await read(h, 10)).toContain('"visit_min_minutes":90');
+    expect(ans.sheet.fields.duration.minutes).toBe(90); // the answer shows what the read shows
+  });
+  it('a copied website follows the Site line, in the record and in TREK', async () => {
+    const trip = build();
+    const p = trip.places.find((x) => x.id === 13);
+    Object.assign(p, { notes: 'Site : https://old-host.example.com', website: null });
+    const h = makeHost({ trip });
+    await fillIt(h, 13);
+    expect(p.website).toBe('https://old-host.example.com');
+    await call(h, 'vanlife_place', { tripId: 1, placeId: 13, sheet_set: { website: 'https://new-host.example.com' } });
+    const r = await read(h, 13);
+    expect(r).toContain('"website":"https://new-host.example.com"');
+    expect(r).not.toContain('old-host');
+    expect(p.website).toBe('https://new-host.example.com');
+  });
+});
