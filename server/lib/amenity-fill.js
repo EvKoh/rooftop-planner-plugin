@@ -171,6 +171,51 @@ function ownContacts(place) {
   return out;
 }
 
+/** The time on site the place's own sheet or notes state: { min, max, quote }, or null. */
+function statedVisit(place) {
+  const stated = placeSheet.factsOf(place);
+  if (stated.visitMinutes != null) return { min: stated.visitMinutes, max: stated.visitMax, quote: stated.visitQuote };
+  return parseVisit(`${place.notes || ''}\n${place.description || ''}`);
+}
+
+/**
+ * A value the fill copied from the notes follows the notes: when they change (sheet_set, or
+ * the user's own edit before a new fill), the copied time on site and contacts are read again,
+ * replaced or dropped; TREK's website field follows when it held the copied site. A value a
+ * person typed, or one from another source, is never touched. Returns true when it wrote.
+ * `place`: TREK's row with its categoryName.
+ */
+async function resync(ctx, tripId, place, current) {
+  if (!current) return false;
+  const fromNotes = (src) => typeof src === 'string' && (src === placeInfo.SRC.notes || src.startsWith(`${placeInfo.SRC.notes}:`));
+  const patch = {};
+  if (fromNotes(current.visit_source)) {
+    const v = statedVisit(place);
+    if (!v) Object.assign(patch, { visit_min_minutes: null, visit_max_minutes: null, visit_source: null });
+    else if (v.min !== current.visit_min_minutes || (v.max ?? null) !== (current.visit_max_minutes ?? null)) {
+      Object.assign(patch, { visit_min_minutes: v.min, visit_max_minutes: v.max ?? null, visit_source: `${placeInfo.SRC.notes}: "${v.quote}"` });
+    }
+  }
+  const noted = (ownContacts({ ...place, website: null, phone: null }).find((c) => c.source === placeInfo.SRC.notes) || {}).values || {};
+  const cpatch = {};
+  const csources = {};
+  for (const k of CONTACT_KEYS) {
+    if (!fromNotes((current.contact_sources || {})[k])) continue;
+    const now = noted[k] || null;
+    if (now === (current.contacts || {})[k]) continue;
+    cpatch[k] = now;
+    if (now) csources[k] = placeInfo.SRC.notes;
+  }
+  if (Object.keys(cpatch).length) { patch.contacts = cpatch; patch.contact_sources = csources; }
+  if (!Object.keys(patch).length) return false;
+  await placeInfo.set(ctx, tripId, place.id, patch, { place });
+  // TREK's website field held the copied site: it follows.
+  if ('website' in cpatch && cpatch.website && place.website && place.website === current.contacts.website) {
+    await ctx.places.update(Number(tripId), Number(place.id), { website: cpatch.website });
+  }
+  return true;
+}
+
 /** Places worth looking at: real places (no road geometry) with a position. */
 function candidates(places) {
   return places.filter((p) => !p.route_geometry && p.lat != null && p.lng != null);
@@ -203,6 +248,7 @@ async function fill(ctx, tripId, opts = {}) {
   t = Date.now();
   const todo = pool.filter((p) => !seen.has(p.id));
   // Read records only until the batch is full: a trip can hold hundreds of places.
+  const res0 = { resynced: 0 };
   const batch = [];
   const records = new Map();
   const complete = [];
@@ -211,12 +257,12 @@ async function fill(ctx, tripId, opts = {}) {
     if (batch.length >= BATCH || Date.now() > until) break;
     read++;
     const r = await placeInfo.get(ctx, p.id);
-    if (!incomplete(r, p)) { complete.push(p.id); continue; }
+    if (!incomplete(r, p)) { if (await resync(ctx, tripId, p, r)) res0.resynced++; complete.push(p.id); continue; }
     records.set(p.id, r);
     batch.push(p);
   }
   lap('read', t);
-  const res = { looked: batch.length, filled: 0, contacts: 0, visits: 0, nothing: 0, remaining: todo.length - read, park4nightLimited: false, osmBusy: false, ms };
+  const res = { resynced: res0.resynced, looked: batch.length, filled: 0, contacts: 0, visits: 0, nothing: 0, remaining: todo.length - read, park4nightLimited: false, osmBusy: false, ms };
   if (!batch.length) { await remember(ctx, complete); return res; }
 
   let osm = [];
@@ -272,7 +318,8 @@ async function fill(ctx, tripId, opts = {}) {
     }
     // A linked place whose park4night lookup was cut short by the rate limit is retried later.
     if (!(res.park4nightLimited && id && !sources.some((x) => x.startsWith('park4night')))) looked.push(place.id);
-    const current = records.get(place.id) || null;
+    let current = records.get(place.id) || null;
+    if (await resync(ctx, tripId, place, current)) { current = await placeInfo.get(ctx, place.id); res.resynced++; }
     const patch = {};
     // The place's own sheet already answers the dog and the rooftop tent: an open source
     // never fills over what the host's text says (a "Chiens : non" stays a no).
@@ -291,10 +338,7 @@ async function fill(ctx, tripId, opts = {}) {
     }
     // Time on site, from what the place's own notes or description say; never over a typed one
     // (a typed maximum alone is a recorded time on site too: the fill leaves it whole).
-    const stated = placeSheet.factsOf(place);
-    const visit = (!current || (current.visit_min_minutes == null && current.visit_max_minutes == null))
-      ? (stated.visitMinutes != null ? { min: stated.visitMinutes, max: stated.visitMax, quote: stated.visitQuote } : parseVisit(`${place.notes || ''}\n${place.description || ''}`))
-      : null;
+    const visit = (!current || (current.visit_min_minutes == null && current.visit_max_minutes == null)) ? statedVisit(place) : null;
     if (visit) {
       Object.assign(patch, { visit_min_minutes: visit.min, visit_max_minutes: visit.max, visit_source: `${placeInfo.SRC.notes}: "${visit.quote}"` });
       res.visits++;
@@ -321,4 +365,4 @@ async function fill(ctx, tripId, opts = {}) {
   return res;
 }
 
-module.exports = { hostText, CONTACT_KEYS, incomplete, ownContacts, P4N, LOG_SQL, fill, fromOsm, fromP4n, p4nId, migrate, MIGRATION, BATCH, OSM_RADIUS_M, P4N_RADIUS_M };
+module.exports = { statedVisit, resync, hostText, CONTACT_KEYS, incomplete, ownContacts, P4N, LOG_SQL, fill, fromOsm, fromP4n, p4nId, migrate, MIGRATION, BATCH, OSM_RADIUS_M, P4N_RADIUS_M };

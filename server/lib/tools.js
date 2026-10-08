@@ -111,8 +111,7 @@ function placeView(model, p, info, settings, { full = false } = {}) {
     // card shows; edit a field with sheet_set, which rewrites its line in the notes.
     const sh = placeSheet.sheetOf(p, { night });
     // The time on site the plan counts wins over the notes' figure, as on the panel's card.
-    const onSite = recordedMinutes(info);
-    const fields = onSite != null ? { ...sh.fields, duration: { minutes: onSite, text: durationText(onSite, L) } } : sh.fields;
+    const fields = withRecordedDuration(sh.fields, info, L);
     out.sheet = { kind: sh.kind, fields, otherNotes: sh.other, about: sh.about, freeNotes: sh.text };
   }
   return out;
@@ -133,6 +132,12 @@ function walkView(w, geo, L) {
 }
 
 /** Every hike of the plan with its car park and walking route (computed and cached here). */
+/** The sheet's fields with the time on site the plan counts (the record's) as its duration, as on the panel's card. */
+function withRecordedDuration(fields, info, L) {
+  const onSite = recordedMinutes(info);
+  return onSite != null ? { ...fields, duration: { minutes: onSite, text: durationText(onSite, L) } } : fields;
+}
+
 async function hikesList(ctx, model, settings, opts) {
   const list = walks.hikeWalks(model);
   const geo = await walks.walkGeometry(ctx, list, { network: opts.network !== false, deadline: opts.deadline });
@@ -263,9 +268,11 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
     await ctx.places.update(model.tripId, place.id, patchTexts);
     Object.assign(raw, patchTexts);
     place.raw = raw;
+    // What the fill copied from the notes follows the new notes (time on site, contacts).
+    await amenityFill.resync(ctx, model.tripId, { ...raw, id: place.id, categoryName: place.categoryName }, await placeInfo.get(ctx, place.id));
     if (!a.set && !a.log && !(a.clear_fields && a.clear_fields.length)) {
       const sh = placeSheet.sheetOf(place, { night: isNightPlace(model, place) });
-      return { saved: true, placeId: place.id, sheetFields: sheetSet.map(([f]) => f), sheet: { kind: sh.kind, fields: sh.fields, otherNotes: sh.other } };
+      return { saved: true, placeId: place.id, sheetFields: sheetSet.map(([f]) => f), sheet: { kind: sh.kind, fields: withRecordedDuration(sh.fields, await placeInfo.get(ctx, place.id), settings.language), otherNotes: sh.other } };
     }
   }
   const patch = placeInfo.expandParking(placeInfo.expandWalk({ ...(a.set || {}) }));
