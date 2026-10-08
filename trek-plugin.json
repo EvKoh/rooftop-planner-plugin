@@ -1,7 +1,7 @@
 {
   "id": "vanlife",
   "name": "Vanlife Planner",
-  "version": "0.6.29",
+  "version": "0.6.30",
   "apiVersion": 1,
   "author": "EvKoh",
   "description": "Road trips with a rooftop tent, a campervan or a motorhome: legal nights, sunset-safe arrivals, routes, schedules, amenities, host contacts and night status, as MCP tools.",
@@ -713,7 +713,7 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 400,
-              "description": "The day (schedule and supplies: required)."
+              "description": "The day (schedule and supplies: required; routes: this day only)."
             },
             "dayNumbers": {
               "type": "array",
@@ -725,7 +725,7 @@
                 "maximum": 400,
                 "description": "Day number in the trip (1 = first day)."
               },
-              "description": "routes: days to route (default all)."
+              "description": "routes: days to route (default: dayNumber, else all)."
             },
             "apply": {
               "type": "boolean",

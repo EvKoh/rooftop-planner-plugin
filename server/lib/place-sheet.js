@@ -329,14 +329,18 @@ function parse(description, notes, { kind = 'activity' } = {}) {
   read(description, false);
   // …and the weakest even against a free sentence that states a time on site ("the round trip
   // takes 5 h 30"): that sentence is the duration, read by the one length reader.
+  // Its text is the notes' own line; its minutes are the ones the reader gave (re-reading the
+  // line as a duration line could take a start hour: "from 8 h; the loop takes 3 h").
+  let freeLength = null;
   if (summary.duration && !fields.duration) {
-    const free = require('./visit').parseVisit(text.map((x) => x.text).join('\n'));
-    // Its minutes, as the reader gave them: re-reading a cut quote could take a start hour.
-    if (free) summary.duration = free.max ? `${free.min}-${free.max} min` : `${free.min} min`;
+    const { parseVisit } = require('./visit');
+    const line = text.find((x) => parseVisit(x.text));
+    if (line) { freeLength = parseVisit(line.text); summary.duration = line.text; }
   }
   for (const [f, v] of Object.entries(summary)) if (!fields[f]) add(f, v, []);
   const out = {};
   for (const [f, v] of Object.entries(fields)) out[f] = typed(f, v.value, v.items);
+  if (freeLength && out.duration) Object.assign(out.duration, { minutes: freeLength.min, max: freeLength.max });
   // A free line that is the same as a field's items (a highlight repeated as prose) goes.
   const known = new Set(Object.values(out).flatMap((v) => (v.items || []).map(sig)));
   const free = text.filter((x) => !known.has(sig(x.text)));
@@ -366,7 +370,7 @@ function factsOf(place, { stayNotes = '' } = {}) {
   return {
     visitMinutes: f.duration && f.duration.minutes != null ? f.duration.minutes : null,
     // The upper end of a range ("1h30-2h"), as parseVisit keeps it.
-    visitMax: f.duration ? maxMinutesOf(f.duration.text) : null,
+    visitMax: f.duration ? (f.duration.max !== undefined ? f.duration.max : maxMinutesOf(f.duration.text)) : null,
     dogText: f.dog ? f.dog.text : null,
     tentText: f.rooftop_tent ? f.rooftop_tent.text : tentBan,
     visitQuote: f.duration ? f.duration.text : null,

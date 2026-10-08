@@ -97,8 +97,8 @@ const TOOL_SPECS = [
       properties: {
         tripId: TRIP,
         action: { type: 'string', enum: ['routes', 'schedule', 'supplies'], description: 'routes = road geometry of the days; schedule = times of one day; supplies = shops, fuel and water along one day.' },
-        dayNumber: { ...DAY, description: 'The day (schedule and supplies: required).' },
-        dayNumbers: { type: 'array', maxItems: 60, uniqueItems: true, items: DAY, description: 'routes: days to route (default all).' },
+        dayNumber: { ...DAY, description: 'The day (schedule and supplies: required; routes: this day only).' },
+        dayNumbers: { type: 'array', maxItems: 60, uniqueItems: true, items: DAY, description: 'routes: days to route (default: dayNumber, else all).' },
         apply: { type: 'boolean', default: false, description: 'routes: false = propose only (default); true = write the route places.' },
         startAt: { type: 'integer', minimum: 0, maximum: 400, default: 0, description: 'routes: resume index from a previous continuation.' },
         departure: { ...HHMM, description: 'schedule: departure from last night\'s place (default: keep the current plan, else the day_start setting).' },
