@@ -173,8 +173,15 @@ function ownContacts(place) {
 
 /** The time on site the place's own sheet or notes state: { min, max, quote }, or null. */
 function statedVisit(place) {
-  const stated = placeSheet.factsOf(place);
-  if (stated.visitMinutes != null) return { min: stated.visitMinutes, max: stated.visitMax, quote: stated.visitQuote };
+  const sh = placeSheet.sheetOf(place);
+  // The sheet's duration (a labelled line, else a free sentence, else a hike's summary: the
+  // sheet decides): even unreadable ("depends on the snow"), it is the answer, never a figure
+  // taken elsewhere in the text.
+  if (sh.fields.duration) {
+    const stated = placeSheet.factsOf(place);
+    return stated.visitMinutes != null ? { min: stated.visitMinutes, max: stated.visitMax, quote: stated.visitQuote } : null;
+  }
+  // No duration on the sheet (nor a summary time): the one length reader on the notes.
   return parseVisit(`${place.notes || ''}\n${place.description || ''}`);
 }
 

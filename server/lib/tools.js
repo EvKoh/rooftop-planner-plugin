@@ -150,6 +150,8 @@ async function hikesList(ctx, model, settings, opts) {
 
 /** List / read / set / log / clear / fill the record of the places of a trip. */
 async function placeTool(ctx, model, a, settings, opts = {}) {
+  // fill is a call of its own: nothing else is written, no place is created (placeToolOn says so).
+  if (a.fill) return placeToolOn(ctx, model, a, settings, opts);
   if (!a.placeId && a.filter === 'hikes') return hikesList(ctx, model, settings, opts);
   // A new place (create), and a hike's car park given inline (set.walk.parking): made first,
   // so a whole hike — car park, hike, dotted walk — goes on the map in one call.
@@ -222,12 +224,12 @@ async function placeToolOn(ctx, model, a, settings, opts = {}) {
   if (a.fill) {
     const res = await amenityFill.fill(ctx, model.tripId, { placeIds: a.placeId ? [a.placeId] : undefined, park4night: settings.park4night, budgetMs: 6000 });
     // fill is a call of its own: say what it did not do rather than drop it silently.
-    const ignored = ['set', 'sheet_set', 'log', 'kind', 'clear', 'clear_fields'].filter((k) => a[k] != null && !(Array.isArray(a[k]) && !a[k].length));
+    const ignored = ['create', 'set', 'sheet_set', 'log', 'kind', 'clear', 'clear_fields'].filter((k) => a[k] != null && !(Array.isArray(a[k]) && !a[k].length));
     if (ignored.length) res.ignored = `${ignored.join(', ')}: not applied with fill=true; call again without fill`;
     return res;
   }
   if (!a.placeId) {
-    if (a.set || a.log || a.clear || a.sheet_set || (a.clear_fields && a.clear_fields.length)) throw new Error('placeId is required to set, log or clear');
+    if (a.set || a.log || a.clear || a.sheet_set || a.kind || (a.clear_fields && a.clear_fields.length)) throw new Error('placeId is required to set, log, clear or give a kind');
     // Three sets of nights: planned (a lodging in the trip), candidates (a night category but
     // no lodging), and both together (trip.js decides both).
     const planned = new Set(model.nights.map((n) => n.placeId));
@@ -343,7 +345,8 @@ async function hikeWalk(ctx, model, placeId, settings, opts) {
 /** The three day actions that used to be three tools. */
 async function dayTool(ctx, model, a, opts) {
   const needDay = () => { if (!a.dayNumber) throw new Error(`dayNumber is required for action "${a.action}"`); };
-  if (a.action === 'routes') return computeRoutes(ctx, model, { days: (a.dayNumbers || []).map((n) => ({ dayNumber: n })), apply: a.apply, startAt: a.startAt }, opts);
+  // dayNumbers, else the one dayNumber given: never every day when one was named.
+  if (a.action === 'routes') return computeRoutes(ctx, model, { days: (a.dayNumbers && a.dayNumbers.length ? a.dayNumbers : a.dayNumber != null ? [a.dayNumber] : []).map((n) => ({ dayNumber: n })), apply: a.apply, startAt: a.startAt }, opts);
   if (a.action === 'schedule') {
     needDay();
     const stays = Object.fromEntries((a.stays || []).map((x) => [x.assignmentId, x.minutes]));
@@ -391,6 +394,7 @@ async function callTool({ name, args }, ctx, { now } = {}) {
         res = await findNights(ctx, {
           evening: { lat: a.lat, lng: a.lng }, morning: a.morning_lat != null && a.morning_lng != null ? { lat: a.morning_lat, lng: a.morning_lng } : null, date: a.date, radiusKm: a.radius_km, sources: a.sources,
         }, opts);
+        if (a.dayNumber != null) res.ignored = 'dayNumber: used only with tripId (trip mode)';
       } else throw new Error('give tripId and dayNumber, or lat and lng');
       if (res.date && res.evening) {
         // At tonight's planned stay when there is one (the check's and the schedule's point), else at
